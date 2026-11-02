@@ -2,7 +2,7 @@
 task: system-audit-and-roadmap
 created: 2026-11-02
 updated: 2026-11-02
-status: in_progress
+status: done
 workflow: WF-ARCH
 priority: P1
 ---
@@ -37,12 +37,12 @@ Từ kết quả phân tích, chỉ rõ **Ưu điểm cốt lõi**, **Nhược �
 ### Phase 2: Thẩm định Chiến lược, Phê duyệt Lộ trình & Ban hành ADR
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 2.1 | Thẩm định báo cáo của Tech Lead dưới góc nhìn chiến lược công nghệ, đánh giá rủi ro Golive/Scale, chốt ma trận ưu tiên đầu tư (Impact vs Effort) cho 3 giai đoạn và ký duyệt Architecture Decision Record (ADR) | `cto` | ⬜ | `steps/STEP-2.1-cto-strategic-review-adr.md` | - |
+| 2.1 | Thẩm định báo cáo của Tech Lead dưới góc nhìn chiến lược công nghệ, đánh giá rủi ro Golive/Scale, chốt ma trận ưu tiên đầu tư (Impact vs Effort) cho 3 giai đoạn và ký duyệt Architecture Decision Record (ADR) | `cto` | ✅ | `steps/STEP-2.1-cto-strategic-review-adr.md` | 2026-11-02 17:01 |
 
 ## Artifacts dự kiến (tổng)
 - [x] `docs/architecture/ARCH-AUDIT-system-2026-11-02.md` (+ `.docx`, `.pdf` xuất qua `scripts/md_to_docx_kztek.py`)
-- [ ] `docs/architecture/ADR-001-system-architecture-roadmap.md` (+ `.docx`, `.pdf` xuất qua `scripts/md_to_docx_kztek.py`)
-- [ ] `docs/plans/PLAN-system-audit-and-roadmap-2026-11-02/PLAN-MASTER.md` & `steps/STEP-*.md` (+ `.docx`, `.pdf` theo Rule R1)
+- [x] `docs/architecture/ADR-001-system-architecture-roadmap.md` (+ `.docx`, `.pdf` xuất qua `scripts/md_to_docx_kztek.py`)
+- [x] `docs/plans/PLAN-system-audit-and-roadmap-2026-11-02/PLAN-MASTER.md` & `steps/STEP-*.md` (+ `.docx`, `.pdf` theo Rule R1)
 
 ## Blockers
 Không có
@@ -50,13 +50,16 @@ Không có
 ## Quyết định / Ghi chú tổng
 - **Chế độ Read-Only đối với Source Code:** Tuyệt đối KHÔNG sửa đổi bất kỳ file mã nguồn ứng dụng nào (`src/`, `prisma/`, `mobile/`, `Dockerfile`...) trong phạm vi plan này; chỉ tạo tài liệu báo cáo, ADR và plan files.
 - **Chuẩn bằng chứng (Evidence-based Audit):** Mọi nhận định ưu điểm, nhược điểm hoặc lỗ hổng tiềm ẩn đều phải gắn nhãn độ tin cậy (`CONFIRMED` kèm đường dẫn `file:line`, không suy diễn cảm tính từ tài liệu cũ).
-- **Git hygiene trên nhánh hiện tại:** Nhánh `feature/ui-ux-enhancements-and-mywork` đang có một số file dirty từ task trước; khi commit các bước của plan này CHỈ `git add` đúng các file thuộc `docs/architecture/` và `docs/plans/PLAN-system-audit-and-roadmap-2026-11-02/`.
+- **Quyết định Chiến lược CTO (`ADR-001`):** Phê duyệt có điều kiện (**Phương án B** — Modular Monolith cứng hóa theo cấp độ + Golive 2 tầng: **Tier-1 LAN** sau Phase G0 = `9.0 man-days`, **Tier-2 Public Internet & Mobile R9** sau Phase G1 = `24.0 man-days` có bổ sung PostgreSQL Transactional Outbox `G1-0`, và **Phase G2 = `30.0 man-days`** neo chặt theo ngưỡng KPI thực tế). Giữ nguyên hiệu lực `🛑 BLOCK GOLIVE` hiện tại cho tới khi hoàn thành Gate 1.
+- **Git hygiene trên nhánh hiện tại:** Nhánh `feature/ui-ux-enhancements-and-mywork` đang có `_workspace/` untracked; khi commit các bước của plan này CHỈ `git add` đúng các file thuộc `docs/architecture/` và `docs/plans/PLAN-system-audit-and-roadmap-2026-11-02/`.
 - **Đường dẫn script R1 thực tế trên workspace:** Sử dụng `python scripts/md_to_docx_kztek.py <duong-dan-file.md>` (kiểm tra file `.pdf` trên đĩa theo `GOTCHAS.md` G005 nếu gặp cảnh báo RPC Word COM).
 
 ## Lịch sử cập nhật
 | Ngày | Cập nhật | Agent |
 |------|----------|-------|
 | 2026-11-02 | User xác nhận plan, khởi tạo cấu trúc folder & bắt đầu Bước 1.1 | task-planner |
+| 2026-11-02 | Hoàn thành Bước 1.1: Xuất báo cáo kiểm toán kiến trúc & bảo mật toàn diện (`ARCH-AUDIT-system-2026-11-02`) | tech-lead |
+| 2026-11-02 | Hoàn thành Bước 2.1 & đóng Plan (`status: done`): CTO thẩm định chiến lược, chốt lộ trình 2-Tier Golive + KPI Gates và ký duyệt `ADR-001-system-architecture-roadmap` | cto |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped
