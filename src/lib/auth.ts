@@ -96,7 +96,7 @@ export async function createSession(
   try {
     const store = await cookies();
     store.set(COOKIE_NAME, token, {
-      httpOnly: false, // Step 1.2 sẽ nâng cấp đồng bộ httpOnly: true
+      httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
       maxAge: SESSION_DAYS * 24 * 60 * 60,
@@ -113,9 +113,9 @@ export async function destroySession() {
   try {
     const store = await cookies();
     store.set(COOKIE_NAME, "", {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: process.env.COOKIE_SECURE === "true",
       maxAge: 0,
       path: "/",
     });

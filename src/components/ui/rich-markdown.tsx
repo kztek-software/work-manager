@@ -3,6 +3,7 @@
 import React from "react";
 import { AtSign, CheckSquare, Square, ExternalLink, Code as CodeIcon } from "lucide-react";
 import type { MemberDto } from "@/lib/types";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 /**
  * Color map for preset keys and hex values
@@ -266,16 +267,7 @@ export interface RichMarkdownProps {
   members?: MemberDto[];
 }
 
-function sanitizeHtml(html: string): string {
-  if (!html) return "";
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
-    .replace(/on\w+\s*=\s*(['"]).*?\1/gi, "")
-    .replace(/href\s*=\s*(['"])javascript:.*?\1/gi, 'href="#"');
-}
+// sanitizeHtml is now imported from @/lib/sanitize
 
 /**
  * Rich Markdown block & inline parser component:

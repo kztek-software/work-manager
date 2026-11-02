@@ -22,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { COLOR_PRESETS, type ColorPreset } from "./rich-text-toolbar";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 /**
  * Converts Markdown string to HTML for WYSIWYG editor initialization
@@ -366,7 +367,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   useEffect(() => {
     if (!editorRef.current) return;
     if (!isFocusedRef.current) {
-      const html = markdownToHtml(value || "");
+      const html = sanitizeHtml(markdownToHtml(value || ""));
       if (editorRef.current.innerHTML !== html) {
         editorRef.current.innerHTML = html;
         lastEmittedValueRef.current = value || "";
@@ -406,7 +407,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       debounceTimerRef.current = null;
     }
     const html = editorRef.current.innerHTML;
-    const cleanHtml = html === "<p><br></p>" || html === "<br>" || html === "" ? "" : html;
+    const cleanHtml = html === "<p><br></p>" || html === "<br>" || html === "" ? "" : sanitizeHtml(html);
     if (cleanHtml !== lastEmittedValueRef.current) {
       lastEmittedValueRef.current = cleanHtml;
       onChange(cleanHtml);
@@ -429,6 +430,20 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   };
 
   // Immediate input handler (Zero DOM thrashing, debounced parent update)
+  // Handle paste with DOMPurify sanitization
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const textHtml = e.clipboardData.getData("text/html");
+    const textPlain = e.clipboardData.getData("text/plain");
+    if (textHtml) {
+      const clean = sanitizeHtml(textHtml);
+      document.execCommand("insertHTML", false, clean);
+    } else if (textPlain) {
+      document.execCommand("insertText", false, textPlain);
+    }
+    handleInputImmediate();
+  };
+
   const handleInputImmediate = () => {
     if (!editorRef.current) return;
     const html = editorRef.current.innerHTML;
@@ -923,6 +938,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           ref={editorRef}
           contentEditable={!disabled}
           onInput={handleInputImmediate}
+          onPaste={handlePaste}
           onKeyUp={updateActiveFormats}
           onMouseUp={updateActiveFormats}
           onFocus={() => {

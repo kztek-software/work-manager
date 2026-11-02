@@ -366,6 +366,7 @@ export function BoardView({
         const res = await fetch(`/api/projects/${task.projectId}/tasks/${taskId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({ assigneeId: userId }),
         });
         if (!res.ok) loadBoard();
@@ -725,6 +726,7 @@ export function BoardView({
       const res = await fetch(`/api/projects/${task.projectId}/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ status: newStatus, position: newPosition }),
       });
       if (!res.ok) loadBoard();
