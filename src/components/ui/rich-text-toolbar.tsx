@@ -355,30 +355,44 @@ export function RichTextToolbar({
         </button>
 
         {showColorMenu && (
-          <div className="absolute top-full left-0 mt-1 z-[100] w-64 rounded-xl border border-line bg-surface-2 p-2.5 shadow-2xl space-y-1.5 animate-fade-in-up">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted px-1 flex items-center justify-between">
-              <span className="flex items-center gap-1">
-                <Palette className="h-3 w-3 text-accent" />
+          <div className="absolute top-full left-0 mt-1 z-[100] w-72 rounded-2xl border border-line bg-surface-2 p-3 shadow-2xl space-y-2 animate-fade-in-up">
+            <div className="text-xs font-bold text-foreground px-1 flex items-center justify-between border-b border-line/50 pb-2">
+              <span className="flex items-center gap-1.5">
+                <Palette className="h-3.5 w-3.5 text-accent" />
                 Màu chữ
               </span>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  applyColor("inherit");
+                  setShowColorMenu(false);
+                }}
+                className="text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold border border-line/50 text-muted hover:text-foreground hover:bg-surface-3"
+              >
+                Mặc định
+              </button>
             </div>
 
-            {/* Compact 4-column color grid with swatches & clear labels */}
-            <div className="grid grid-cols-4 gap-1 pt-1 border-t border-line/40">
+            {/* 2-column color grid with ample width (w-72), NO ellipsis '...' truncation */}
+            <div className="grid grid-cols-2 gap-1.5 pt-0.5">
               {COLOR_PRESETS.map((color) => (
                 <button
                   key={color.key}
                   type="button"
                   title={color.name}
                   onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => applyColor(color.key)}
-                  className="flex items-center gap-1.5 rounded-lg p-1.5 text-[11px] font-medium text-foreground hover:bg-surface-3 transition-colors cursor-pointer"
+                  onClick={() => {
+                    applyColor(color.key);
+                    setShowColorMenu(false);
+                  }}
+                  className="flex items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold border border-line/40 bg-surface/70 text-foreground hover:bg-surface-3 hover:border-line transition-all cursor-pointer"
                 >
                   <span
-                    className={`h-2.5 w-2.5 rounded-full shrink-0 shadow-xs border border-white/20 ${color.bgClass}`}
+                    className={`h-3.5 w-3.5 rounded-full shrink-0 shadow-xs border border-white/20 ${color.bgClass}`}
                     style={{ backgroundColor: color.hex }}
                   />
-                  <span className="truncate">{color.name}</span>
+                  <span className="whitespace-nowrap">{color.name}</span>
                 </button>
               ))}
             </div>

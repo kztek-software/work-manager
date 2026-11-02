@@ -19,6 +19,7 @@ import {
   Minus,
   ChevronDown,
   RemoveFormatting,
+  Check,
 } from "lucide-react";
 import { COLOR_PRESETS, type ColorPreset } from "./rich-text-toolbar";
 
@@ -118,6 +119,33 @@ export function markdownToHtml(md: string): string {
   return resultLines.join("\n");
 }
 
+export function parseColorToHex(input: string): string {
+  if (!input) return "";
+  const s = input.trim().toLowerCase();
+  if (s.startsWith("#")) {
+    if (s.length === 4) {
+      return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
+    }
+    return s;
+  }
+  const rgbMatch = s.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10).toString(16).padStart(2, "0");
+    const g = parseInt(rgbMatch[2], 10).toString(16).padStart(2, "0");
+    const b = parseInt(rgbMatch[3], 10).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+  return s;
+}
+
+export function matchPresetColor(colorVal: string): ColorPreset | undefined {
+  if (!colorVal) return undefined;
+  const hex = parseColorToHex(colorVal);
+  return COLOR_PRESETS.find(
+    (p) => p.hex.toLowerCase() === hex || p.key.toLowerCase() === hex || p.name.toLowerCase() === hex
+  );
+}
+
 export interface WysiwygEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -157,6 +185,10 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
     italic: false,
     underline: false,
     strikeThrough: false,
+    highlight: false,
+    colorKey: "",
+    colorHex: "",
+    colorName: "",
     orderedList: false,
     unorderedList: false,
     blockquote: false,
@@ -182,6 +214,8 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
     let italic = false;
     let underline = false;
     let strikeThrough = false;
+    let highlight = false;
+    let detectedColor = "";
     let orderedList = false;
     let unorderedList = false;
     let blockquote = false;
@@ -199,6 +233,35 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       // Fallback
     }
 
+    try {
+      const blockVal = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+      if (blockVal === "blockquote") blockquote = true;
+      if (blockVal === "pre") code = true;
+      if (blockVal === "h1" || blockVal === "h2" || blockVal === "h3") {
+        heading = blockVal;
+      }
+    } catch {}
+
+    try {
+      const backColor = document.queryCommandValue("hiliteColor") || document.queryCommandValue("backColor");
+      if (
+        backColor &&
+        backColor !== "transparent" &&
+        backColor !== "rgba(0, 0, 0, 0)" &&
+        backColor !== "rgb(255, 255, 255)" &&
+        backColor !== "#ffffff"
+      ) {
+        highlight = true;
+      }
+    } catch {}
+
+    try {
+      const foreVal = document.queryCommandValue("foreColor");
+      if (foreVal) {
+        detectedColor = foreVal;
+      }
+    } catch {}
+
     // Traverse ancestors in DOM to catch semantic elements
     let curr: Node | null = anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
     while (curr && curr !== editorRef.current) {
@@ -210,8 +273,27 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
         if (tag === "s" || tag === "del" || tag === "strike") strikeThrough = true;
         if (tag === "ol") orderedList = true;
         if (tag === "ul") unorderedList = true;
+        if (tag === "li") {
+          const parentTag = curr.parentElement?.tagName.toLowerCase();
+          if (parentTag === "ol") orderedList = true;
+          if (parentTag === "ul") unorderedList = true;
+        }
         if (tag === "blockquote") blockquote = true;
         if (tag === "pre" || tag === "code") code = true;
+        if (tag === "mark") highlight = true;
+        if (
+          curr.style.backgroundColor &&
+          curr.style.backgroundColor !== "transparent" &&
+          curr.style.backgroundColor !== "rgba(0, 0, 0, 0)"
+        ) {
+          highlight = true;
+        }
+        if (curr.style.color && !detectedColor) {
+          detectedColor = curr.style.color;
+        }
+        if (tag === "font" && (curr as HTMLFontElement).color && !detectedColor) {
+          detectedColor = (curr as HTMLFontElement).color;
+        }
         if (tag === "h1" || tag === "h2" || tag === "h3") {
           if (!heading) heading = tag;
         }
@@ -219,12 +301,21 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       curr = curr.parentNode;
     }
 
+    const matchedPreset = matchPresetColor(detectedColor);
+    const colorKey = matchedPreset ? matchedPreset.key : "";
+    const colorHex = matchedPreset ? matchedPreset.hex : "";
+    const colorName = matchedPreset ? matchedPreset.name : "";
+
     setActiveFormats((prev) => {
       if (
         prev.bold === bold &&
         prev.italic === italic &&
         prev.underline === underline &&
         prev.strikeThrough === strikeThrough &&
+        prev.highlight === highlight &&
+        prev.colorKey === colorKey &&
+        prev.colorHex === colorHex &&
+        prev.colorName === colorName &&
         prev.orderedList === orderedList &&
         prev.unorderedList === unorderedList &&
         prev.blockquote === blockquote &&
@@ -238,6 +329,10 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
         italic,
         underline,
         strikeThrough,
+        highlight,
+        colorKey,
+        colorHex,
+        colorName,
         orderedList,
         unorderedList,
         blockquote,
@@ -352,7 +447,37 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
     setTimeout(updateActiveFormats, 10);
   };
 
+  const toggleHighlight = () => {
+    if (disabled) return;
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    if (activeFormats.highlight) {
+      try {
+        document.execCommand("hiliteColor", false, "transparent");
+        document.execCommand("backColor", false, "transparent");
+      } catch {}
+      if (editorRef.current) {
+        const selection = window.getSelection();
+        if (selection && selection.anchorNode) {
+          let curr: Node | null = selection.anchorNode;
+          while (curr && curr !== editorRef.current) {
+            if (curr instanceof HTMLElement && (curr.tagName === "MARK" || curr.style.backgroundColor)) {
+              curr.style.backgroundColor = "transparent";
+            }
+            curr = curr.parentNode;
+          }
+        }
+      }
+    } else {
+      execCmd("hiliteColor", "#fef08a");
+    }
+    handleInputImmediate();
+    setTimeout(updateActiveFormats, 10);
+  };
+
   const applyColor = (hex: string) => {
+    if (disabled) return;
     if (hex === "inherit" || hex === "default") {
       execCmd("removeFormat");
     } else {
@@ -363,9 +488,28 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   };
 
   const applyHeading = (tag: string) => {
+    if (disabled) return;
     execCmd("formatBlock", `<${tag}>`);
     setShowHeadingMenu(false);
     setTimeout(updateActiveFormats, 10);
+  };
+
+  const toggleBlockquote = () => {
+    if (disabled) return;
+    if (activeFormats.blockquote) {
+      execCmd("formatBlock", "<p>");
+    } else {
+      execCmd("formatBlock", "<blockquote>");
+    }
+  };
+
+  const toggleCode = () => {
+    if (disabled) return;
+    if (activeFormats.code) {
+      execCmd("formatBlock", "<p>");
+    } else {
+      execCmd("formatBlock", "<pre>");
+    }
   };
 
   const handleKeyDownInternal = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -394,6 +538,11 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       if (key === "x" && e.shiftKey) {
         e.preventDefault();
         execCmd("strikeThrough");
+        return;
+      }
+      if (key === "h" && e.shiftKey) {
+        e.preventDefault();
+        toggleHighlight();
         return;
       }
       if (key === "enter") {
@@ -521,11 +670,14 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
         {/* 5. Highlight */}
         <button
           type="button"
-          title="Đánh dấu highlight"
+          title={activeFormats.highlight ? "Bỏ highlight (Ctrl+Shift+H)" : "Đánh dấu highlight (Ctrl+Shift+H)"}
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => execCmd("hiliteColor", "#fef08a")}
-          className={getBtnClass(false, "text-amber-500 hover:text-amber-400")}
+          onClick={toggleHighlight}
+          className={getBtnClass(
+            activeFormats.highlight,
+            activeFormats.highlight ? "text-amber-500 font-bold ring-amber-400/50 bg-amber-400/20" : "text-amber-500 hover:text-amber-400"
+          )}
         >
           <Highlighter className="h-4 w-4" />
         </button>
@@ -537,51 +689,77 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
         <div className="relative" ref={colorMenuRef}>
           <button
             type="button"
-            title="Đổi màu chữ trực tiếp"
+            title={activeFormats.colorName ? `Màu chữ hiện tại: ${activeFormats.colorName}` : "Đổi màu chữ"}
             disabled={disabled}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowColorMenu((prev) => !prev)}
-            className={getBtnClass(showColorMenu, "gap-0.5 text-accent")}
+            className={getBtnClass(Boolean(activeFormats.colorKey) || showColorMenu, "gap-1")}
           >
-            <Palette className="h-4 w-4" />
+            <div className="relative flex items-center">
+              <Palette
+                className="h-4 w-4"
+                style={{ color: activeFormats.colorHex || undefined }}
+              />
+              {activeFormats.colorHex && (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-surface shadow-xs"
+                  style={{ backgroundColor: activeFormats.colorHex }}
+                />
+              )}
+            </div>
             <ChevronDown className="h-2.5 w-2.5 opacity-60" />
           </button>
 
           {showColorMenu && (
-            <div className="absolute top-full left-0 mt-1 z-[100] w-64 rounded-xl border border-line bg-surface-2 p-2.5 shadow-2xl space-y-1.5 animate-fade-in-up">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted px-1 flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <Palette className="h-3 w-3 text-accent" />
+            <div className="absolute top-full left-0 mt-1 z-[100] w-72 rounded-2xl border border-line bg-surface-2 p-3 shadow-2xl space-y-2 animate-fade-in-up">
+              <div className="text-xs font-bold text-foreground px-1 flex items-center justify-between border-b border-line/50 pb-2">
+                <span className="flex items-center gap-1.5">
+                  <Palette className="h-3.5 w-3.5 text-accent" />
                   Màu chữ
                 </span>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applyColor("inherit")}
-                  className="text-[10px] text-muted hover:text-accent font-semibold cursor-pointer"
+                  className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold flex items-center gap-1 border ${
+                    !activeFormats.colorKey
+                      ? "bg-accent/15 border-accent text-accent ring-1 ring-accent/30"
+                      : "border-line/50 text-muted hover:text-foreground hover:bg-surface-3"
+                  }`}
                 >
-                  Mặc định
+                  <span>Mặc định</span>
+                  {!activeFormats.colorKey && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
                 </button>
               </div>
 
-              {/* Compact 4-column color grid with swatches & clear labels */}
-              <div className="grid grid-cols-4 gap-1 pt-1 border-t border-line/40">
-                {COLOR_PRESETS.map((color) => (
-                  <button
-                    key={color.key}
-                    type="button"
-                    title={color.name}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => applyColor(color.hex)}
-                    className="flex items-center gap-1.5 rounded-lg p-1.5 text-[11px] font-medium text-foreground hover:bg-surface-3 transition-colors cursor-pointer"
-                  >
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full shrink-0 shadow-xs border border-white/20 ${color.bgClass}`}
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <span className="truncate">{color.name}</span>
-                  </button>
-                ))}
+              {/* 2-column color grid with ample width (w-72), NO ellipsis '...' truncation */}
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                {COLOR_PRESETS.map((color) => {
+                  const isSelected = activeFormats.colorKey === color.key;
+                  return (
+                    <button
+                      key={color.key}
+                      type="button"
+                      title={color.name}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyColor(color.hex)}
+                      className={`flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-accent/20 border-accent text-accent font-bold ring-1 ring-accent/40 shadow-xs"
+                          : "border-line/40 bg-surface/70 text-foreground hover:bg-surface-3 hover:border-line"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="h-3.5 w-3.5 rounded-full shrink-0 shadow-xs border border-white/20"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span className="whitespace-nowrap">{color.name}</span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-accent shrink-0 stroke-[2.5]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -635,49 +813,59 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           </button>
 
           {showHeadingMenu && (
-            <div className="absolute top-full left-0 mt-1 z-50 w-40 rounded-xl border border-line bg-surface-2 p-1.5 shadow-2xl space-y-1 animate-fade-in-up">
+            <div className="absolute top-full left-0 mt-1 z-50 w-44 rounded-2xl border border-line bg-surface-2 p-1.5 shadow-2xl space-y-1 animate-fade-in-up">
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h1")}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs font-bold rounded-lg text-left cursor-pointer transition-colors ${
-                  activeFormats.heading === "h1" ? "bg-accent/20 text-accent" : "hover:bg-surface-3 text-foreground"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-bold rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h1" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
                 }`}
               >
-                <Heading1 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 1 (H1)</span>
+                <div className="flex items-center gap-2">
+                  <Heading1 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 1 (H1)</span>
+                </div>
+                {activeFormats.heading === "h1" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h2")}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs font-semibold rounded-lg text-left cursor-pointer transition-colors ${
-                  activeFormats.heading === "h2" ? "bg-accent/20 text-accent" : "hover:bg-surface-3 text-foreground"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-semibold rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h2" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
                 }`}
               >
-                <Heading2 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 2 (H2)</span>
+                <div className="flex items-center gap-2">
+                  <Heading2 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 2 (H2)</span>
+                </div>
+                {activeFormats.heading === "h2" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h3")}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs font-medium rounded-lg text-left cursor-pointer transition-colors ${
-                  activeFormats.heading === "h3" ? "bg-accent/20 text-accent" : "hover:bg-surface-3 text-foreground"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h3" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
                 }`}
               >
-                <Heading3 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 3 (H3)</span>
+                <div className="flex items-center gap-2">
+                  <Heading3 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 3 (H3)</span>
+                </div>
+                {activeFormats.heading === "h3" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("p")}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg text-left cursor-pointer transition-colors ${
-                  !activeFormats.heading ? "bg-surface-3 text-foreground font-semibold" : "text-muted hover:bg-surface-3"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-xl text-left cursor-pointer transition-colors border ${
+                  !activeFormats.heading ? "bg-surface-3 border-line/60 text-foreground font-semibold" : "border-transparent text-muted hover:bg-surface-3"
                 }`}
               >
                 <span>Văn bản thường</span>
+                {!activeFormats.heading && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
             </div>
           )}
@@ -689,7 +877,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           title="Trích dẫn"
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => execCmd("formatBlock", "<blockquote>")}
+          onClick={toggleBlockquote}
           className={getBtnClass(activeFormats.blockquote)}
         >
           <Quote className="h-4 w-4" />
@@ -701,7 +889,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           title="Khối mã (Code)"
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => execCmd("formatBlock", "<pre>")}
+          onClick={toggleCode}
           className={getBtnClass(activeFormats.code, "font-mono")}
         >
           <Code className="h-4 w-4" />
@@ -713,7 +901,10 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           title="Xóa định dạng"
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => execCmd("removeFormat")}
+          onClick={() => {
+            execCmd("removeFormat");
+            setTimeout(updateActiveFormats, 10);
+          }}
           className={getBtnClass(false)}
         >
           <RemoveFormatting className="h-4 w-4" />
@@ -752,4 +943,3 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
     </div>
   );
 });
-
