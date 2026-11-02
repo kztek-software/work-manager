@@ -1238,7 +1238,7 @@ export function BoardView({
         <div
           ref={boardContainerRef}
           onScroll={handleBoardScroll}
-          className="flex flex-1 min-h-0 w-full gap-2.5 sm:gap-3 md:gap-3.5 overflow-x-auto p-2 sm:p-3 md:p-3.5 px-2.5 sm:px-3.5 md:px-4 snap-x snap-mandatory touch-pan-x no-scrollbar overflow-y-hidden select-none pb-2.5"
+          className="flex flex-1 min-h-0 w-full gap-3 sm:gap-3.5 md:gap-4 overflow-x-auto p-2.5 sm:p-3 md:p-3.5 px-3 sm:px-4 snap-x snap-mandatory touch-pan-x no-scrollbar overflow-y-hidden select-none pb-3"
         >
           {STATUSES.map((status) => (
             <BoardColumn

@@ -39,14 +39,14 @@ function TaskCardComponent({
 
   // The avatar/assignee slot doubles as a quick-assign trigger when members + onAssign are wired in.
   const assigneeSlot = task.assignee ? (
-    <Avatar className="h-[22px] w-[22px] border border-white/10 shadow-sm shrink-0" title={`Phụ trách: ${task.assignee.name}`}>
-      <AvatarFallback color={task.assignee.avatarColor} className="text-[9px] font-bold">
+    <Avatar className="h-[23px] w-[23px] ring-1 ring-black/5 dark:ring-white/10 border border-background shadow-xs shrink-0" title={`Phụ trách: ${task.assignee.name}`}>
+      <AvatarFallback color={task.assignee.avatarColor} className="text-[9.5px] font-bold">
         {initials(task.assignee.name)}
       </AvatarFallback>
     </Avatar>
   ) : (
     <div
-      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border border-dashed border-line-strong text-muted/70"
+      className="flex h-[23px] w-[23px] shrink-0 items-center justify-center rounded-full border border-dashed border-line-strong text-muted/70 hover:border-accent hover:text-accent transition-colors"
       title="Chưa giao"
     >
       <Plus className="h-3 w-3" />
@@ -55,10 +55,10 @@ function TaskCardComponent({
 
   return (
     <div
-      className={`group relative rounded-xl border p-2.5 sm:p-3 transition-all duration-200 ${
+      className={`group relative rounded-xl border p-3 transition-all duration-200 ${
         overlay
           ? "rotate-2 scale-[1.03] shadow-2xl shadow-black/80 ring-2 ring-accent border-accent bg-surface/95 backdrop-blur-xl cursor-grabbing z-50 overflow-hidden"
-          : "border-line bg-surface/80 hover:bg-surface hover:border-line-strong hover:shadow-md shadow-sm cursor-grab active:cursor-grabbing active:scale-[0.98]"
+          : "border-line bg-surface/80 hover:bg-surface hover:border-line-strong hover:shadow-md shadow-xs cursor-grab active:cursor-grabbing active:scale-[0.98]"
       }`}
     >
       {/* Priority strip — the single strong color cue on the card */}
@@ -139,7 +139,7 @@ function TaskCardComponent({
       )}
 
       {/* Footer: due date, comments, checklist chips + assignee — compact and tight */}
-      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-line/40">
+      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-line/50">
         <div className="flex flex-wrap items-center gap-1">
           {task.dueDate && (
             <span

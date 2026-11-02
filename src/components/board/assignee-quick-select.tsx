@@ -207,8 +207,8 @@ export function AssigneeQuickSelect({
           aria-label="Gán người phụ trách"
         >
           {effectiveAssignee ? (
-            <Avatar className="h-[22px] w-[22px] border border-white/10 shadow-sm shrink-0">
-              <AvatarFallback color={effectiveAssignee.avatarColor} className="text-[9px] font-bold">
+            <Avatar className="h-[23px] w-[23px] ring-1 ring-black/5 dark:ring-white/10 border border-background shadow-xs shrink-0">
+              <AvatarFallback color={effectiveAssignee.avatarColor} className="text-[9.5px] font-bold">
                 {initials(effectiveAssignee.name)}
               </AvatarFallback>
             </Avatar>
