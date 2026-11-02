@@ -92,11 +92,12 @@ export async function POST(req: NextRequest) {
 
     // Nếu gửi bằng form HTML thông thường (legacy fallback)
     if (!contentType.includes("application/json")) {
+      const secureAttr = process.env.COOKIE_SECURE === "true" ? "; Secure" : "";
       return new Response(null, {
         status: 303,
         headers: {
           Location: user.mustChangePassword ? "/change-password" : "/",
-          "Set-Cookie": `flowboard_session=${token}; Path=/; Max-Age=604800; SameSite=Lax`,
+          "Set-Cookie": `flowboard_session=${token}; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly${secureAttr}`,
         },
       });
     }
@@ -115,7 +116,7 @@ export async function POST(req: NextRequest) {
     });
 
     res.cookies.set("flowboard_session", token, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
       maxAge: 7 * 24 * 60 * 60,

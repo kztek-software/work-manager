@@ -36,7 +36,7 @@ Thực thi trọn vẹn **Giai đoạn 0 (Phase G0: `G0-1` → `G0-6`)** theo qu
 ### Phase 2: Kiểm định An ninh Độc lập & Đánh giá Giao diện Thực tế (Two-Eyes Review)
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 2.1 | **[Security & Code Review] Review 2 trục & Tái kiểm định OWASP/STRIDE:** Kiểm tra `VERIFICATION REPORT`, chạy `/code-review` (Standards + Spec) trên toàn bộ thay đổi Phase 1 và thực thi đầy đủ `security-audit-stride` (OWASP Top 10 + STRIDE) xác nhận xóa sạch toàn bộ lỗi `Critical:` / `Required` của Phase G0 | `tech-lead` | ⬜ | `steps/STEP-2.1-tech-lead-security-and-code-review.md` | - |
+| 2.1 | **[Security & Code Review] Review 2 trục & Tái kiểm định OWASP/STRIDE:** Kiểm tra `VERIFICATION REPORT`, chạy `/code-review` (Standards + Spec) trên toàn bộ thay đổi Phase 1 và thực thi đầy đủ `security-audit-stride` (OWASP Top 10 + STRIDE) xác nhận xóa sạch toàn bộ lỗi `Critical:` / `Required` của Phase G0 | `tech-lead` | ✅ | `steps/STEP-2.1-tech-lead-security-and-code-review.md` | 2026-11-02 21:40 |
 | 2.2 | **[UI/UX Real-App Review] Kiểm tra trực quan trên App thật (C1–C7):** Chạy ứng dụng thật trên trình duyệt, chụp screenshot và đánh giá 7 tiêu chí C1–C7 cho: (1) Trang `/login` & `/register` sau khi đóng tự đăng ký công khai; (2) Soạn thảo `WysiwygEditor` & hiển thị `RichMarkdown` sau khi bọc `DOMPurify`; (3) Không gian làm việc `/desktop` tạo mới và cập nhật trạng thái công việc | `ux-ui-reviewer` | ⬜ | `steps/STEP-2.2-ux-ui-real-app-review.md` | - |
 
 ### Phase 3: Kiểm thử Nghiệm thu App Thật, Cứng hóa Docker/Backup & Sign-off Gate 1
@@ -68,6 +68,7 @@ Không có
 | 2026-11-02 20:55 | Hoàn thành Bước 1.1: Auth/RBAC Guard, Đóng tự đăng ký & Vòng đời Token | senior-developer |
 | 2026-11-02 21:15 | Hoàn thành Bước 1.2: DOMPurify XSS, Cookie httpOnly & Mã hóa Secrets AES-256-GCM | senior-developer |
 | 2026-11-02 21:25 | Hoàn thành Bước 1.3: Rate-Limiter, An toàn Upload, Vá /desktop 404, Atomic Task.number & /verify-pr | senior-developer |
+| 2026-11-02 21:40 | Hoàn thành Bước 2.1: Code Review 2 trục & Tái kiểm định OWASP/STRIDE Gate 1 | tech-lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

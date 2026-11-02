@@ -47,7 +47,7 @@ export const POST = withApiAuth(
 
     const res = NextResponse.json({ ok: true, token: newToken });
     res.cookies.set("flowboard_session", newToken, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
       maxAge: 7 * 24 * 60 * 60,

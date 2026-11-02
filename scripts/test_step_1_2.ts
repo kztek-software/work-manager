@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { sanitizeHtml } from "../src/lib/sanitize";
 import { escapeHtml, generateTaskAssignedEmailHtml, generateTaskCommentEmailHtml } from "../src/lib/mail";
 import { encryptSecret, decryptSecret, maskSecret, isMasked, isEncrypted } from "../src/lib/crypto-secrets";
