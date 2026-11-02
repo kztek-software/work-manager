@@ -52,6 +52,8 @@ export type TaskMinAggregateOutputType = {
   position: number | null
   assigneeId: string | null
   creatorId: string | null
+  contactName: string | null
+  contactPhone: string | null
   dueDate: Date | null
   completedAt: Date | null
   createdAt: Date | null
@@ -72,6 +74,8 @@ export type TaskMaxAggregateOutputType = {
   position: number | null
   assigneeId: string | null
   creatorId: string | null
+  contactName: string | null
+  contactPhone: string | null
   dueDate: Date | null
   completedAt: Date | null
   createdAt: Date | null
@@ -92,6 +96,8 @@ export type TaskCountAggregateOutputType = {
   position: number
   assigneeId: number
   creatorId: number
+  contactName: number
+  contactPhone: number
   dueDate: number
   completedAt: number
   createdAt: number
@@ -126,6 +132,8 @@ export type TaskMinAggregateInputType = {
   position?: true
   assigneeId?: true
   creatorId?: true
+  contactName?: true
+  contactPhone?: true
   dueDate?: true
   completedAt?: true
   createdAt?: true
@@ -146,6 +154,8 @@ export type TaskMaxAggregateInputType = {
   position?: true
   assigneeId?: true
   creatorId?: true
+  contactName?: true
+  contactPhone?: true
   dueDate?: true
   completedAt?: true
   createdAt?: true
@@ -166,6 +176,8 @@ export type TaskCountAggregateInputType = {
   position?: true
   assigneeId?: true
   creatorId?: true
+  contactName?: true
+  contactPhone?: true
   dueDate?: true
   completedAt?: true
   createdAt?: true
@@ -273,6 +285,8 @@ export type TaskGroupByOutputType = {
   position: number
   assigneeId: string | null
   creatorId: string
+  contactName: string | null
+  contactPhone: string | null
   dueDate: Date | null
   completedAt: Date | null
   createdAt: Date
@@ -316,6 +330,8 @@ export type TaskWhereInput = {
   position?: Prisma.FloatFilter<"Task"> | number
   assigneeId?: Prisma.StringNullableFilter<"Task"> | string | null
   creatorId?: Prisma.StringFilter<"Task"> | string
+  contactName?: Prisma.StringNullableFilter<"Task"> | string | null
+  contactPhone?: Prisma.StringNullableFilter<"Task"> | string | null
   dueDate?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
@@ -346,6 +362,8 @@ export type TaskOrderByWithRelationInput = {
   position?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorId?: Prisma.SortOrder
+  contactName?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -380,6 +398,8 @@ export type TaskWhereUniqueInput = Prisma.AtLeast<{
   position?: Prisma.FloatFilter<"Task"> | number
   assigneeId?: Prisma.StringNullableFilter<"Task"> | string | null
   creatorId?: Prisma.StringFilter<"Task"> | string
+  contactName?: Prisma.StringNullableFilter<"Task"> | string | null
+  contactPhone?: Prisma.StringNullableFilter<"Task"> | string | null
   dueDate?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
@@ -410,6 +430,8 @@ export type TaskOrderByWithAggregationInput = {
   position?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   creatorId?: Prisma.SortOrder
+  contactName?: Prisma.SortOrderInput | Prisma.SortOrder
+  contactPhone?: Prisma.SortOrderInput | Prisma.SortOrder
   dueDate?: Prisma.SortOrderInput | Prisma.SortOrder
   completedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -438,6 +460,8 @@ export type TaskScalarWhereWithAggregatesInput = {
   position?: Prisma.FloatWithAggregatesFilter<"Task"> | number
   assigneeId?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   creatorId?: Prisma.StringWithAggregatesFilter<"Task"> | string
+  contactName?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
+  contactPhone?: Prisma.StringNullableWithAggregatesFilter<"Task"> | string | null
   dueDate?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Task"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Task"> | Date | string
@@ -454,6 +478,8 @@ export type TaskCreateInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -484,6 +510,8 @@ export type TaskUncheckedCreateInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -506,6 +534,8 @@ export type TaskUpdateInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -536,6 +566,8 @@ export type TaskUncheckedUpdateInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -562,6 +594,8 @@ export type TaskCreateManyInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -578,6 +612,8 @@ export type TaskUpdateManyMutationInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -598,6 +634,8 @@ export type TaskUncheckedUpdateManyInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -633,6 +671,8 @@ export type TaskCountOrderByAggregateInput = {
   position?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   creatorId?: Prisma.SortOrder
+  contactName?: Prisma.SortOrder
+  contactPhone?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -659,6 +699,8 @@ export type TaskMaxOrderByAggregateInput = {
   position?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   creatorId?: Prisma.SortOrder
+  contactName?: Prisma.SortOrder
+  contactPhone?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -679,6 +721,8 @@ export type TaskMinOrderByAggregateInput = {
   position?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   creatorId?: Prisma.SortOrder
+  contactName?: Prisma.SortOrder
+  contactPhone?: Prisma.SortOrder
   dueDate?: Prisma.SortOrder
   completedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -991,6 +1035,8 @@ export type TaskCreateWithoutAssigneeInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1019,6 +1065,8 @@ export type TaskUncheckedCreateWithoutAssigneeInput = {
   storyPoints?: number | null
   position?: number
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1051,6 +1099,8 @@ export type TaskCreateWithoutCreatorInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1079,6 +1129,8 @@ export type TaskUncheckedCreateWithoutCreatorInput = {
   storyPoints?: number | null
   position?: number
   assigneeId?: string | null
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1134,6 +1186,8 @@ export type TaskScalarWhereInput = {
   position?: Prisma.FloatFilter<"Task"> | number
   assigneeId?: Prisma.StringNullableFilter<"Task"> | string | null
   creatorId?: Prisma.StringFilter<"Task"> | string
+  contactName?: Prisma.StringNullableFilter<"Task"> | string | null
+  contactPhone?: Prisma.StringNullableFilter<"Task"> | string | null
   dueDate?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   completedAt?: Prisma.DateTimeNullableFilter<"Task"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Task"> | Date | string
@@ -1166,6 +1220,8 @@ export type TaskCreateWithoutProjectInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1194,6 +1250,8 @@ export type TaskUncheckedCreateWithoutProjectInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1242,6 +1300,8 @@ export type TaskCreateWithoutSprintInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1270,6 +1330,8 @@ export type TaskUncheckedCreateWithoutSprintInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1318,6 +1380,8 @@ export type TaskCreateWithoutLabelsInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1347,6 +1411,8 @@ export type TaskUncheckedCreateWithoutLabelsInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1384,6 +1450,8 @@ export type TaskUpdateWithoutLabelsInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1413,6 +1481,8 @@ export type TaskUncheckedUpdateWithoutLabelsInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1434,6 +1504,8 @@ export type TaskCreateWithoutSubtasksInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1463,6 +1535,8 @@ export type TaskUncheckedCreateWithoutSubtasksInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1500,6 +1574,8 @@ export type TaskUpdateWithoutSubtasksInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1529,6 +1605,8 @@ export type TaskUncheckedUpdateWithoutSubtasksInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1550,6 +1628,8 @@ export type TaskCreateWithoutCommentsInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1579,6 +1659,8 @@ export type TaskUncheckedCreateWithoutCommentsInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1616,6 +1698,8 @@ export type TaskUpdateWithoutCommentsInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1645,6 +1729,8 @@ export type TaskUncheckedUpdateWithoutCommentsInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1666,6 +1752,8 @@ export type TaskCreateWithoutActivityInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1695,6 +1783,8 @@ export type TaskUncheckedCreateWithoutActivityInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1732,6 +1822,8 @@ export type TaskUpdateWithoutActivityInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1761,6 +1853,8 @@ export type TaskUncheckedUpdateWithoutActivityInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1782,6 +1876,8 @@ export type TaskCreateWithoutCustomerTicketInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1811,6 +1907,8 @@ export type TaskUncheckedCreateWithoutCustomerTicketInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1848,6 +1946,8 @@ export type TaskUpdateWithoutCustomerTicketInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1877,6 +1977,8 @@ export type TaskUncheckedUpdateWithoutCustomerTicketInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1898,6 +2000,8 @@ export type TaskCreateWithoutAttachmentsInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1927,6 +2031,8 @@ export type TaskUncheckedCreateWithoutAttachmentsInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -1964,6 +2070,8 @@ export type TaskUpdateWithoutAttachmentsInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1993,6 +2101,8 @@ export type TaskUncheckedUpdateWithoutAttachmentsInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2017,6 +2127,8 @@ export type TaskCreateManyAssigneeInput = {
   storyPoints?: number | null
   position?: number
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -2036,6 +2148,8 @@ export type TaskCreateManyCreatorInput = {
   storyPoints?: number | null
   position?: number
   assigneeId?: string | null
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -2052,6 +2166,8 @@ export type TaskUpdateWithoutAssigneeInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2080,6 +2196,8 @@ export type TaskUncheckedUpdateWithoutAssigneeInput = {
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2105,6 +2223,8 @@ export type TaskUncheckedUpdateManyWithoutAssigneeInput = {
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2121,6 +2241,8 @@ export type TaskUpdateWithoutCreatorInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2149,6 +2271,8 @@ export type TaskUncheckedUpdateWithoutCreatorInput = {
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2174,6 +2298,8 @@ export type TaskUncheckedUpdateManyWithoutCreatorInput = {
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2193,6 +2319,8 @@ export type TaskCreateManyProjectInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -2209,6 +2337,8 @@ export type TaskUpdateWithoutProjectInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2237,6 +2367,8 @@ export type TaskUncheckedUpdateWithoutProjectInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2262,6 +2394,8 @@ export type TaskUncheckedUpdateManyWithoutProjectInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2281,6 +2415,8 @@ export type TaskCreateManySprintInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -2297,6 +2433,8 @@ export type TaskUpdateWithoutSprintInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2325,6 +2463,8 @@ export type TaskUncheckedUpdateWithoutSprintInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2350,6 +2490,8 @@ export type TaskUncheckedUpdateManyWithoutSprintInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2437,6 +2579,8 @@ export type TaskSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   position?: boolean
   assigneeId?: boolean
   creatorId?: boolean
+  contactName?: boolean
+  contactPhone?: boolean
   dueDate?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -2468,6 +2612,8 @@ export type TaskSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   position?: boolean
   assigneeId?: boolean
   creatorId?: boolean
+  contactName?: boolean
+  contactPhone?: boolean
   dueDate?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -2492,6 +2638,8 @@ export type TaskSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   position?: boolean
   assigneeId?: boolean
   creatorId?: boolean
+  contactName?: boolean
+  contactPhone?: boolean
   dueDate?: boolean
   completedAt?: boolean
   createdAt?: boolean
@@ -2516,13 +2664,15 @@ export type TaskSelectScalar = {
   position?: boolean
   assigneeId?: boolean
   creatorId?: boolean
+  contactName?: boolean
+  contactPhone?: boolean
   dueDate?: boolean
   completedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "sprintId" | "number" | "title" | "description" | "type" | "status" | "priority" | "storyPoints" | "position" | "assigneeId" | "creatorId" | "dueDate" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
+export type TaskOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "sprintId" | "number" | "title" | "description" | "type" | "status" | "priority" | "storyPoints" | "position" | "assigneeId" | "creatorId" | "contactName" | "contactPhone" | "dueDate" | "completedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["task"]>
 export type TaskInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   sprint?: boolean | Prisma.Task$sprintArgs<ExtArgs>
@@ -2577,6 +2727,8 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     position: number
     assigneeId: string | null
     creatorId: string
+    contactName: string | null
+    contactPhone: string | null
     dueDate: Date | null
     completedAt: Date | null
     createdAt: Date
@@ -3027,6 +3179,8 @@ export interface TaskFieldRefs {
   readonly position: Prisma.FieldRef<"Task", 'Float'>
   readonly assigneeId: Prisma.FieldRef<"Task", 'String'>
   readonly creatorId: Prisma.FieldRef<"Task", 'String'>
+  readonly contactName: Prisma.FieldRef<"Task", 'String'>
+  readonly contactPhone: Prisma.FieldRef<"Task", 'String'>
   readonly dueDate: Prisma.FieldRef<"Task", 'DateTime'>
   readonly completedAt: Prisma.FieldRef<"Task", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Task", 'DateTime'>

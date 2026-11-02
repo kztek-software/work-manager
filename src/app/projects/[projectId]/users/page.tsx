@@ -1685,6 +1685,8 @@ export default function UsersManagementPage() {
       {/* MODAL: TẠO / SỬA NHÓM (CREATE / EDIT TEAM DIALOG) */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={editingTeam ? `Chỉnh sửa Nhóm: ${editingTeam.name}` : "Tạo Nhóm / Phòng Ban Mới"}
         visible={createTeamOpen || editTeamOpen}
         onHide={() => {
@@ -1828,6 +1830,8 @@ export default function UsersManagementPage() {
       {/* MODAL: TẠO / SỬA USER (CREATE / EDIT USER DIALOG) */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={editingUser ? `Cập nhật tài khoản: ${editingUser.name}` : "Thêm Nhân Sự Mới"}
         visible={createUserOpen || editUserOpen}
         onHide={() => {
@@ -2012,6 +2016,8 @@ export default function UsersManagementPage() {
       {/* MODAL: TẠO VAI TRÒ MỚI (CREATE CUSTOM ROLE DIALOG) */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Tạo Vai Trò & Phân Quyền Tùy Ý"
         visible={createRoleOpen}
         onHide={() => setCreateRoleOpen(false)}
@@ -2125,6 +2131,8 @@ export default function UsersManagementPage() {
       {/* MODAL: SỬA VAI TRÒ (EDIT ROLE DIALOG) */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={`Chỉnh sửa vai trò: ${editingRoleItem?.name}`}
         visible={editRoleOpen}
         onHide={() => setEditRoleOpen(false)}
@@ -2229,6 +2237,8 @@ export default function UsersManagementPage() {
       {/* MODAL: XÁC NHẬN XÓA VAI TRÒ (CONFIRM DELETE ROLE DIALOG) */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Xác Nhận Xóa Vai Trò"
         visible={deleteRoleConfirmOpen}
         onHide={() => setDeleteRoleConfirmOpen(false)}

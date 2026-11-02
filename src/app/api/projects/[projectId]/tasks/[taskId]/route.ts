@@ -24,6 +24,8 @@ const updateSchema = z.object({
   storyPoints: z.number().int().min(0).max(100).nullable().optional(),
   assigneeId: z.string().nullable().optional(),
   sprintId: z.string().nullable().optional(),
+  contactName: z.string().nullable().optional(),
+  contactPhone: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
   position: z.number().optional(),
@@ -91,6 +93,8 @@ export async function PATCH(
       storyPoints: d.storyPoints,
       assigneeId: d.assigneeId,
       sprintId: d.sprintId,
+      contactName: d.contactName,
+      contactPhone: d.contactPhone,
       dueDate: d.dueDate === undefined ? undefined : d.dueDate ? new Date(d.dueDate) : null,
       position: d.position,
       completedAt:

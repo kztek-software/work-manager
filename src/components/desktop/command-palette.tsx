@@ -20,7 +20,10 @@ import {
   ExternalLink,
   Keyboard,
   Layers,
+  TrendingUp,
+  CheckSquare,
 } from "lucide-react";
+import { boardHref } from "@/lib/board-link";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -124,7 +127,29 @@ export function CommandPalette({
       icon: KanbanSquare,
       action: () => {
         onClose();
-        if (projectId) router.push(`/projects/${projectId}/board`);
+        router.push(projectId ? boardHref(projectId) : "/board");
+      },
+    },
+    {
+      id: "act-open-my-work",
+      category: "🧭 Điều Hướng",
+      title: "Việc Của Tôi (My Work)",
+      subtitle: "Tổng hợp toàn bộ công việc được giao của bạn",
+      icon: CheckSquare,
+      action: () => {
+        onClose();
+        router.push("/my-work");
+      },
+    },
+    {
+      id: "act-open-my-stats",
+      category: "🧭 Điều Hướng",
+      title: "Thống Kê Công Việc",
+      subtitle: "Số liệu cá nhân & nhóm mình quản lý theo khoảng thời gian",
+      icon: TrendingUp,
+      action: () => {
+        onClose();
+        if (projectId) router.push(`/projects/${projectId}/my-stats`);
         else router.push("/");
       },
     },
@@ -226,7 +251,10 @@ export function CommandPalette({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150 cursor-pointer"
+    >
       <div
         className="w-full max-w-2xl bg-surface border border-line rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}

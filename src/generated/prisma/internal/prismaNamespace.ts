@@ -2173,6 +2173,8 @@ export const TaskScalarFieldEnum = {
   position: 'position',
   assigneeId: 'assigneeId',
   creatorId: 'creatorId',
+  contactName: 'contactName',
+  contactPhone: 'contactPhone',
   dueDate: 'dueDate',
   completedAt: 'completedAt',
   createdAt: 'createdAt',

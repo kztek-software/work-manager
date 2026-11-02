@@ -49,6 +49,8 @@ export type TaskDto = {
   position: number;
   assigneeId: string | null;
   creatorId: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
   dueDate: string | null;
   notionUrl?: string | null;
   notionPageId?: string | null;
@@ -276,3 +278,17 @@ export type BoardData = {
   members: MemberDto[];
   currentRole?: string;
 };
+
+// Board Công Việc đa dự án (GET /api/board): dữ liệu phẳng, mỗi bản ghi mang projectId
+export type BoardProjectDto = ProjectDto & { currentRole: string };
+
+export type MultiBoardData = {
+  projects: BoardProjectDto[];
+  tasks: TaskDto[];
+  sprints: (SprintDto & { projectId: string })[];
+  labels: (LabelDto & { projectId: string })[];
+  members: (MemberDto & { projectId: string })[];
+};
+
+// Nhãn dự án hiển thị trên thẻ task khi Board xem nhiều dự án
+export type TaskProjectTag = { key: string; name: string };

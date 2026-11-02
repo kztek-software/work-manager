@@ -294,6 +294,39 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
         e.preventDefault();
         onCancel();
       }
+      return;
+    }
+
+    // Auto-detect list triggers: "1. " -> Ordered List, "- " or "* " -> Bullet List
+    if (e.key === " " && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const selection = window.getSelection();
+      if (selection && selection.isCollapsed && selection.anchorNode) {
+        const node = selection.anchorNode;
+        const text = node.textContent || "";
+        const offset = selection.anchorOffset;
+        const textBeforeCursor = text.slice(0, offset).trim();
+
+        const olMatch = textBeforeCursor.match(/^(\d+)\.$/);
+        const ulMatch = textBeforeCursor.match(/^[-*]$/);
+
+        if (olMatch) {
+          e.preventDefault();
+          const remaining = text.slice(offset);
+          node.textContent = remaining;
+          document.execCommand("insertOrderedList", false);
+          flushChange();
+          return;
+        }
+
+        if (ulMatch) {
+          e.preventDefault();
+          const remaining = text.slice(offset);
+          node.textContent = remaining;
+          document.execCommand("insertUnorderedList", false);
+          flushChange();
+          return;
+        }
+      }
     }
   };
 
