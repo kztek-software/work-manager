@@ -56,7 +56,7 @@ deps: [2.1]
 - next_inputs: Bàn giao toàn bộ mã nguồn sang QA Engineer (`STEP-3.1-qa-real-app-gate1-verification.md`) để triển khai kiểm thử tự động 10 chốt chặn Gate 1.
 
 ## Commit
-- Hash: (cập nhật sau khi git commit)
+- Hash: 1a916b6
 - Đã push: false
 
 ---

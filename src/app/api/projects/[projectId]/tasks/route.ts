@@ -118,8 +118,8 @@ export async function POST(
     const d = parsed.data;
 
     // Đảm bảo tính nguyên tử (Atomic) khi sinh Task.number và vị trí (position)
-    // Bọc trong transaction có retry tối đa 3 lần nếu gặp xung đột mã P2002 (G0-6)
-    const maxAttempts = 3;
+    // Bọc trong transaction có retry tối đa 10 lần nếu gặp xung đột mã P2002 khi có nhiều tác vụ đồng thời (G0-6)
+    const maxAttempts = 10;
     let attempt = 0;
     let task: any = null;
 
@@ -191,8 +191,8 @@ export async function POST(
       } catch (err: any) {
         if (err?.code === "P2002" && attempt < maxAttempts - 1) {
           attempt++;
-          // Chờ ngẫu nhiên 20-70ms trước khi retry
-          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50 + 20));
+          // Chờ ngẫu nhiên với exponential/jitter backoff trước khi retry (30-100ms)
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50 + 25 * attempt));
           continue;
         }
         throw err;
