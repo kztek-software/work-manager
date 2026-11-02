@@ -15,6 +15,8 @@ import {
   Check,
   Layers,
   Rocket,
+  User,
+  Phone,
 } from "lucide-react";
 import { STATUSES, PRIORITIES, TASK_TYPES } from "@/lib/constants";
 import type { LabelDto, MemberDto, SprintDto } from "@/lib/types";
@@ -59,6 +61,8 @@ export function NewTaskDialog({
   const [storyPoints, setStoryPoints] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
   const [sprintId, setSprintId] = useState(defaultSprintId || "");
+  const [contactName, setContactName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
@@ -84,6 +88,8 @@ export function NewTaskDialog({
     setStoryPoints("");
     setAssigneeId("");
     setSprintId("");
+    setContactName("");
+    setContactPhone("");
     setLabelIds([]);
     setSubtasks([]);
     setNewSubtask("");
@@ -148,6 +154,8 @@ export function NewTaskDialog({
           storyPoints: storyPoints ? Number(storyPoints) : undefined,
           assigneeId: assigneeId || undefined,
           sprintId: sprintId || undefined,
+          contactName: contactName.trim() || undefined,
+          contactPhone: contactPhone.trim() || undefined,
           labelIds,
           subtasks: subtasks.map((st) => ({ title: st })),
           attachments: attachments.map((att) => ({
@@ -473,6 +481,34 @@ export function NewTaskDialog({
                     </div>
                   );
                 }}
+              />
+            </div>
+          </div>
+
+          {/* Người liên hệ & Số điện thoại (Tùy chọn) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-line/40">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-muted flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5 text-accent" />
+                Người liên hệ (Tùy chọn)
+              </Label>
+              <Input
+                placeholder="VD: Anh Nam, Khách hàng..."
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                className="text-xs h-8 bg-surface-2"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-muted flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 text-accent" />
+                Số điện thoại liên hệ
+              </Label>
+              <Input
+                placeholder="VD: 0912 345 678"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                className="text-xs h-8 bg-surface-2 font-mono"
               />
             </div>
           </div>

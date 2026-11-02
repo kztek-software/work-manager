@@ -74,6 +74,8 @@ const createTaskSchema = z.object({
   storyPoints: z.number().int().min(0).max(100).nullable().optional(),
   assigneeId: z.string().nullable().optional(),
   sprintId: z.string().nullable().optional(),
+  contactName: z.string().nullable().optional(),
+  contactPhone: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
   labelIds: z.array(z.string()).optional(),
   subtasks: z
@@ -139,6 +141,8 @@ export async function POST(
       storyPoints: d.storyPoints ?? null,
       assigneeId: d.assigneeId,
       creatorId: user.id,
+      contactName: d.contactName ?? null,
+      contactPhone: d.contactPhone ?? null,
       sprintId: d.sprintId,
       dueDate: d.dueDate ? new Date(d.dueDate) : null,
       position: (maxPos._max.position ?? 0) + 1000,

@@ -38,8 +38,9 @@ import {
   Bell,
   Bot,
   TrendingUp,
+  CheckSquare,
 } from "lucide-react";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/components/desktop/command-palette";
 import { ZaloLinkModal } from "@/components/account/zalo-link-modal";
@@ -63,6 +64,7 @@ import { usePermissions } from "@/lib/permissions-context";
 import { useTheme } from "@/lib/theme-context";
 import { prefetchTab } from "@/lib/tab-cache";
 import { useLocalStorageRaw, writeLocalStorage } from "@/lib/client-store";
+import { boardHref } from "@/lib/board-link";
 
 type ProjectInfo = {
   id: string;
@@ -87,8 +89,14 @@ const PROJECT_GRADIENTS = [
 const LEGACY_BOARD_HREF = /^\/projects\/[^/]+\/board$/;
 
 function pinKeyOf(href: string) {
-  if (LEGACY_BOARD_HREF.test(href)) return "/board";
-  return href.endsWith("/my-stats") ? "workspace:my-stats" : href;
+  if (LEGACY_BOARD_HREF.test(href) || href.startsWith("/board")) return "/board";
+  if (href.startsWith("/my-work")) return "/my-work";
+  if (href.endsWith("/my-stats")) return "workspace:my-stats";
+  const match = href.match(/^\/projects\/[^/]+\/([a-z0-9-]+)$/);
+  if (match) {
+    return `project:${match[1]}`;
+  }
+  return href;
 }
 
 function getProjectGradient(key: string) {
@@ -166,6 +174,53 @@ export function AppShell({
   const [isNotificationPrefsOpen, setIsNotificationPrefsOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isScratchpadOpen, setIsScratchpadOpen] = useState(false);
+
+  // Sidebar Splitter / Resizable Width (220px to 460px)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(260);
+  const isResizingSidebarRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("kztek_sidebar_width");
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val) && val >= 220 && val <= 460) {
+          setSidebarWidth(val);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const startResizingSidebar = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingSidebarRef.current = true;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizingSidebarRef.current) return;
+      const newWidth = Math.min(Math.max(moveEvent.clientX, 220), 460);
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      if (!isResizingSidebarRef.current) return;
+      isResizingSidebarRef.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      setSidebarWidth((w) => {
+        try {
+          localStorage.setItem("kztek_sidebar_width", String(w));
+        } catch {}
+        return w;
+      });
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }, []);
 
   // Pinned Sidebar Nav Items (ghim mục điều hướng lên đầu sidebar) — lưu theo từng user trên trình duyệt.
   // localStorage là external store: đọc trực tiếp qua useSyncExternalStore thay vì
@@ -308,9 +363,10 @@ export function AppShell({
     { href: `/projects/${project.id}/reports`, label: "Báo Cáo & KPI", icon: BarChart3 },
   ];
 
-  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board) và số liệu tổng hợp của bản thân / nhóm
+  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work), và số liệu tổng hợp
   const workspaceNav = [
-    { href: "/board", label: "Board Công Việc", icon: KanbanSquare },
+    { href: boardHref(project.id), label: "Board Công Việc", icon: KanbanSquare },
+    { href: "/my-work", label: "Việc Của Tôi", icon: CheckSquare },
     { href: `/projects/${project.id}/my-stats`, label: "Thống Kê Công Việc", icon: TrendingUp },
   ];
 
@@ -449,11 +505,36 @@ export function AppShell({
       p.key.toLowerCase().includes(searchProject.toLowerCase())
   );
 
+  // Phân nhóm danh sách dự án trực quan (Grouping theo trạng thái)
+  const groupedProjects = useMemo(() => {
+    const active = filteredProjects.filter((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE");
+    const planning = filteredProjects.filter((p) => p.status === "PLANNING" || !p.status);
+    const completed = filteredProjects.filter((p) =>
+      ["COMPLETED", "ON_HOLD", "CANCELLED", "PAUSED", "ARCHIVED"].includes(p.status || "")
+    );
+
+    const groups: { key: string; label: string; color: string; items: typeof projects }[] = [];
+    if (active.length > 0) {
+      groups.push({ key: "ACTIVE", label: "Đang thực hiện", color: "#10b981", items: active });
+    }
+    if (planning.length > 0) {
+      groups.push({ key: "PLANNING", label: "Lên kế hoạch", color: "#3b82f6", items: planning });
+    }
+    if (completed.length > 0) {
+      groups.push({ key: "COMPLETED", label: "Tạm dừng & Hoàn thành", color: "#8b5cf6", items: completed });
+    }
+    if (groups.length === 0 && filteredProjects.length > 0) {
+      groups.push({ key: "ALL", label: "Tất cả dự án", color: "#64748b", items: filteredProjects });
+    }
+    return groups;
+  }, [filteredProjects]);
+
   const activeProjectStatusMeta = projectStatusMeta(project.status);
 
   // Compute current page label once — used for both breadcrumb text and title tooltip
   const currentPageLabel =
-    pathname.endsWith("/board") ? "Board Công Việc" :
+    pathname.startsWith("/my-work") ? "Việc Của Tôi" :
+    (pathname === "/board" || pathname.startsWith("/board")) ? "Board Công Việc" :
     pathname.endsWith("/sprints") ? "Sprints & Kế Hoạch" :
     pathname.endsWith("/reports") ? "Báo Cáo & KPI" :
     pathname.endsWith("/my-stats") ? "Thống Kê Công Việc" :
@@ -467,10 +548,11 @@ export function AppShell({
 
   // Danh sách phẳng toàn bộ mục nav (đã lọc visible) — dùng để tra cứu icon/label cho mục đã ghim
   const allVisibleNavItems = [...workspaceNav, ...mainNav, ...systemNav.filter((item) => item.visible)];
-  // Board Công Việc (/board) không thuộc dự án nào -> breadcrumb không gắn tên dự án ngữ cảnh
-  const isBoardPage = pathname === "/board";
+  // Board Công Việc (/board) và Việc Của Tôi (/my-work) không thuộc riêng 1 dự án -> breadcrumb hiển thị danh mục Công Việc
+  const isBoardPage = pathname === "/board" || pathname.startsWith("/board");
+  const isMyWorkPage = pathname === "/my-work" || pathname.startsWith("/my-work");
   // Trang thuộc nhóm "Công việc" -> breadcrumb không hiển thị như trang con của dự án
-  const isWorkspacePage = workspaceNav.some((item) => pathname === item.href);
+  const isWorkspacePage = isBoardPage || isMyWorkPage || pathname.endsWith("/my-stats");
   const pinnedNavItems = pinnedHrefs
     .map((href) => allVisibleNavItems.find((item) => pinKeyOf(item.href) === href))
     .filter((item): item is (typeof allVisibleNavItems)[number] => Boolean(item));
@@ -482,10 +564,17 @@ export function AppShell({
     keyPrefix: string = ""
   ) {
     const active =
-      pathname === item.href || (item.href.endsWith("/dashboard") && pathname === `/projects/${project.id}`);
+      pathname === item.href ||
+      (item.href.endsWith("/dashboard") && pathname === `/projects/${project.id}`) ||
+      (pathname.startsWith("/board") && item.href.startsWith("/board")) ||
+      (pathname.startsWith("/my-work") && item.href.startsWith("/my-work"));
     const pinned = pinnedHrefs.includes(pinKeyOf(item.href));
     const handlePrefetch = () => {
-      if (item.href.endsWith("/dashboard")) {
+      if (item.href.startsWith("/my-work")) {
+        prefetchTab("/api/my-work");
+      } else if (item.href.startsWith("/board")) {
+        prefetchTab(`/api/board?projects=${project.id}`);
+      } else if (item.href.endsWith("/dashboard")) {
         prefetchTab(`/api/projects/${project.id}/dashboard`);
       } else if (item.href.endsWith("/sprints")) {
         prefetchTab(`/api/projects/${project.id}/tasks`);
@@ -647,7 +736,7 @@ export function AppShell({
 
         {/* Flyout Workspace Menu Dropdown */}
         {projectMenuOpen && (
-          <div className="absolute left-3 right-3 top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line">
+          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[360px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
             {/* Header */}
             <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between border-b border-line/50 pb-2">
               <span>{isAdmin ? `Toàn bộ dự án (${projects.length})` : `Dự án của bạn (${projects.length})`}</span>
@@ -671,73 +760,89 @@ export function AppShell({
               </div>
             )}
 
-            {/* Projects List */}
-            <div className="space-y-1 max-h-56 overflow-y-auto py-1 pr-0.5">
-              {filteredProjects.map((p) => {
-                const isActive = p.id === project.id;
-                const pStatusMeta = projectStatusMeta(p.status);
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/projects/${p.id}/dashboard`}
-                    onClick={() => {
-                      setProjectMenuOpen(false);
-                      if (isMobile) setMobileDrawerOpen(false);
-                    }}
-                    className={cn(
-                      "flex items-center justify-between rounded-xl px-2.5 py-2 transition-all group/item",
-                      isActive
-                        ? "bg-accent/15 border border-accent/40 shadow-sm"
-                        : "hover:bg-surface-2/90 border border-transparent"
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {/* Project Initial Avatar */}
-                      <div
+            {/* Projects List with Groups & 2-column layout */}
+            <div className="space-y-2 max-h-64 overflow-y-auto py-1 pr-0.5">
+              {groupedProjects.map((group) => (
+                <div key={group.key} className="space-y-1">
+                  <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
+                      <span>{group.label}</span>
+                    </div>
+                    <span className="text-[9px] font-mono font-medium text-muted/70">{group.items.length}</span>
+                  </div>
+
+                  {group.items.map((p) => {
+                    const isActive = p.id === project.id;
+                    const pStatusMeta = projectStatusMeta(p.status);
+                    return (
+                      <Link
+                        key={p.id}
+                        href={`/projects/${p.id}/dashboard`}
+                        onClick={() => {
+                          setProjectMenuOpen(false);
+                          if (isMobile) setMobileDrawerOpen(false);
+                        }}
                         className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-sm bg-gradient-to-br",
-                          getProjectGradient(p.key)
+                          "flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all group/item",
+                          isActive
+                            ? "bg-accent/15 border border-accent/40 shadow-sm"
+                            : "hover:bg-surface-2/90 border border-transparent"
                         )}
                       >
-                        {p.key.slice(0, 3)}
-                      </div>
+                        {/* Cột 1: Avatar + Tên + Key */}
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div
+                            className={cn(
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-sm bg-gradient-to-br",
+                              getProjectGradient(p.key)
+                            )}
+                          >
+                            {p.key.slice(0, 3)}
+                          </div>
 
-                      <div className="min-w-0">
-                        <div
-                          className={cn(
-                            "truncate text-xs font-bold transition-colors",
-                            isActive
-                              ? "text-accent"
-                              : "text-foreground group-hover/item:text-accent"
-                          )}
-                        >
-                          {p.name}
+                          <div className="min-w-0 flex-1">
+                            <div
+                              className={cn(
+                                "truncate text-xs font-bold transition-colors",
+                                isActive
+                                  ? "text-accent"
+                                  : "text-foreground group-hover/item:text-accent"
+                              )}
+                              title={p.name}
+                            >
+                              {p.name}
+                            </div>
+                            <div className="text-[10px] text-muted font-mono mt-0.5 truncate">
+                              {p.key}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted font-mono mt-0.5">
-                          <span className="font-bold text-foreground/80">{p.key}</span>
-                          <span>•</span>
+
+                        {/* Cột 2: Trạng thái căn phải, kích thước cố định đồng nhất */}
+                        <div className="shrink-0 flex items-center gap-1.5">
                           <span
-                            className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold"
+                            className="w-[94px] h-[22px] px-1.5 flex items-center justify-center rounded text-[10px] font-bold text-center truncate shadow-2xs"
                             style={{
                               backgroundColor: pStatusMeta.bg,
                               color: pStatusMeta.color,
                               border: `1px solid ${pStatusMeta.border}`,
                             }}
+                            title={pStatusMeta.label}
                           >
                             {pStatusMeta.label}
                           </span>
+                          {isActive && (
+                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-white shrink-0">
+                              <Check className="h-2.5 w-2.5 stroke-[3]" />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-
-                    {isActive && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white shrink-0 shadow-sm">
-                        <Check className="h-3 w-3 stroke-[3]" />
-                      </div>
-                    )}
-                  </Link>
-                );
-              })}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
 
               {filteredProjects.length === 0 && (
                 <div className="p-3 text-center text-xs text-muted">
@@ -886,8 +991,28 @@ export function AppShell({
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground" suppressHydrationWarning>
       {/* Modern Obsidian Sidebar (Desktop View >= lg) */}
-      <aside className="hidden lg:flex w-64 shrink-0 flex-col border-r border-line bg-surface/95 backdrop-blur-md z-30" suppressHydrationWarning>
+      <aside
+        style={{ width: `${sidebarWidth}px` }}
+        className="relative hidden lg:flex shrink-0 flex-col border-r border-line bg-surface/95 backdrop-blur-md z-30 select-none"
+        suppressHydrationWarning
+      >
         {renderSidebarContent(false)}
+        {/* Sidebar Splitter Resizer Handle */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          onMouseDown={startResizingSidebar}
+          onDoubleClick={() => {
+            setSidebarWidth(260);
+            try {
+              localStorage.setItem("kztek_sidebar_width", "260");
+            } catch {}
+          }}
+          className="absolute top-0 right-0 bottom-0 w-2 cursor-col-resize hover:bg-accent/40 active:bg-accent transition-all z-40 group flex items-center justify-center select-none"
+          title="Kéo sang phải/trái để co giãn thanh bên (Double-click để khôi phục mặc định 260px)"
+        >
+          <div className="w-0.5 h-8 bg-line-strong/60 group-hover:bg-accent rounded-full transition-colors" />
+        </div>
       </aside>
 
       {/* Mobile Drawer Sidebar with Animated Backdrop (< lg) */}
@@ -923,6 +1048,11 @@ export function AppShell({
             {isBoardPage ? (
               <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
                 <KanbanSquare className="h-3.5 w-3.5 text-accent" />
+                Công việc
+              </span>
+            ) : isMyWorkPage ? (
+              <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
+                <CheckSquare className="h-3.5 w-3.5 text-accent" />
                 Công việc
               </span>
             ) : isWorkspacePage ? (
@@ -1162,7 +1292,7 @@ export function AppShell({
         </Link>
 
         <Link
-          href="/board"
+          href={boardHref(project.id)}
           className={cn(
             "flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition-all duration-150 active:scale-90 cursor-pointer",
             isBoardPage ? "text-accent font-bold" : "text-muted hover:text-foreground"

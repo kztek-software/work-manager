@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Calendar, MessageSquare, CheckSquare, AlertTriangle, Plus, Check } from "lucide-react";
+import { Calendar, MessageSquare, CheckSquare, AlertTriangle, Plus, Check, Phone } from "lucide-react";
 import { format } from "date-fns";
 import type { TaskDto, MemberDto, TaskProjectTag } from "@/lib/types";
 import { priorityMeta, typeMeta } from "@/lib/constants";
@@ -159,6 +159,16 @@ function TaskCardComponent({
               {doneSubtasks}/{subtasks.length}
             </span>
           )}
+
+          {(task.contactName || task.contactPhone) && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 text-[10px] font-semibold"
+              title={`Người liên hệ: ${task.contactName || ""} ${task.contactPhone ? `(${task.contactPhone})` : ""}`}
+            >
+              <Phone className="h-2.5 w-2.5" />
+              {task.contactName ? <span className="max-w-[70px] truncate">{task.contactName}</span> : "Liên hệ"}
+            </span>
+          )}
         </div>
 
         {members && onAssign ? (
@@ -198,6 +208,8 @@ export const TaskCard = memo(TaskCardComponent, (prev, next) => {
     prev.task.dueDate === next.task.dueDate &&
     prev.task.storyPoints === next.task.storyPoints &&
     prev.task.assigneeId === next.task.assigneeId &&
+    prev.task.contactName === next.task.contactName &&
+    prev.task.contactPhone === next.task.contactPhone &&
     prev.task._count?.comments === next.task._count?.comments &&
     prev.task.subtasks?.length === next.task.subtasks?.length &&
     prev.task.labels?.length === next.task.labels?.length &&

@@ -25,6 +25,8 @@ import {
   Eye,
   FileText,
   X,
+  User,
+  Phone,
 } from "lucide-react";
 import { STATUSES, PRIORITIES, TASK_TYPES } from "@/lib/constants";
 import { TaskAttachmentGallery } from "./task-attachment-gallery";
@@ -81,6 +83,7 @@ export function TaskDialog({
   const [comments, setComments] = useState<CommentDto[]>([]);
   const [activity, setActivity] = useState<ActivityDto[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
+  const [subtaskFeedback, setSubtaskFeedback] = useState<string | null>(null);
   const [tab, setTab] = useState<"comments" | "activity">("comments");
   const [saving, setSaving] = useState(false);
 
@@ -98,6 +101,8 @@ export function TaskDialog({
     task?.storyPoints !== null && task?.storyPoints !== undefined ? String(task.storyPoints) : ""
   );
   const [sprintId, setSprintId] = useState<string | null>(task?.sprintId ?? null);
+  const [contactName, setContactName] = useState<string>(task?.contactName ?? "");
+  const [contactPhone, setContactPhone] = useState<string>(task?.contactPhone ?? "");
   const [labelIds, setLabelIds] = useState<string[]>(
     task?.labels ? task.labels.map((tl) => tl.label.id) : []
   );
@@ -107,12 +112,13 @@ export function TaskDialog({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
 
   // Sync state whenever task prop updates or dialog opens with a task.
-  // Điều chỉnh state ngay trong lúc render (thay vì useEffect) để form không
-  // hiển thị dữ liệu của task cũ ở lượt render đầu sau khi prop `task` đổi.
+  // Chỉ ghi đè form khi đổi sang task khác (task.id !== prevTask.id) để không
+  // làm mất nội dung đang chỉnh sửa dở khi subtask/comment re-fetch.
   const [prevTask, setPrevTask] = useState(task);
   if (task !== prevTask) {
+    const isDifferentTask = !prevTask || task?.id !== prevTask.id;
     setPrevTask(task);
-    if (task) {
+    if (task && isDifferentTask) {
       setTitle(task.title);
       setDescriptionValue(task.description ?? "");
       setStatus(task.status);
@@ -124,6 +130,8 @@ export function TaskDialog({
         task.storyPoints !== null && task.storyPoints !== undefined ? String(task.storyPoints) : ""
       );
       setSprintId(task.sprintId ?? null);
+      setContactName(task.contactName ?? "");
+      setContactPhone(task.contactPhone ?? "");
       setLabelIds(task.labels ? task.labels.map((tl) => tl.label.id) : []);
     }
   }
@@ -206,6 +214,8 @@ export function TaskDialog({
     (dueDate || "") !== originalDueDate ||
     String(storyPoints).trim() !== originalStoryPoints ||
     (sprintId || null) !== (task.sprintId || null) ||
+    contactName.trim() !== (task.contactName || "").trim() ||
+    contactPhone.trim() !== (task.contactPhone || "").trim() ||
     currentLabelIdsSorted !== originalLabelIdsSorted;
 
   const doneSubtasks = task.subtasks.filter((s) => s.done).length;
@@ -230,6 +240,8 @@ export function TaskDialog({
         dueDate: dueDate || null,
         storyPoints: storyPoints === "" ? null : Number(storyPoints),
         sprintId: sprintId || null,
+        contactName: contactName.trim() || null,
+        contactPhone: contactPhone.trim() || null,
         labelIds,
       };
 
@@ -300,18 +312,24 @@ export function TaskDialog({
       body: JSON.stringify({ title: subtaskTitle }),
     });
     if (res.ok) {
+      setSubtaskFeedback("Đã lưu việc con ✓");
+      setTimeout(() => setSubtaskFeedback(null), 2500);
       onChanged();
     }
   }
 
   async function toggleSubtask(subtaskId: string, done: boolean) {
     try {
-      await fetch(`/api/projects/${projectId}/tasks/${taskId}/subtasks/${subtaskId}`, {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}/subtasks/${subtaskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ done: !done }),
       });
-      onChanged();
+      if (res.ok) {
+        setSubtaskFeedback("Đã cập nhật việc con ✓");
+        setTimeout(() => setSubtaskFeedback(null), 2500);
+        onChanged();
+      }
     } catch (err) {
       console.error("Lỗi cập nhật subtask:", err);
     }
@@ -596,13 +614,25 @@ export function TaskDialog({
               {/* 2. Danh sách việc con (Checklist) */}
               <div className="shrink-0 space-y-1.5 rounded-xl border border-line bg-surface p-2.5 sm:p-3 shadow-xs">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
-                    <CheckSquare className="h-3.5 w-3.5 text-accent" />
-                    Danh sách việc con (Checklist)
-                  </Label>
-                  <span className="text-[11px] font-bold text-muted font-mono">
-                    {doneSubtasks}/{task.subtasks.length}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-[11.5px] font-bold text-foreground flex items-center gap-1.5">
+                      <CheckSquare className="h-3.5 w-3.5 text-accent" />
+                      Danh sách việc con (Checklist)
+                    </Label>
+                    <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                      Tự động lưu
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {subtaskFeedback && (
+                      <span className="text-[10px] font-bold text-emerald-500 animate-fade-in flex items-center gap-1">
+                        {subtaskFeedback}
+                      </span>
+                    )}
+                    <span className="text-[11px] font-bold text-muted font-mono">
+                      {doneSubtasks}/{task.subtasks.length}
+                    </span>
+                  </div>
                 </div>
                 {task.subtasks.length > 0 && (
                   <div className="h-1 w-full rounded-full bg-surface-2 overflow-hidden border border-line">
@@ -777,6 +807,33 @@ export function TaskDialog({
                     className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
                     placeholder="Chưa ước lượng (—)"
                     onChange={(e) => setStoryPoints(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Người liên hệ & SĐT (Tùy chọn) */}
+              <div className="rounded-lg border border-line bg-surface p-2.5 space-y-2">
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                  <User className="h-3 w-3 text-accent" /> Người liên hệ &amp; SĐT
+                </div>
+                <div className="space-y-0.5">
+                  <Label className="text-[10.5px] font-semibold text-muted">Họ tên người liên hệ</Label>
+                  <Input
+                    type="text"
+                    value={contactName}
+                    placeholder="VD: Anh Nam, Khách hàng..."
+                    className="h-7.5 text-xs bg-surface-2 px-2.5 w-full"
+                    onChange={(e) => setContactName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <Label className="text-[10.5px] font-semibold text-muted">Số điện thoại liên hệ</Label>
+                  <Input
+                    type="text"
+                    value={contactPhone}
+                    placeholder="VD: 0912 345 678"
+                    className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
+                    onChange={(e) => setContactPhone(e.target.value)}
                   />
                 </div>
               </div>

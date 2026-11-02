@@ -182,9 +182,11 @@ model Task {
   priority    String    @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
   storyPoints Int?
   position    Float     @default(0)
-  assigneeId  String?
-  creatorId   String
-  dueDate     DateTime?
+  assigneeId   String?
+  creatorId    String
+  contactName  String?   @db.VarChar(120)
+  contactPhone String?   @db.VarChar(50)
+  dueDate      DateTime?
   completedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

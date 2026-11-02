@@ -273,6 +273,8 @@ export type TaskGroupByOutputType = {
   position: number
   assigneeId: string | null
   creatorId: string
+  contactName: string | null
+  contactPhone: string | null
   dueDate: Date | null
   completedAt: Date | null
   createdAt: Date
@@ -454,6 +456,8 @@ export type TaskCreateInput = {
   priority?: string
   storyPoints?: number | null
   position?: number
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -484,6 +488,8 @@ export type TaskUncheckedCreateInput = {
   position?: number
   assigneeId?: string | null
   creatorId: string
+  contactName?: string | null
+  contactPhone?: string | null
   dueDate?: Date | string | null
   completedAt?: Date | string | null
   createdAt?: Date | string
@@ -506,6 +512,8 @@ export type TaskUpdateInput = {
   priority?: Prisma.StringFieldUpdateOperationsInput | string
   storyPoints?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   position?: Prisma.FloatFieldUpdateOperationsInput | number
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -536,6 +544,8 @@ export type TaskUncheckedUpdateInput = {
   position?: Prisma.FloatFieldUpdateOperationsInput | number
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   creatorId?: Prisma.StringFieldUpdateOperationsInput | string
+  contactName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  contactPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   dueDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   completedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2577,6 +2587,8 @@ export type $TaskPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     position: number
     assigneeId: string | null
     creatorId: string
+    contactName: string | null
+    contactPhone: string | null
     dueDate: Date | null
     completedAt: Date | null
     createdAt: Date

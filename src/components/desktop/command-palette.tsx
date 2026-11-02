@@ -21,7 +21,9 @@ import {
   Keyboard,
   Layers,
   TrendingUp,
+  CheckSquare,
 } from "lucide-react";
+import { boardHref } from "@/lib/board-link";
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -125,8 +127,18 @@ export function CommandPalette({
       icon: KanbanSquare,
       action: () => {
         onClose();
-        // Board Công Việc là route cấp ngoài, tự nhớ lựa chọn dự án gần nhất
-        router.push("/board");
+        router.push(projectId ? boardHref(projectId) : "/board");
+      },
+    },
+    {
+      id: "act-open-my-work",
+      category: "🧭 Điều Hướng",
+      title: "Việc Của Tôi (My Work)",
+      subtitle: "Tổng hợp toàn bộ công việc được giao của bạn",
+      icon: CheckSquare,
+      action: () => {
+        onClose();
+        router.push("/my-work");
       },
     },
     {

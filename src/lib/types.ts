@@ -49,6 +49,8 @@ export type TaskDto = {
   position: number;
   assigneeId: string | null;
   creatorId: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
   dueDate: string | null;
   notionUrl?: string | null;
   notionPageId?: string | null;
