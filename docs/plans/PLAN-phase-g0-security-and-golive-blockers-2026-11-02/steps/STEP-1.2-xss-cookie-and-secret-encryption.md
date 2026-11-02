@@ -71,7 +71,7 @@ deps: [1.1]
   - Bước 1.3: Cố định ID/Key Dự án Kép (`G0-4` & `G0-6`) và chuẩn hóa luồng Activity Log / SSE Event.
 
 ## Commit
-- Hash: (cập nhật sau khi commit)
+- Hash: 0cbe043
 - Đã push: false
 
 ---
