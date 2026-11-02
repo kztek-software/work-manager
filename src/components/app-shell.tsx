@@ -40,7 +40,8 @@ import {
   TrendingUp,
   CheckSquare,
 } from "lucide-react";
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { CommandPalette } from "@/components/desktop/command-palette";
 import { ZaloLinkModal } from "@/components/account/zalo-link-modal";
@@ -180,15 +181,44 @@ export function AppShell({
   const [sidebarWidth, setSidebarWidth] = useState<number>(260);
   const isResizingSidebarRef = useRef(false);
 
-  // Quick Project Status Picker State
+  // Quick Project Status Picker State (Portal-rendered)
   const [currentProjectStatus, setCurrentProjectStatus] = useState<string>(project.status || "PLANNING");
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const [statusPickerPos, setStatusPickerPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const statusTriggerElRef = useRef<HTMLElement | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const statusPickerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setCurrentProjectStatus(project.status || "PLANNING");
   }, [project.status]);
+
+  // Recalculate status picker position on open, scroll, or resize
+  useLayoutEffect(() => {
+    if (!statusPickerOpen) return;
+    function updatePosition() {
+      const el = statusTriggerElRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setStatusPickerPos({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: Math.max(rect.width, 240),
+      });
+    }
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [statusPickerOpen]);
 
   // Collapsible Sidebar Sections State
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
@@ -351,22 +381,36 @@ export function AppShell({
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
-  // Close dropdowns on outside click
+  // Close dropdowns on outside click or ESC
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setProjectMenuOpen(false);
       }
-      if (statusPickerRef.current && !statusPickerRef.current.contains(event.target as Node)) {
+      if (
+        statusPickerRef.current &&
+        !statusPickerRef.current.contains(target) &&
+        statusTriggerElRef.current &&
+        !statusTriggerElRef.current.contains(target)
+      ) {
         setStatusPickerOpen(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setUserMenuOpen(false);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setStatusPickerOpen(false);
+        setProjectMenuOpen(false);
+      }
+    }
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
 
@@ -772,7 +816,10 @@ export function AppShell({
         </div>
 
         {/* Project Card Trigger with Quick Status Switcher */}
-        <div className={cn("relative", projectMenuOpen || statusPickerOpen ? "z-50" : "z-10")}>
+        <div
+          data-project-card
+          className={cn("relative", projectMenuOpen ? "z-50" : "z-10")}
+        >
           <button
             onClick={() => {
               setStatusPickerOpen(false);
@@ -807,6 +854,14 @@ export function AppShell({
                       if (canEditProject) {
                         e.stopPropagation();
                         setProjectMenuOpen(false);
+                        const cardEl = (e.currentTarget.closest("[data-project-card]") as HTMLElement) || e.currentTarget;
+                        statusTriggerElRef.current = cardEl;
+                        const rect = cardEl.getBoundingClientRect();
+                        setStatusPickerPos({
+                          top: rect.bottom + 6,
+                          left: rect.left,
+                          width: Math.max(rect.width, 240),
+                        });
                         setStatusPickerOpen((v) => !v);
                       }
                     }}
@@ -839,48 +894,6 @@ export function AppShell({
               />
             </div>
           </button>
-
-          {/* Quick Status Picker Flyout */}
-          {statusPickerOpen && (
-            <div
-              ref={statusPickerRef}
-              className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2 shadow-2xl ring-1 ring-line animate-fade-in-up"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted border-b border-line/50 pb-1.5 mb-1 flex items-center justify-between">
-                <span>Đổi trạng thái dự án</span>
-                <span className="text-[9px] font-mono text-muted/70">{project.key}</span>
-              </div>
-              <div className="space-y-0.5">
-                {PROJECT_STATUSES.map((st) => {
-                  const isCurrent = st.id === currentProjectStatus;
-                  return (
-                    <button
-                      key={st.id}
-                      type="button"
-                      disabled={updatingStatus}
-                      onClick={() => handleUpdateProjectStatus(st.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer",
-                        isCurrent
-                          ? "bg-accent/15 text-accent font-bold"
-                          : "text-foreground hover:bg-surface-2"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: st.color }}
-                        />
-                        <span className="truncate">{st.label}</span>
-                      </div>
-                      {isCurrent && <Check className="h-3.5 w-3.5 text-accent shrink-0 stroke-[3]" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Flyout Workspace Menu Dropdown */}
@@ -1047,7 +1060,7 @@ export function AppShell({
       </div>
 
       {/* Navigation Sections */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4 relative z-0">
         {/* Pinned Section — các mục đã được ghim, luôn nổi lên đầu sidebar */}
         {pinnedNavItems.length > 0 && (
           <div className="space-y-1">
@@ -1558,6 +1571,58 @@ export function AppShell({
           <span>Menu</span>
         </button>
       </nav>
+
+      {/* ========================================================================= */}
+      {/* QUICK PROJECT STATUS PICKER PORTAL (Fixed z-[99999] on document.body)    */}
+      {/* ========================================================================= */}
+      {mounted && statusPickerOpen && statusPickerPos && typeof document !== "undefined" && createPortal(
+        <div
+          ref={statusPickerRef}
+          style={{
+            position: "fixed",
+            top: `${statusPickerPos.top}px`,
+            left: `${statusPickerPos.left}px`,
+            width: `${statusPickerPos.width}px`,
+            zIndex: 99999,
+          }}
+          className="rounded-2xl border border-line bg-surface p-2 shadow-2xl ring-1 ring-line animate-fade-in-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted border-b border-line/50 pb-1.5 mb-1 flex items-center justify-between">
+            <span>Đổi trạng thái dự án</span>
+            <span className="text-[9px] font-mono text-muted/70">{project.key}</span>
+          </div>
+          <div className="space-y-0.5">
+            {PROJECT_STATUSES.map((st) => {
+              const isCurrent = st.id === currentProjectStatus;
+              return (
+                <button
+                  key={st.id}
+                  type="button"
+                  disabled={updatingStatus}
+                  onClick={() => handleUpdateProjectStatus(st.id)}
+                  className={cn(
+                    "w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer",
+                    isCurrent
+                      ? "bg-accent/15 text-accent font-bold"
+                      : "text-foreground hover:bg-surface-2"
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: st.color }}
+                    />
+                    <span className="truncate">{st.label}</span>
+                  </div>
+                  {isCurrent && <Check className="h-3.5 w-3.5 text-accent shrink-0 stroke-[3]" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ========================================================================= */}
       {/* MODAL: TẠO DỰ ÁN MỚI — HỖ TRỢ CHỌN TEAM AUTO-SELECT THÀNH VIÊN VÀ STATUS */}
