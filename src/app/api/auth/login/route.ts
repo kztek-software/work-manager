@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().min(1),
@@ -16,6 +17,16 @@ function getClientBaseUrl(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 requests / phút / IP
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`login:${clientIp}`, { maxRequests: 10, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Quá nhiều lần đăng nhập không thành công, vui lòng thử lại sau 1 phút",
+        rl
+      );
+    }
+
     const baseUrl = getClientBaseUrl(req);
     let email = "";
     let password = "";
