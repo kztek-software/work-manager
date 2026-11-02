@@ -383,6 +383,8 @@ export default function SprintsPage() {
 
       {/* CREATE SPRINT MODAL */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={createOpen}
         onHide={() => setCreateOpen(false)}
         header={

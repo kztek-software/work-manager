@@ -1,7 +1,7 @@
 import { memo } from "react";
-import { Calendar, MessageSquare, CheckSquare, AlertTriangle, Plus, Check } from "lucide-react";
+import { Calendar, MessageSquare, CheckSquare, AlertTriangle, Plus, Check, Phone } from "lucide-react";
 import { format } from "date-fns";
-import type { TaskDto, MemberDto } from "@/lib/types";
+import type { TaskDto, MemberDto, TaskProjectTag } from "@/lib/types";
 import { priorityMeta, typeMeta } from "@/lib/constants";
 import { Avatar, AvatarFallback, initials } from "@/components/ui/avatar";
 import {
@@ -19,11 +19,14 @@ function TaskCardComponent({
   overlay,
   members,
   onAssign,
+  projectTag,
 }: {
   task: TaskDto;
   overlay?: boolean;
   members?: MemberDto[];
   onAssign?: (taskId: string, userId: string | null) => void;
+  // Chỉ truyền khi Board đang xem nhiều dự án — hiển thị mã dự án để phân biệt
+  projectTag?: TaskProjectTag;
 }) {
   const priority = priorityMeta(task.priority);
   const type = typeMeta(task.type);
@@ -72,6 +75,14 @@ function TaskCardComponent({
       <div className="mb-1.5 flex items-center justify-between gap-1.5">
         <div className="flex min-w-0 items-center gap-1.5">
           <TypeIcon type={task.type} />
+          {projectTag && (
+            <span
+              className="shrink-0 rounded px-1 py-0.2 text-[9.5px] font-mono font-bold bg-surface-3 border border-line-strong text-muted-light"
+              title={`Dự án: ${projectTag.name}`}
+            >
+              {projectTag.key}
+            </span>
+          )}
           <span className="truncate text-[10.5px] font-bold text-muted">
             #{task.number} · {type.label}
           </span>
@@ -148,6 +159,16 @@ function TaskCardComponent({
               {doneSubtasks}/{subtasks.length}
             </span>
           )}
+
+          {(task.contactName || task.contactPhone) && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20 px-1.5 py-0.5 text-[10px] font-semibold"
+              title={`Người liên hệ: ${task.contactName || ""} ${task.contactPhone ? `(${task.contactPhone})` : ""}`}
+            >
+              <Phone className="h-2.5 w-2.5" />
+              {task.contactName ? <span className="max-w-[70px] truncate">{task.contactName}</span> : "Liên hệ"}
+            </span>
+          )}
         </div>
 
         {members && onAssign ? (
@@ -187,10 +208,13 @@ export const TaskCard = memo(TaskCardComponent, (prev, next) => {
     prev.task.dueDate === next.task.dueDate &&
     prev.task.storyPoints === next.task.storyPoints &&
     prev.task.assigneeId === next.task.assigneeId &&
+    prev.task.contactName === next.task.contactName &&
+    prev.task.contactPhone === next.task.contactPhone &&
     prev.task._count?.comments === next.task._count?.comments &&
     prev.task.subtasks?.length === next.task.subtasks?.length &&
     prev.task.labels?.length === next.task.labels?.length &&
     prev.members === next.members &&
-    prev.onAssign === next.onAssign
+    prev.onAssign === next.onAssign &&
+    prev.projectTag === next.projectTag
   );
 });

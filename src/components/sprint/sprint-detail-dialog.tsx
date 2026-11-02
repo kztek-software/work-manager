@@ -38,6 +38,7 @@ import { STATUSES, PRIORITIES, TASK_TYPES, statusMeta } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { boardHref } from "@/lib/board-link";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, initials } from "@/components/ui/avatar";
 import { Dialog } from "primereact/dialog";
@@ -452,12 +453,14 @@ export function SprintDetailDialog({
 
   function handleGoToBoard() {
     onOpenChange(false);
-    router.push(`/projects/${projectId}/board?sprintId=${sprint.id}`);
+    router.push(boardHref(projectId, { sprintId: sprint.id }));
   }
 
   return (
     <>
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={open}
         onHide={() => onOpenChange(false)}
         showHeader={false}
@@ -1208,6 +1211,8 @@ export function SprintDetailDialog({
 
       {/* EDIT SPRINT MODAL */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={
           <div className="flex items-center gap-2 text-base font-bold text-foreground">
             <Edit3 className="h-4 w-4 text-accent" />
@@ -1288,6 +1293,8 @@ export function SprintDetailDialog({
 
       {/* ADD TASKS FROM BACKLOG MODAL */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={
           <div className="flex items-center gap-2 text-base font-bold text-foreground">
             <Plus className="h-4 w-4 text-accent" />

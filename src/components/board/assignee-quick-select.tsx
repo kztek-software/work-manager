@@ -17,7 +17,7 @@ export function AssigneeQuickSelect({
 }: {
   taskId?: string;
   currentAssigneeId: string | null;
-  currentAssignee?: { id: string; name: string; avatarColor?: string; team?: { name: string; color?: string } } | null;
+  currentAssignee?: { id: string; name: string; avatarColor?: string; team?: { name: string; color?: string } | null } | null;
   members: MemberDto[];
   onAssign: (taskId: string, userId: string | null) => void;
   variant?: "avatar" | "field";
