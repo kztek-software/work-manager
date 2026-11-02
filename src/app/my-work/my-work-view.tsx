@@ -593,41 +593,48 @@ export function MyWorkView({ userId }: { userId: string }) {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#251C53] to-[#F05922] font-mono font-black text-xs text-white shadow-sm">
                       {project.key.slice(0, 3)}
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-foreground truncate group-hover/header:text-accent transition-colors">
-                          {project.name}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-accent">{project.key}</span>
-                        <span
-                          className="px-1.5 py-0.2 rounded text-[9px] font-bold"
-                          style={{
-                            backgroundColor: pStatusMeta.bg,
-                            color: pStatusMeta.color,
-                            border: `1px solid ${pStatusMeta.border}`,
-                          }}
-                        >
-                          {pStatusMeta.label}
-                        </span>
-                        {isCollapsed && (
-                          <span className="px-1.5 py-0.2 rounded-full bg-surface-3 text-muted text-[10px] font-bold border border-line">
-                            {tasks.length} việc
-                          </span>
-                        )}
-                      </div>
+                    <div className="min-w-0 flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground truncate group-hover/header:text-accent transition-colors">
+                        {project.name}
+                      </span>
+                      <span className="text-xs font-mono font-bold text-accent shrink-0">{project.key}</span>
                     </div>
                   </div>
 
-                  {/* Project Progress */}
-                  <div className="flex items-center gap-3 text-xs font-semibold text-muted ml-auto sm:ml-0">
-                    <span>
-                      Tiến độ: <strong className="text-foreground">{doneCount}/{tasks.length}</strong> ({progress}%)
-                    </span>
-                    <div className="w-24 h-2 rounded-full bg-surface-3 overflow-hidden border border-line">
-                      <div
-                        className={cn("h-full transition-all duration-300", progress === 100 ? "bg-emerald-500" : "bg-accent")}
-                        style={{ width: `${progress}%` }}
-                      />
+                  {/* Right Meta Group: Status, Task Count & Progress — Cố định kích thước các cột */}
+                  <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-auto">
+                    {/* Project Status Badge — Cố định độ rộng 110px */}
+                    <div className="w-[110px] shrink-0 flex items-center justify-center">
+                      <span
+                        className="w-full text-center px-2 py-0.5 rounded text-[10px] font-bold select-none truncate"
+                        style={{
+                          backgroundColor: pStatusMeta.bg,
+                          color: pStatusMeta.color,
+                          border: `1px solid ${pStatusMeta.border}`,
+                        }}
+                      >
+                        {pStatusMeta.label}
+                      </span>
+                    </div>
+
+                    {/* Task Count Pill — Cố định độ rộng 68px */}
+                    <div className="w-[68px] shrink-0 flex items-center justify-center">
+                      <span className="w-full text-center px-1.5 py-0.5 rounded-full bg-surface-3 text-muted text-[10px] font-bold border border-line select-none">
+                        {tasks.length} việc
+                      </span>
+                    </div>
+
+                    {/* Project Progress */}
+                    <div className="flex items-center gap-2.5 text-xs font-semibold text-muted shrink-0 min-w-[150px] justify-end">
+                      <span className="whitespace-nowrap">
+                        Tiến độ: <strong className="text-foreground">{doneCount}/{tasks.length}</strong> ({progress}%)
+                      </span>
+                      <div className="w-20 sm:w-24 h-2 rounded-full bg-surface-3 overflow-hidden border border-line shrink-0">
+                        <div
+                          className={cn("h-full transition-all duration-300", progress === 100 ? "bg-emerald-500" : "bg-accent")}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
