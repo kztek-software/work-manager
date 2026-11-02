@@ -340,6 +340,8 @@ export function TaskDialog({
       visible={true}
       onHide={onClose}
       closable={true}
+      dismissableMask={true}
+      closeOnEscape={true}
       className="w-[96vw] max-w-5xl p-0 overflow-hidden border border-line bg-surface shadow-2xl rounded-2xl flex flex-col h-[90vh] max-h-[90vh]"
       contentClassName="p-0 overflow-hidden flex flex-col h-full bg-surface"
       header={null}

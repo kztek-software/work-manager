@@ -941,6 +941,8 @@ export default function AllProjectsManagementPage() {
       {/* MODAL 1: CHỈNH SỬA DỰ ÁN & CHUYỂN GIAO CHỦ DỰ ÁN                          */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Chỉnh Sửa Thông Tin Dự Án"
         visible={editModalOpen}
         onHide={() => setEditModalOpen(false)}
@@ -1082,6 +1084,8 @@ export default function AllProjectsManagementPage() {
       {/* MODAL 2: XÓA DỰ ÁN AN TOÀN (YÊU CẦU NHẬP MÃ KEY XÁC NHẬN)                */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Xác Nhận Xóa Dự Án Vĩnh Viễn"
         visible={deleteModalOpen}
         onHide={() => setDeleteModalOpen(false)}

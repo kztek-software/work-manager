@@ -23,8 +23,10 @@ Giải quyết toàn diện các phản hồi người dùng sau khi chạy th�
 7. **Trải nghiệm Subtask**: Thêm phản hồi trực quan (Toast thông báo "Đã lưu việc con") khi thêm subtask và làm rõ trạng thái lưu.
 8. **Chuẩn hóa Ô Tìm kiếm (SearchInput)**: Tạo component dùng chung `SearchInput` đồng bộ kích thước thoải mái, khắc phục triệt để lỗi icon kính lúp đè lên chữ và chữ bị đẩy lệch trái.
 9. **Cố định Kích thước Cột Trạng thái & Người liên hệ**: Cố định độ rộng cột Người liên hệ (`145px`) và cột Trạng thái (`105px`) trên MyWork để tất cả các dòng thẳng hàng tuyệt đối như bảng biểu.
-10. **Thu gọn/Mở rộng Menu Sidebar**: Cho phép đóng mở từng nhóm điều hướng (`CÔNG VIỆC`, `QUẢN LÝ DỰ ÁN`, `HỆ THỐNG & TÍCH HỢP`, `THÀNH VIÊN`) và ghi nhớ trạng thái vào `localStorage`.
-11. **Đổi nhanh Trạng thái Dự án từ Sidebar**: Thẻ dự án hiện tại trên Sidebar cho phép click trực tiếp để đổi trạng thái tức thì mà không cần chuyển trang.
+10. **Thu gọn/Mở rộng Menu Sidebar & Thẻ Dự Án**: Cho phép đóng mở từng nhóm điều hướng và từng nhóm dự án trên MyWork kèm ghi nhớ trạng thái vào `localStorage`.
+11. **Bấm ra ngoài để đóng Dialog (Dismissable Mask)**: Cấu hình `dismissableMask={true}` và `closeOnEscape={true}` cho 100% Dialog trong toàn bộ hệ thống.
+12. **Lazy Loading Tránh Treo UI**: Thay thế màn hình xoay tròn loading bằng Progressive Skeleton rendering và bộ nhớ RAM SWR Cache (`useTabCache`) tải 0ms tức thì.
+13. **Sửa lỗi đè lớp Z-Index Popup Đổi trạng thái**: Khắc phục hiện tượng nút `Board Công Việc` đè lên popup đổi trạng thái dự án trên Sidebar.
 
 ## 2. Phases & Steps
 
@@ -47,11 +49,13 @@ Giải quyết toàn diện các phản hồi người dùng sau khi chạy th�
 | 3.1 | Chuẩn hóa Component SearchInput (khắc phục icon đè chữ & chữ lệch trái) | Senior Developer | ✅ | steps/STEP-3.1-standardize-search-input.md | 2026-11-02 14:04 |
 | 3.2 | Cố định kích thước Cột Trạng thái & Cột Người liên hệ trên MyWork | Senior Developer | ✅ | steps/STEP-3.2-fixed-column-widths-mywork.md | 2026-11-02 14:05 |
 | 3.3 | Bổ sung tính năng Thu gọn Menu Sidebar & Đổi nhanh Trạng thái Dự án | Senior Developer | ✅ | steps/STEP-3.3-sidebar-collapsible-and-quick-status.md | 2026-11-02 14:05 |
+| 3.4 | Thu gọn/mở rộng nhóm dự án MyWork & Lazy loading SWR + Progressive Skeleton | Senior Developer | ✅ | steps/STEP-3.4-mywork-collapsible-and-swr-skeleton.md | 2026-11-02 14:22 |
+| 3.5 | Cấu hình dismissableMask toàn bộ Dialog & Fix lỗi Z-index popup trạng thái | Senior Developer | ✅ | steps/STEP-3.5-dialog-dismissable-and-zindex-fix.md | 2026-11-02 14:23 |
 
 ### Phase 4: Review, Verification & Tạo Pull Request
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
-| 4.1 | Verification checklist, Type check & UX Review | Tech Lead & QA | ✅ | steps/STEP-4.1-verify-and-code-graph.md | 2026-11-02 14:06 |
+| 4.1 | Verification checklist, Type check & UX Review | Tech Lead & QA | ✅ | steps/STEP-4.1-verify-and-code-graph.md | 2026-11-02 14:25 |
 | 4.2 | Commit, push nhánh và tạo Pull Request về staging | DevOps Engineer | 🔄 | steps/STEP-4.2-create-pull-request.md | — |
 
 ## 3. Danh sách Artifacts

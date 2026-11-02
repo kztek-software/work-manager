@@ -198,6 +198,8 @@ export function EmailLogModal({
 
   return (
     <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
       visible={visible}
       onHide={onHide}
       header={

@@ -459,6 +459,8 @@ export function SprintDetailDialog({
   return (
     <>
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={open}
         onHide={() => onOpenChange(false)}
         showHeader={false}
@@ -1209,6 +1211,8 @@ export function SprintDetailDialog({
 
       {/* EDIT SPRINT MODAL */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={
           <div className="flex items-center gap-2 text-base font-bold text-foreground">
             <Edit3 className="h-4 w-4 text-accent" />
@@ -1289,6 +1293,8 @@ export function SprintDetailDialog({
 
       {/* ADD TASKS FROM BACKLOG MODAL */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header={
           <div className="flex items-center gap-2 text-base font-bold text-foreground">
             <Plus className="h-4 w-4 text-accent" />

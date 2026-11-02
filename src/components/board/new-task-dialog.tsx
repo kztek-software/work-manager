@@ -220,6 +220,8 @@ export function NewTaskDialog({
       onHide={() => onOpenChange(false)}
       closable={false}
       showHeader={false}
+      dismissableMask={true}
+      closeOnEscape={true}
       className="w-[96vw] sm:w-[92vw] max-w-4xl border border-line bg-surface p-0 shadow-2xl rounded-2xl overflow-hidden h-[90vh] max-h-[90vh] flex flex-col"
       contentClassName="p-0 overflow-hidden flex flex-col h-full bg-surface"
     >

@@ -759,16 +759,25 @@ export function AppShell({
       {/* ========================================================================= */}
       {/* PROJECT SWITCHER WIDGET WITH STATUS BADGE                                */}
       {/* ========================================================================= */}
-      <div className="relative p-3 border-b border-line/70 bg-surface/50 shrink-0" ref={isMobile ? undefined : dropdownRef}>
+      <div
+        className={cn(
+          "relative p-3 border-b border-line/70 bg-surface/50 shrink-0 transition-all",
+          projectMenuOpen || statusPickerOpen ? "z-50" : "z-10"
+        )}
+        ref={isMobile ? undefined : dropdownRef}
+      >
         <div className="text-[10px] font-bold uppercase tracking-wider text-muted/80 mb-1.5 px-1 flex items-center justify-between">
           <span>Dự án hiện tại</span>
           <span className="text-[9px] font-mono text-accent font-semibold">{project.key}</span>
         </div>
 
         {/* Project Card Trigger with Quick Status Switcher */}
-        <div className="relative">
+        <div className={cn("relative", projectMenuOpen || statusPickerOpen ? "z-50" : "z-10")}>
           <button
-            onClick={() => setProjectMenuOpen((v) => !v)}
+            onClick={() => {
+              setStatusPickerOpen(false);
+              setProjectMenuOpen((v) => !v);
+            }}
             className={cn(
               "flex w-full items-center justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer shadow-sm group",
               projectMenuOpen
@@ -797,6 +806,7 @@ export function AppShell({
                     onClick={(e) => {
                       if (canEditProject) {
                         e.stopPropagation();
+                        setProjectMenuOpen(false);
                         setStatusPickerOpen((v) => !v);
                       }
                     }}
@@ -834,7 +844,7 @@ export function AppShell({
           {statusPickerOpen && (
             <div
               ref={statusPickerRef}
-              className="absolute left-0 right-0 top-[calc(100%+4px)] z-60 rounded-xl border border-line bg-surface p-1.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50"
+              className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2 shadow-2xl ring-1 ring-line animate-fade-in-up"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted border-b border-line/50 pb-1.5 mb-1 flex items-center justify-between">
@@ -851,7 +861,7 @@ export function AppShell({
                       disabled={updatingStatus}
                       onClick={() => handleUpdateProjectStatus(st.id)}
                       className={cn(
-                        "w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-semibold transition-all text-left cursor-pointer",
+                        "w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer",
                         isCurrent
                           ? "bg-accent/15 text-accent font-bold"
                           : "text-foreground hover:bg-surface-2"
@@ -1553,6 +1563,8 @@ export function AppShell({
       {/* MODAL: TẠO DỰ ÁN MỚI — HỖ TRỢ CHỌN TEAM AUTO-SELECT THÀNH VIÊN VÀ STATUS */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Khởi Tạo Dự Án Mới"
         visible={createProjectOpen}
         onHide={() => setCreateProjectOpen(false)}

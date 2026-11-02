@@ -912,6 +912,8 @@ export default function ProjectDashboardPage() {
       {/* MODAL 1: CÀI ĐẶT & CHỈNH SỬA DỰ ÁN                                       */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Cài Đặt Dự Án"
         visible={settingsOpen}
         onHide={() => setSettingsOpen(false)}
@@ -1021,6 +1023,8 @@ export default function ProjectDashboardPage() {
       {/* MODAL 2: XÁC NHẬN XÓA DỰ ÁN AN TOÀN                                       */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Xác Nhận Xóa Dự Án Vĩnh Viễn"
         visible={deleteModalOpen}
         onHide={() => setDeleteModalOpen(false)}

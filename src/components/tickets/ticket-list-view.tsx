@@ -638,6 +638,8 @@ export function TicketListView({
       {/* MODAL: TẠO TICKET BÁO LỖI NỘI BỘ (STAFF INTAKE MODAL)                    */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Ghi Nhận Ticket Báo Lỗi Khách Hàng (Nội Bộ)"
         visible={createModalOpen}
         onHide={() => setCreateModalOpen(false)}

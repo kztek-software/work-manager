@@ -376,6 +376,8 @@ export default function DesktopWorkstationPage() {
 
       {/* Quick New Task Modal */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={isCreateTaskModalOpen}
         onHide={() => setIsCreateTaskModalOpen(false)}
         header={

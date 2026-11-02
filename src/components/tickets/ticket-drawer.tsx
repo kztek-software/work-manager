@@ -368,6 +368,8 @@ export function TicketDrawer({
   return (
     <>
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={isOpen}
         onHide={onClose}
         header={
@@ -734,6 +736,8 @@ export function TicketDrawer({
       {/* MODAL: CHUYỂN ĐỔI TICKET THÀNH TASK TRÊN KANBAN BOARD                     */}
       {/* ========================================================================= */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         header="Chuyển Đổi Ticket Thành Task/Bug Trên Board"
         visible={convertModalOpen}
         onHide={() => setConvertModalOpen(false)}
@@ -824,6 +828,8 @@ export function TicketDrawer({
 
       {/* Admin Dispatch Modal */}
       <Dialog
+        dismissableMask={true}
+        closeOnEscape={true}
         visible={dispatchModalOpen}
         onHide={() => setDispatchModalOpen(false)}
         header={
