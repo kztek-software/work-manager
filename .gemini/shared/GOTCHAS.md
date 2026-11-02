@@ -38,8 +38,24 @@
 | G008 | Next.js 16 App Router — 2 thư mục dynamic param cùng cấp (`[code]` và `[ticketId]`) gây lỗi Ambiguous Routes → Internal Server Error | `[CONFIG]` | 2026-08-18 |
 | G009 | Next.js 16 Turbopack — Lỗi `Jest worker encountered 2 child process exceptions` do lồng thẻ `<button>` trong `<Link>` hoặc lock file dev | `[CONFIG]` | 2026-08-20 |
 | G010 | Prisma singleton trong Next.js dev runtime không tự nhận model mới sau `prisma generate` nếu giữ nguyên `globalThis.prisma` | `[CONFIG]` | 2026-08-20 |
+| G011 | Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50` | `[UI-BINDING]` | 2026-11-02 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai, cấu hình routing) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
+
+---
+
+## G011 — Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50`
+**Category:** `[UI-BINDING]`
+
+**Ngày phát hiện:** 2026-11-02
+**Môi trường:** Next.js 16 (App Router), Tailwind CSS, Sidebar Layout
+**Vấn đề:** Popup đổi nhanh trạng thái dự án (`statusPickerRef`) hoặc dropdown dự án đặt trong khối trigger của Sidebar. Dù đã đặt `relative z-50` lên khối cha, khi mở ra, các link điều hướng phía dưới (`Board Công Việc`, `Việc Của Tôi`...) vẫn đè lên popup hoặc chữ hiển thị xuyên qua popup.
+**Nguyên nhân:** Khối danh sách điều hướng phía sau (`Navigation Sections`) có `overflow-y-auto`, các link con dùng `relative flex items-center` và thẻ cha có `animate-in fade-in-50`. Trong Blink/WebKit, scroll container kết hợp với CSS animation tạo thành stacking context độc lập hoặc paint layer riêng, khiến các phần tử có `position: relative` bên trong đó được vẽ sau các phần tử của sibling trước đó.
+**Cách xử lý:** 
+1. Render popup bay ra ngoài Sidebar bằng `createPortal(..., document.body)` với `position: fixed`, `zIndex: 99999`, tính tọa độ động theo `getBoundingClientRect()` của nút kích hoạt và lắng nghe sự kiện `resize`/`scroll`.
+2. Đặt `relative z-0` cho khối scrolling sibling (`Navigation Sections`) để cô lập hoàn toàn stacking context nội bộ của danh sách menu.
+**Lần đầu gặp:** Khi triển khai Quick Project Status Picker trên Sidebar (2026-11-02).
+**Không cần làm lại:** Luôn dùng `createPortal` vào `document.body` cho mọi popup/flyout cần hiển thị phủ qua các khối giao diện khác trong AppShell.
 
 ---
 
