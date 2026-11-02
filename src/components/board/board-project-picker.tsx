@@ -108,7 +108,7 @@ export function BoardProjectPicker({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-1.5 rounded-lg border px-2 h-7 sm:h-7.5 text-[11px] sm:text-xs font-bold transition-all cursor-pointer min-w-0 max-w-[180px] sm:max-w-[280px]",
+          "flex items-center gap-1.5 rounded-xl border px-2.5 h-8 sm:h-8.5 text-xs font-bold transition-all cursor-pointer min-w-0 max-w-[180px] sm:max-w-[280px]",
           open
             ? "bg-surface-3 border-accent ring-2 ring-accent/30 text-foreground"
             : "bg-surface border-line hover:border-line-strong hover:bg-surface-2 text-foreground"

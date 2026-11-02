@@ -602,7 +602,7 @@ export function TaskDialog({
                 ) : (
                   <div
                     onClick={() => setIsEditingDescription(true)}
-                    className="p-2 rounded-md bg-surface-2 border border-line hover:border-line-strong transition-all max-h-[100px] overflow-y-auto no-scrollbar cursor-pointer group relative text-xs"
+                    className="p-2.5 sm:p-3 rounded-xl bg-surface-2/70 border border-line hover:border-line-strong transition-all min-h-[64px] max-h-[220px] overflow-y-auto cursor-pointer group relative text-xs"
                   >
                     {descriptionValue?.trim() ? (
                       <RichMarkdown content={descriptionValue} members={members} />
@@ -669,9 +669,9 @@ export function TaskDialog({
                     placeholder="Thêm mục việc con mới..."
                     value={newSubtask}
                     onChange={(e) => setNewSubtask(e.target.value)}
-                    className="h-7.5 text-xs bg-surface rounded-lg"
+                    className="h-8.5 text-xs bg-surface rounded-xl"
                   />
-                  <Button type="submit" size="sm" variant="secondary" className="h-7.5 text-xs font-semibold px-2.5 rounded-lg">
+                  <Button type="submit" size="sm" variant="secondary" className="h-8.5 text-xs font-semibold px-3 rounded-xl">
                     <Plus className="h-3.5 w-3.5 mr-0.5" /> Thêm
                   </Button>
                 </form>
@@ -797,7 +797,7 @@ export function TaskDialog({
                   <Input
                     type="date"
                     value={dueDate ?? ""}
-                    className={`h-7.5 text-xs bg-surface-2 px-2.5 w-full ${isOverdue ? "text-accent font-bold border-accent/40" : ""}`}
+                    className={`h-8.5 text-xs bg-surface-2 px-3 w-full rounded-xl ${isOverdue ? "text-accent font-bold border-accent/40" : ""}`}
                     onChange={(e) => setDueDate(e.target.value || null)}
                   />
                 </div>
@@ -806,7 +806,7 @@ export function TaskDialog({
                   <Input
                     type="number"
                     value={storyPoints}
-                    className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 font-mono px-3 w-full rounded-xl"
                     placeholder="Chưa ước lượng (—)"
                     onChange={(e) => setStoryPoints(e.target.value)}
                   />
@@ -824,7 +824,7 @@ export function TaskDialog({
                     type="text"
                     value={contactName}
                     placeholder="VD: Anh Nam, Khách hàng..."
-                    className="h-7.5 text-xs bg-surface-2 px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 px-3 w-full rounded-xl"
                     onChange={(e) => setContactName(e.target.value)}
                   />
                 </div>
@@ -834,7 +834,7 @@ export function TaskDialog({
                     type="text"
                     value={contactPhone}
                     placeholder="VD: 0912 345 678"
-                    className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 font-mono px-3 w-full rounded-xl"
                     onChange={(e) => setContactPhone(e.target.value)}
                   />
                 </div>
@@ -857,7 +857,7 @@ export function TaskDialog({
                   ]}
                   onChange={(e) => setSprintId(e.value === "none" ? null : e.value)}
                   panelClassName="border border-line bg-surface rounded-xl shadow-2xl p-1 text-xs min-w-[240px]"
-                  className="h-7.5 w-full text-xs bg-surface-2 border border-line rounded-lg"
+                  className="h-8.5 w-full text-xs bg-surface-2 border border-line rounded-xl"
                   valueTemplate={(opt) => {
                     const s = sprints.find((x) => x.id === (opt?.value || sprintId));
                     if (!s || (opt?.value === "none" || sprintId === "none" || !sprintId)) {

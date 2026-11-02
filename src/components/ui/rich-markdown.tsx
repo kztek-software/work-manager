@@ -54,7 +54,7 @@ export function renderRichInline(
   // 11. @mentions
 
   const inlineRegex =
-    /(\*\*[^*]+?\*\*|__[^_]+?__|<u>[\s\S]+?<\/u>|\+\+[\s\S]+?\+\+|~_[\s\S]+?_~|~~[\s\S]+?~~|<del>[\s\S]+?<\/del>|==[\s\S]+?==|\[color:[^\]]+\][\s\S]+?\[\/color\]|\[bg:[^\]]+\][\s\S]+?\[\/bg\]|\[(?:red|green|blue|amber|orange|purple|gray|pink)\][\s\S]+?\[\/(?:red|green|blue|amber|orange|purple|gray|pink)\]|`[^`]+?`|\[[^\]]+\]\([^)]+\)|(?:\B@[\w\u00C0-\u1EF9]+(?:\s+[\w\u00C0-\u1EF9]+)*)|\*(?:[^*]+?)\*|_(?:[^_]+?)_)/g;
+    /(<br\s*\/?>|\*\*[^*]+?\*\*|__[^_]+?__|<u>[\s\S]+?<\/u>|\+\+[\s\S]+?\+\+|~_[\s\S]+?_~|~~[\s\S]+?~~|<del>[\s\S]+?<\/del>|==[\s\S]+?==|\[color:[^\]]+\][\s\S]+?\[\/color\]|\[bg:[^\]]+\][\s\S]+?\[\/bg\]|\[(?:red|green|blue|amber|orange|purple|gray|pink)\][\s\S]+?\[\/(?:red|green|blue|amber|orange|purple|gray|pink)\]|`[^`]+?`|\[[^\]]+\]\([^)]+\)|(?:\B@[\w\u00C0-\u1EF9]+(?:\s+[\w\u00C0-\u1EF9]+)*)|\*(?:[^*]+?)\*|_(?:[^_]+?)_)/g;
 
   const parts = text.split(inlineRegex);
 
@@ -242,8 +242,21 @@ export function renderRichInline(
       );
     }
 
-    // Normal text
-    return <span key={i}>{part}</span>;
+    // 0. Line break: <br> or <br/>
+    if (/^<br\s*\/?>$/i.test(part)) {
+      return <br key={i} />;
+    }
+
+    // Normal text with entity decoding
+    const decodedText = part
+      .replace(/&nbsp;/g, "\u00A0")
+      .replace(/&gt;/g, ">")
+      .replace(/&lt;/g, "<")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+
+    return <span key={i}>{decodedText}</span>;
   });
 }
 
@@ -284,7 +297,7 @@ export function RichMarkdown({
   if (!content || !content.trim()) return null;
 
   // Check if content is HTML from WYSIWYG editor
-  const isHtml = /<(p|strong|em|u|del|span|ol|ul|li|h[1-6]|blockquote|pre|code|div|mark)[\s>]/i.test(content);
+  const isHtml = /<\/?(p|strong|b|em|i|u|del|s|strike|span|ol|ul|li|h[1-6]|blockquote|pre|code|div|mark|br|hr|a|img|table|tbody|thead|tr|th|td)\b[^>]*>/i.test(content) || /&(nbsp|amp|quot|lt|gt|#\d+|#x[0-9a-f]+);/i.test(content);
 
   if (isHtml) {
     const sanitized = sanitizeHtml(content);

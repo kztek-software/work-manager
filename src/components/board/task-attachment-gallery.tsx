@@ -124,7 +124,7 @@ export function TaskAttachmentGallery({
             size="sm"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
-            className="h-7.5 text-xs font-semibold px-2.5 border-dashed border-accent/40 bg-accent/5 hover:bg-accent/15 text-accent cursor-pointer rounded-lg gap-1"
+            className="h-8.5 text-xs font-semibold px-3 border-dashed border-accent/40 bg-accent/5 hover:bg-accent/15 text-accent cursor-pointer rounded-xl gap-1.5"
           >
             {uploading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin mr-0.5" />
