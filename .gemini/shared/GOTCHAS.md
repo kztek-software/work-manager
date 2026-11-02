@@ -39,8 +39,29 @@
 | G009 | Next.js 16 Turbopack — Lỗi `Jest worker encountered 2 child process exceptions` do lồng thẻ `<button>` trong `<Link>` hoặc lock file dev | `[CONFIG]` | 2026-08-20 |
 | G010 | Prisma singleton trong Next.js dev runtime không tự nhận model mới sau `prisma generate` nếu giữ nguyên `globalThis.prisma` | `[CONFIG]` | 2026-08-20 |
 | G011 | Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50` | `[UI-BINDING]` | 2026-11-02 |
+| G012 | Toolbar trong `contenteditable` mất selection và không highlight nút active khi click/gõ phím | `[UI-BINDING]` | 2026-11-02 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai, cấu hình routing) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
+
+---
+
+## G012 — Toolbar trong contenteditable mất selection và không highlight nút active khi click/gõ phím
+**Category:** `[UI-BINDING]`
+
+**Ngày phát hiện:** 2026-11-02
+**Môi trường:** Next.js 16 (App Router), React 19, WYSIWYG ContentEditable
+**Vấn đề:** 
+1. Khi bấm phím tắt Ctrl+B, Ctrl+I, Ctrl+U hoặc đặt con trỏ tại dòng danh sách số (1. 2. 3.), gạch đầu dòng (•), trích dẫn, code block hay tiêu đề, các nút toolbar không hề thay đổi trạng thái (không sáng lên, không có viền nhấn).
+2. Khi người dùng click vào một nút toolbar, đôi khi con trỏ trong editor bị mất focus hoặc vùng chọn text bị hủy trước khi lệnh `execCommand` kịp thi hành.
+**Nguyên nhân:** 
+1. `contenteditable` không tự động truyền state formatting ngược lên React nếu không có cơ chế `document.queryCommandState()` kết hợp `document.addEventListener("selectionchange", ...)` và duyệt ancestor nodes trong DOM.
+2. Thao tác click mặc định của trình duyệt trên thẻ `<button>` chuyển focus từ `contenteditable` sang nút trước khi `onClick` kích hoạt.
+**Cách xử lý:** 
+1. Luôn thêm `onMouseDown={(e) => e.preventDefault()}` cho toàn bộ nút bấm trên toolbar để ngăn mất focus/selection khỏi vùng soạn thảo.
+2. Theo dõi sự kiện `selectionchange` toàn cục khi editor đang focus kết hợp `document.queryCommandState(...)` và kiểm tra thẻ cha (`curr.tagName.toLowerCase()`) để cập nhật state `activeFormats`.
+3. Áp dụng styling nhấn rõ rệt khi active: `bg-accent/20 text-accent font-bold ring-1 ring-accent/40 shadow-xs`.
+**Lần đầu gặp:** Khi cải tiến WYSIWYG Editor cho Task Dialog (2026-11-02).
+**Không cần làm lại:** Mọi component toolbar rich text/contenteditable trong hệ thống đều phải áp dụng pattern `e.preventDefault()` trên `onMouseDown` và `selectionchange` listener.
 
 ---
 
