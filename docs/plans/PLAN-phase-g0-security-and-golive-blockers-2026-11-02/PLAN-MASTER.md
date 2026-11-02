@@ -37,7 +37,7 @@ Thực thi trọn vẹn **Giai đoạn 0 (Phase G0: `G0-1` → `G0-6`)** theo qu
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 2.1 | **[Security & Code Review] Review 2 trục & Tái kiểm định OWASP/STRIDE:** Kiểm tra `VERIFICATION REPORT`, chạy `/code-review` (Standards + Spec) trên toàn bộ thay đổi Phase 1 và thực thi đầy đủ `security-audit-stride` (OWASP Top 10 + STRIDE) xác nhận xóa sạch toàn bộ lỗi `Critical:` / `Required` của Phase G0 | `tech-lead` | ✅ | `steps/STEP-2.1-tech-lead-security-and-code-review.md` | 2026-11-02 21:40 |
-| 2.2 | **[UI/UX Real-App Review] Kiểm tra trực quan trên App thật (C1–C7):** Chạy ứng dụng thật trên trình duyệt, chụp screenshot và đánh giá 7 tiêu chí C1–C7 cho: (1) Trang `/login` & `/register` sau khi đóng tự đăng ký công khai; (2) Soạn thảo `WysiwygEditor` & hiển thị `RichMarkdown` sau khi bọc `DOMPurify`; (3) Không gian làm việc `/desktop` tạo mới và cập nhật trạng thái công việc | `ux-ui-reviewer` | ⬜ | `steps/STEP-2.2-ux-ui-real-app-review.md` | - |
+| 2.2 | **[UI/UX Real-App Review] Kiểm tra trực quan trên App thật (C1–C7):** Chạy ứng dụng thật trên trình duyệt, chụp screenshot và đánh giá 7 tiêu chí C1–C7 cho: (1) Trang `/login` & `/register` sau khi đóng tự đăng ký công khai; (2) Soạn thảo `WysiwygEditor` & hiển thị `RichMarkdown` sau khi bọc `DOMPurify`; (3) Không gian làm việc `/desktop` tạo mới và cập nhật trạng thái công việc | `ux-ui-reviewer` | ✅ | `steps/STEP-2.2-ux-ui-real-app-review.md` | 2026-11-02 21:55 |
 
 ### Phase 3: Kiểm thử Nghiệm thu App Thật, Cứng hóa Docker/Backup & Sign-off Gate 1
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
@@ -49,7 +49,7 @@ Thực thi trọn vẹn **Giai đoạn 0 (Phase G0: `G0-1` → `G0-6`)** theo qu
 - [ ] Mã nguồn khắc phục toàn diện `G0-1` → `G0-6`
 - [ ] `code-graph/CODE-GRAPH.md` (+ `.docx`, `.pdf` cập nhật theo Rule R3)
 - [ ] `docs/architecture/SECURITY-AUDIT-gate1-2026-11-02.md` (+ `.docx`, `.pdf`)
-- [ ] `docs/ux-review/UX-REVIEW-phase-g0-2026-11-02.md` (+ `.docx`, `.pdf` & bộ screenshots thực tế)
+- [x] `docs/ux-review/UX-REVIEW-phase-g0-2026-11-02.md` (+ `.docx`, `.pdf` & bộ screenshots thực tế)
 - [ ] `docs/test-cases/QA-REPORT-gate1-2026-11-02.md` (+ `.docx`, `.pdf`)
 - [ ] `docs/architecture/GATE1-SIGNOFF-2026-11-02.md` (+ `.docx`, `.pdf`)
 
