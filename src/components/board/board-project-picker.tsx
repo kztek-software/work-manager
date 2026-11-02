@@ -2,7 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronsUpDown, FolderKanban, Layers, Search } from "lucide-react";
+import { Check, ChevronsUpDown, FolderKanban, Layers } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
 
 export type BoardProjectOption = { id: string; name: string; key: string; status?: string };
@@ -130,7 +131,7 @@ export function BoardProjectPicker({
         <div
           ref={panelRef}
           style={{ top: panelPos.top, left: panelPos.left }}
-          className="fixed z-[100] w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-line bg-surface p-2 shadow-2xl animate-fade-in-up ring-1 ring-line"
+          className="fixed z-[100] w-80 sm:w-[340px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-line bg-surface p-2.5 shadow-2xl animate-fade-in-up ring-1 ring-line"
         >
           <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between border-b border-line/50 pb-2">
             <span>Dự án trên Board</span>
@@ -140,14 +141,12 @@ export function BoardProjectPicker({
           </div>
 
           {projects.length > 4 && (
-            <div className="relative my-2 px-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
-              <input
-                type="text"
-                placeholder="Tìm tên hoặc mã dự án..."
+            <div className="my-2 px-0.5">
+              <SearchInput
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full h-7.5 rounded-lg border border-line bg-surface-2 pl-8 pr-2 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+                onChange={setQuery}
+                placeholder="Tìm tên hoặc mã dự án..."
+                size="md"
                 autoFocus
               />
             </div>

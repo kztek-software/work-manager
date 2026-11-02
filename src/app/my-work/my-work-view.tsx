@@ -22,6 +22,7 @@ import {
   Sparkles,
   ExternalLink,
 } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 import { STATUSES, PRIORITIES, projectStatusMeta } from "@/lib/constants";
 import { PriorityIcon } from "@/components/board/priority-icon";
 import { TypeIcon } from "@/components/board/type-icon";
@@ -341,27 +342,25 @@ export function MyWorkView({ userId }: { userId: string }) {
       </div>
 
       {/* Filter and View Mode Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-surface p-3 rounded-2xl border border-line shadow-xs">
-        <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-0">
-          {/* Search Box */}
-          <div className="relative min-w-[220px] flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên task, mã task, dự án, người liên hệ..."
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-surface p-3.5 rounded-2xl border border-line shadow-xs">
+        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
+          {/* Search Box - Using standard SearchInput */}
+          <div className="min-w-[280px] flex-1 max-w-xl">
+            <SearchInput
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-8.5 rounded-xl border border-line bg-surface-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+              onChange={setSearch}
+              placeholder="Tìm theo tên task, mã task, dự án, người liên hệ..."
+              size="md"
             />
           </div>
 
           {/* Project Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-muted shrink-0">Dự án:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted shrink-0">Dự án:</span>
             <select
               value={selectedProjectId}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="h-8.5 rounded-xl border border-line bg-surface-2 px-2.5 text-xs text-foreground focus:outline-none focus:border-accent font-semibold"
+              className="h-10 rounded-xl border border-line bg-surface-2 px-3 text-xs sm:text-sm text-foreground focus:outline-none focus:border-accent font-semibold transition-colors shadow-2xs"
             >
               <option value="ALL">Tất cả dự án ({data?.projects.length || 0})</option>
               {data?.projects.map((p) => (
@@ -373,12 +372,12 @@ export function MyWorkView({ userId }: { userId: string }) {
           </div>
 
           {/* Priority Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-muted shrink-0">Ưu tiên:</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted shrink-0">Ưu tiên:</span>
             <select
               value={selectedPriorityFilter}
               onChange={(e) => setSelectedPriorityFilter(e.target.value)}
-              className="h-8.5 rounded-xl border border-line bg-surface-2 px-2.5 text-xs text-foreground focus:outline-none focus:border-accent font-semibold"
+              className="h-10 rounded-xl border border-line bg-surface-2 px-3 text-xs sm:text-sm text-foreground focus:outline-none focus:border-accent font-semibold transition-colors shadow-2xs"
             >
               <option value="ALL">Tất cả mức ưu tiên</option>
               {PRIORITIES.map((pr) => (
@@ -391,14 +390,14 @@ export function MyWorkView({ userId }: { userId: string }) {
         </div>
 
         {/* Group By selector */}
-        <div className="flex items-center gap-1.5 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-line/60">
-          <span className="text-[11px] font-semibold text-muted">Bố cục:</span>
-          <div className="flex rounded-xl border border-line bg-surface-2 p-0.5 text-xs">
+        <div className="flex items-center gap-2 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-line/60">
+          <span className="text-xs font-bold text-muted">Bố cục:</span>
+          <div className="flex h-10 items-center rounded-xl border border-line bg-surface-2 p-1 text-xs">
             <button
               type="button"
               onClick={() => setGroupBy("project")}
               className={cn(
-                "px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer",
+                "h-8 px-3 rounded-lg font-bold transition-all cursor-pointer flex items-center",
                 groupBy === "project" ? "bg-surface text-accent shadow-xs" : "text-muted hover:text-foreground"
               )}
             >
@@ -408,7 +407,7 @@ export function MyWorkView({ userId }: { userId: string }) {
               type="button"
               onClick={() => setGroupBy("none")}
               className={cn(
-                "px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer",
+                "h-8 px-3 rounded-lg font-bold transition-all cursor-pointer flex items-center",
                 groupBy === "none" ? "bg-surface text-accent shadow-xs" : "text-muted hover:text-foreground"
               )}
             >
@@ -623,19 +622,8 @@ function TaskItemRow({
         </div>
       </div>
 
-      {/* Right Column: Metadata Badges (Contact, Checklist, Due Date, Status) */}
+      {/* Right Column: Metadata Badges (Checklist, Due Date, Contact, Status) */}
       <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto text-xs">
-        {/* Contact Person Badge */}
-        {(task.contactName || task.contactPhone) && (
-          <span
-            className="inline-flex items-center gap-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[10.5px] font-semibold"
-            title={`Người liên hệ: ${task.contactName || ""} ${task.contactPhone ? `(${task.contactPhone})` : ""}`}
-          >
-            <Phone className="h-3 w-3" />
-            <span className="max-w-[90px] truncate">{task.contactName || task.contactPhone}</span>
-          </span>
-        )}
-
         {/* Checklist Progress */}
         {totalSubtasks > 0 && (
           <span className="inline-flex items-center gap-1 rounded-lg bg-surface-2 border border-line px-2 py-0.5 text-[10.5px] font-semibold text-muted">
@@ -662,17 +650,35 @@ function TaskItemRow({
           </span>
         )}
 
-        {/* Status Badge */}
-        <span
-          className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10.5px] font-bold border"
-          style={{
-            backgroundColor: `${currentStatusObj.color}18`,
-            color: currentStatusObj.color,
-            borderColor: `${currentStatusObj.color}35`,
-          }}
-        >
-          {currentStatusObj.label}
-        </span>
+        {/* Contact Person Column - Cố định kích thước chuẩn */}
+        <div className="w-[125px] sm:w-[145px] shrink-0 flex items-center justify-end">
+          {task.contactName || task.contactPhone ? (
+            <span
+              className="w-full flex items-center gap-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 px-2 py-0.5 text-[10.5px] font-semibold shadow-2xs"
+              title={`Người liên hệ: ${task.contactName || ""} ${task.contactPhone ? `(${task.contactPhone})` : ""}`}
+            >
+              <Phone className="h-3 w-3 shrink-0" />
+              <span className="truncate flex-1 text-left">{task.contactName || task.contactPhone}</span>
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted/30 italic hidden sm:inline-block pr-2 select-none">—</span>
+          )}
+        </div>
+
+        {/* Status Badge - Cố định kích thước 100% thẳng hàng */}
+        <div className="w-[96px] sm:w-[105px] shrink-0 flex justify-end">
+          <span
+            className="w-full h-[22px] px-1.5 flex items-center justify-center rounded-lg text-[10.5px] font-bold border truncate text-center shadow-2xs"
+            style={{
+              backgroundColor: `${currentStatusObj.color}18`,
+              color: currentStatusObj.color,
+              borderColor: `${currentStatusObj.color}35`,
+            }}
+            title={currentStatusObj.label}
+          >
+            {currentStatusObj.label}
+          </span>
+        </div>
       </div>
     </div>
   );

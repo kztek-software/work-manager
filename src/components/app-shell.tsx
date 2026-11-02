@@ -58,6 +58,7 @@ import { Dialog } from "primereact/dialog";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { FileUploadZone, type UploadedFileItem } from "@/components/ui/file-upload-zone";
 import { PROJECT_STATUSES, projectStatusMeta } from "@/lib/constants";
+import { SearchInput } from "@/components/ui/search-input";
 import type { UserLite } from "@/lib/types";
 
 import { usePermissions } from "@/lib/permissions-context";
@@ -178,6 +179,37 @@ export function AppShell({
   // Sidebar Splitter / Resizable Width (220px to 460px)
   const [sidebarWidth, setSidebarWidth] = useState<number>(260);
   const isResizingSidebarRef = useRef(false);
+
+  // Quick Project Status Picker State
+  const [currentProjectStatus, setCurrentProjectStatus] = useState<string>(project.status || "PLANNING");
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const statusPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCurrentProjectStatus(project.status || "PLANNING");
+  }, [project.status]);
+
+  // Collapsible Sidebar Sections State
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const saved = localStorage.getItem("kztek_sidebar_collapsed_sections");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections((prev) => {
+      const next = { ...prev, [sectionKey]: !prev[sectionKey] };
+      try {
+        localStorage.setItem("kztek_sidebar_collapsed_sections", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     try {
@@ -325,6 +357,9 @@ export function AppShell({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setProjectMenuOpen(false);
       }
+      if (statusPickerRef.current && !statusPickerRef.current.contains(event.target as Node)) {
+        setStatusPickerOpen(false);
+      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
@@ -334,6 +369,34 @@ export function AppShell({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  const handleUpdateProjectStatus = async (newStatus: string) => {
+    if (newStatus === currentProjectStatus) {
+      setStatusPickerOpen(false);
+      return;
+    }
+    const prev = currentProjectStatus;
+    setCurrentProjectStatus(newStatus);
+    setStatusPickerOpen(false);
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/projects/${project.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Không thể cập nhật trạng thái");
+      }
+      router.refresh();
+    } catch (err: any) {
+      setCurrentProjectStatus(prev);
+      alert(err.message || "Lỗi cập nhật trạng thái dự án");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   // Load teams and users when create modal is opened
   useEffect(() => {
@@ -529,7 +592,25 @@ export function AppShell({
     return groups;
   }, [filteredProjects]);
 
-  const activeProjectStatusMeta = projectStatusMeta(project.status);
+  const activeProjectStatusMeta = projectStatusMeta(currentProjectStatus);
+  const canEditProject = isAdmin || isOwner || can("projects.edit");
+
+  // Check if active page is inside each collapsible section
+  const hasActiveInWork = workspaceNav.some((item) => {
+    return item.href === "/my-work"
+      ? pathname.startsWith("/my-work")
+      : (item.href === "/board" || item.href.startsWith("/board"))
+      ? (pathname === "/board" || pathname.startsWith("/board"))
+      : pathname === item.href;
+  });
+  const hasActiveInProject = mainNav.some((item) => {
+    return (
+      pathname === item.href ||
+      (item.href.endsWith("/dashboard") &&
+        (pathname === `/projects/${project.id}` || pathname === `/projects/${project.id}/dashboard`))
+    );
+  });
+  const hasActiveInSystem = systemNav.some((item) => item.visible && pathname === item.href);
 
   // Compute current page label once — used for both breadcrumb text and title tooltip
   const currentPageLabel =
@@ -684,59 +765,117 @@ export function AppShell({
           <span className="text-[9px] font-mono text-accent font-semibold">{project.key}</span>
         </div>
 
-        <button
-          onClick={() => setProjectMenuOpen((v) => !v)}
-          className={cn(
-            "flex w-full items-center justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer shadow-sm group",
-            projectMenuOpen
-              ? "bg-surface-3 border-accent ring-2 ring-accent/30 shadow-md"
-              : "bg-surface-2/80 border-line hover:border-line-strong hover:bg-surface-3"
-          )}
-        >
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            {/* Vibrant Project Key Avatar */}
+        {/* Project Card Trigger with Quick Status Switcher */}
+        <div className="relative">
+          <button
+            onClick={() => setProjectMenuOpen((v) => !v)}
+            className={cn(
+              "flex w-full items-center justify-between rounded-xl border p-2.5 text-left transition-all cursor-pointer shadow-sm group",
+              projectMenuOpen
+                ? "bg-surface-3 border-accent ring-2 ring-accent/30 shadow-md"
+                : "bg-surface-2/80 border-line hover:border-line-strong hover:bg-surface-3"
+            )}
+          >
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* Vibrant Project Key Avatar */}
+              <div
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-xs text-white shadow-md bg-gradient-to-br",
+                  getProjectGradient(project.key)
+                )}
+              >
+                {project.key.slice(0, 3)}
+              </div>
+
+              {/* Project Title, Key & Quick Status Badge */}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-bold text-foreground group-hover:text-accent transition-colors">
+                  {project.name}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    onClick={(e) => {
+                      if (canEditProject) {
+                        e.stopPropagation();
+                        setStatusPickerOpen((v) => !v);
+                      }
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold transition-all select-none shadow-2xs",
+                      canEditProject
+                        ? "cursor-pointer hover:brightness-110 hover:ring-1 hover:ring-accent/50"
+                        : ""
+                    )}
+                    style={{
+                      backgroundColor: activeProjectStatusMeta.bg,
+                      color: activeProjectStatusMeta.color,
+                      border: `1px solid ${activeProjectStatusMeta.border}`,
+                    }}
+                    title={canEditProject ? "Bấm để đổi nhanh trạng thái dự án" : undefined}
+                  >
+                    <span>{activeProjectStatusMeta.label}</span>
+                    {canEditProject && <ChevronDown className="h-2.5 w-2.5 opacity-75" />}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-6 w-6 rounded-lg bg-surface flex items-center justify-center border border-line/60 group-hover:border-line-strong transition-colors shrink-0 ml-1.5">
+              <ChevronsUpDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted transition-colors group-hover:text-foreground",
+                  projectMenuOpen && "text-accent"
+                )}
+              />
+            </div>
+          </button>
+
+          {/* Quick Status Picker Flyout */}
+          {statusPickerOpen && (
             <div
-              className={cn(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-xs text-white shadow-md bg-gradient-to-br",
-                getProjectGradient(project.key)
-              )}
+              ref={statusPickerRef}
+              className="absolute left-0 right-0 top-[calc(100%+4px)] z-60 rounded-xl border border-line bg-surface p-1.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50"
+              onClick={(e) => e.stopPropagation()}
             >
-              {project.key.slice(0, 3)}
-            </div>
-
-            {/* Project Title, Key & Status */}
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-bold text-foreground group-hover:text-accent transition-colors">
-                {project.name}
+              <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted border-b border-line/50 pb-1.5 mb-1 flex items-center justify-between">
+                <span>Đổi trạng thái dự án</span>
+                <span className="text-[9px] font-mono text-muted/70">{project.key}</span>
               </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span
-                  className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold"
-                  style={{
-                    backgroundColor: activeProjectStatusMeta.bg,
-                    color: activeProjectStatusMeta.color,
-                    border: `1px solid ${activeProjectStatusMeta.border}`,
-                  }}
-                >
-                  {activeProjectStatusMeta.label}
-                </span>
+              <div className="space-y-0.5">
+                {PROJECT_STATUSES.map((st) => {
+                  const isCurrent = st.id === currentProjectStatus;
+                  return (
+                    <button
+                      key={st.id}
+                      type="button"
+                      disabled={updatingStatus}
+                      onClick={() => handleUpdateProjectStatus(st.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs font-semibold transition-all text-left cursor-pointer",
+                        isCurrent
+                          ? "bg-accent/15 text-accent font-bold"
+                          : "text-foreground hover:bg-surface-2"
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: st.color }}
+                        />
+                        <span className="truncate">{st.label}</span>
+                      </div>
+                      {isCurrent && <Check className="h-3.5 w-3.5 text-accent shrink-0 stroke-[3]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </div>
-
-          <div className="h-6 w-6 rounded-lg bg-surface flex items-center justify-center border border-line/60 group-hover:border-line-strong transition-colors shrink-0 ml-1.5">
-            <ChevronsUpDown
-              className={cn(
-                "h-3.5 w-3.5 text-muted transition-colors group-hover:text-foreground",
-                projectMenuOpen && "text-accent"
-              )}
-            />
-          </div>
-        </button>
+          )}
+        </div>
 
         {/* Flyout Workspace Menu Dropdown */}
         {projectMenuOpen && (
-          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[360px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
+          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[410px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
             {/* Header */}
             <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between border-b border-line/50 pb-2">
               <span>{isAdmin ? `Toàn bộ dự án (${projects.length})` : `Dự án của bạn (${projects.length})`}</span>
@@ -745,16 +884,14 @@ export function AppShell({
               </span>
             </div>
 
-            {/* Search Box if > 2 projects */}
+            {/* Search Box with Reusable SearchInput Component */}
             {projects.length > 2 && (
-              <div className="relative my-2 px-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" />
-                <input
-                  type="text"
-                  placeholder="Tìm tên hoặc mã dự án..."
+              <div className="my-2.5 px-0.5">
+                <SearchInput
                   value={searchProject}
-                  onChange={(e) => setSearchProject(e.target.value)}
-                  className="w-full h-7.5 rounded-lg border border-line bg-surface-2 pl-8 pr-2 text-xs text-foreground placeholder:text-muted/60 focus:outline-none focus:border-accent"
+                  onChange={setSearchProject}
+                  placeholder="Tìm tên hoặc mã dự án..."
+                  size="md"
                   autoFocus
                 />
               </div>
@@ -786,11 +923,11 @@ export function AppShell({
                         className={cn(
                           "flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all group/item",
                           isActive
-                            ? "bg-accent/15 border border-accent/40 shadow-sm"
+                            ? "bg-accent/15 border border-accent/40 shadow-sm border-l-[3.5px] border-l-accent pl-2"
                             : "hover:bg-surface-2/90 border border-transparent"
                         )}
                       >
-                        {/* Cột 1: Avatar + Tên + Key */}
+                        {/* Cột 1: Avatar + Tên + Key (kèm dấu tích chọn nếu là dự án đang active) */}
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <div
                             className={cn(
@@ -802,16 +939,27 @@ export function AppShell({
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div
-                              className={cn(
-                                "truncate text-xs font-bold transition-colors",
-                                isActive
-                                  ? "text-accent"
-                                  : "text-foreground group-hover/item:text-accent"
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span
+                                className={cn(
+                                  "truncate text-xs font-bold transition-colors",
+                                  isActive
+                                    ? "text-accent"
+                                    : "text-foreground group-hover/item:text-accent"
+                                )}
+                                title={p.name}
+                              >
+                                {p.name}
+                              </span>
+                              {isActive && (
+                                <span
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-accent/20 text-accent text-[9px] font-bold shrink-0 border border-accent/40"
+                                  title="Dự án đang chọn"
+                                >
+                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                  Đang chọn
+                                </span>
                               )}
-                              title={p.name}
-                            >
-                              {p.name}
                             </div>
                             <div className="text-[10px] text-muted font-mono mt-0.5 truncate">
                               {p.key}
@@ -819,10 +967,10 @@ export function AppShell({
                           </div>
                         </div>
 
-                        {/* Cột 2: Trạng thái căn phải, kích thước cố định đồng nhất */}
-                        <div className="shrink-0 flex items-center gap-1.5">
+                        {/* Cột 2: Trạng thái căn phải, kích thước cố định 100% đồng nhất cho tất cả dự án */}
+                        <div className="shrink-0 w-[96px] flex justify-end">
                           <span
-                            className="w-[94px] h-[22px] px-1.5 flex items-center justify-center rounded text-[10px] font-bold text-center truncate shadow-2xs"
+                            className="w-[96px] h-[22px] px-1.5 flex items-center justify-center rounded text-[10px] font-bold text-center truncate shadow-2xs"
                             style={{
                               backgroundColor: pStatusMeta.bg,
                               color: pStatusMeta.color,
@@ -832,11 +980,6 @@ export function AppShell({
                           >
                             {pStatusMeta.label}
                           </span>
-                          {isActive && (
-                            <div className="flex h-4 w-4 items-center justify-center rounded-full bg-accent text-white shrink-0">
-                              <Check className="h-2.5 w-2.5 stroke-[3]" />
-                            </div>
-                          )}
                         </div>
                       </Link>
                     );
@@ -908,39 +1051,107 @@ export function AppShell({
 
         {/* Work Section — không phụ thuộc dự án đang chọn */}
         <div className="space-y-1">
-          <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-            Công việc
-          </div>
-          {workspaceNav.map((item) => renderNavItem(item, isMobile))}
+          <button
+            type="button"
+            onClick={() => toggleSection("work")}
+            className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+          >
+            <div className="flex items-center gap-1.5">
+              <span>Công việc</span>
+              {collapsedSections["work"] && hasActiveInWork && (
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" title="Đang mở trang trong nhóm này" />
+              )}
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                collapsedSections["work"] && "-rotate-90 text-muted/60"
+              )}
+            />
+          </button>
+          {!collapsedSections["work"] && (
+            <div className="space-y-0.5 animate-in fade-in-50 duration-150">
+              {workspaceNav.map((item) => renderNavItem(item, isMobile))}
+            </div>
+          )}
         </div>
 
         {/* Main Workspace Section */}
         <div className="space-y-1">
-          <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-            Quản lý dự án
-          </div>
-          {mainNav.map((item) => renderNavItem(item, isMobile))}
+          <button
+            type="button"
+            onClick={() => toggleSection("project")}
+            className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+          >
+            <div className="flex items-center gap-1.5">
+              <span>Quản lý dự án</span>
+              {collapsedSections["project"] && hasActiveInProject && (
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" title="Đang mở trang trong nhóm này" />
+              )}
+            </div>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                collapsedSections["project"] && "-rotate-90 text-muted/60"
+              )}
+            />
+          </button>
+          {!collapsedSections["project"] && (
+            <div className="space-y-0.5 animate-in fade-in-50 duration-150">
+              {mainNav.map((item) => renderNavItem(item, isMobile))}
+            </div>
+          )}
         </div>
 
         {/* System & Integrations Section */}
         {systemNav.some((item) => item.visible) && (
           <div className="space-y-1">
-            <div className="px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-              Hệ thống & Tích hợp
-            </div>
-            {systemNav.filter((item) => item.visible).map((item) => renderNavItem(item, isMobile))}
+            <button
+              type="button"
+              onClick={() => toggleSection("system")}
+              className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+            >
+              <div className="flex items-center gap-1.5">
+                <span>Hệ thống & Tích hợp</span>
+                {collapsedSections["system"] && hasActiveInSystem && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" title="Đang mở trang trong nhóm này" />
+                )}
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                  collapsedSections["system"] && "-rotate-90 text-muted/60"
+                )}
+              />
+            </button>
+            {!collapsedSections["system"] && (
+              <div className="space-y-0.5 animate-in fade-in-50 duration-150">
+                {systemNav.filter((item) => item.visible).map((item) => renderNavItem(item, isMobile))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Project Members List */}
         <div className="pt-2 border-t border-line/60">
-          <div className="flex items-center justify-between px-2.5 mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
-              Thành viên ({project.members.length})
-            </span>
-            <span className="text-[10px] text-accent font-mono font-bold">{project.key}</span>
-          </div>
-          <div className="space-y-1">
+          <button
+            type="button"
+            onClick={() => toggleSection("members")}
+            className="w-full flex items-center justify-between px-2.5 mb-2 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+          >
+            <span>Thành viên ({project.members.length})</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-accent font-mono font-bold">{project.key}</span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                  collapsedSections["members"] && "-rotate-90 text-muted/60"
+                )}
+              />
+            </div>
+          </button>
+          {!collapsedSections["members"] && (
+            <div className="space-y-1 animate-in fade-in-50 duration-150">
             {project.members.slice(0, 5).map((m) => (
               <div
                 key={m.id}
@@ -971,7 +1182,8 @@ export function AppShell({
                 </span>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
