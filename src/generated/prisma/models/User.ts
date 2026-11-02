@@ -20,8 +20,18 @@ export type UserModel = runtime.Types.Result.DefaultSelection<Prisma.$UserPayloa
 
 export type AggregateUser = {
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
+}
+
+export type UserAvgAggregateOutputType = {
+  tokenVersion: number | null
+}
+
+export type UserSumAggregateOutputType = {
+  tokenVersion: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -30,6 +40,8 @@ export type UserMinAggregateOutputType = {
   email: string | null
   passwordHash: string | null
   mustChangePassword: boolean | null
+  isActive: boolean | null
+  tokenVersion: number | null
   avatarColor: string | null
   title: string | null
   role: string | null
@@ -49,6 +61,8 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   passwordHash: string | null
   mustChangePassword: boolean | null
+  isActive: boolean | null
+  tokenVersion: number | null
   avatarColor: string | null
   title: string | null
   role: string | null
@@ -68,6 +82,8 @@ export type UserCountAggregateOutputType = {
   email: number
   passwordHash: number
   mustChangePassword: number
+  isActive: number
+  tokenVersion: number
   avatarColor: number
   title: number
   role: number
@@ -83,12 +99,22 @@ export type UserCountAggregateOutputType = {
 }
 
 
+export type UserAvgAggregateInputType = {
+  tokenVersion?: true
+}
+
+export type UserSumAggregateInputType = {
+  tokenVersion?: true
+}
+
 export type UserMinAggregateInputType = {
   id?: true
   name?: true
   email?: true
   passwordHash?: true
   mustChangePassword?: true
+  isActive?: true
+  tokenVersion?: true
   avatarColor?: true
   title?: true
   role?: true
@@ -108,6 +134,8 @@ export type UserMaxAggregateInputType = {
   email?: true
   passwordHash?: true
   mustChangePassword?: true
+  isActive?: true
+  tokenVersion?: true
   avatarColor?: true
   title?: true
   role?: true
@@ -127,6 +155,8 @@ export type UserCountAggregateInputType = {
   email?: true
   passwordHash?: true
   mustChangePassword?: true
+  isActive?: true
+  tokenVersion?: true
   avatarColor?: true
   title?: true
   role?: true
@@ -179,6 +209,18 @@ export type UserAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: UserAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: UserSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: UserMinAggregateInputType
@@ -209,6 +251,8 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: UserCountAggregateInputType | true
+  _avg?: UserAvgAggregateInputType
+  _sum?: UserSumAggregateInputType
   _min?: UserMinAggregateInputType
   _max?: UserMaxAggregateInputType
 }
@@ -219,6 +263,8 @@ export type UserGroupByOutputType = {
   email: string
   passwordHash: string
   mustChangePassword: boolean
+  isActive: boolean
+  tokenVersion: number
   avatarColor: string
   title: string | null
   role: string
@@ -231,6 +277,8 @@ export type UserGroupByOutputType = {
   discordLinkedAt: Date | null
   createdAt: Date
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
 }
@@ -259,6 +307,8 @@ export type UserWhereInput = {
   email?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringFilter<"User"> | string
   mustChangePassword?: Prisma.BoolFilter<"User"> | boolean
+  isActive?: Prisma.BoolFilter<"User"> | boolean
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   avatarColor?: Prisma.StringFilter<"User"> | string
   title?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.StringFilter<"User"> | string
@@ -293,6 +343,8 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   mustChangePassword?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatarColor?: Prisma.SortOrder
   title?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
@@ -332,6 +384,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringFilter<"User"> | string
   mustChangePassword?: Prisma.BoolFilter<"User"> | boolean
+  isActive?: Prisma.BoolFilter<"User"> | boolean
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   avatarColor?: Prisma.StringFilter<"User"> | string
   title?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.StringFilter<"User"> | string
@@ -364,6 +418,8 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   mustChangePassword?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatarColor?: Prisma.SortOrder
   title?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
@@ -376,8 +432,10 @@ export type UserOrderByWithAggregationInput = {
   discordLinkedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
+  _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
+  _sum?: Prisma.UserSumOrderByAggregateInput
 }
 
 export type UserScalarWhereWithAggregatesInput = {
@@ -389,6 +447,8 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
   mustChangePassword?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  isActive?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
+  tokenVersion?: Prisma.IntWithAggregatesFilter<"User"> | number
   avatarColor?: Prisma.StringWithAggregatesFilter<"User"> | string
   title?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   role?: Prisma.StringWithAggregatesFilter<"User"> | string
@@ -408,6 +468,8 @@ export type UserCreateInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -441,6 +503,8 @@ export type UserUncheckedCreateInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -474,6 +538,8 @@ export type UserUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -507,6 +573,8 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -540,6 +608,8 @@ export type UserCreateManyInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -559,6 +629,8 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -577,6 +649,8 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -596,6 +670,8 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   mustChangePassword?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatarColor?: Prisma.SortOrder
   title?: Prisma.SortOrder
   role?: Prisma.SortOrder
@@ -609,12 +685,18 @@ export type UserCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
+export type UserAvgOrderByAggregateInput = {
+  tokenVersion?: Prisma.SortOrder
+}
+
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   email?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   mustChangePassword?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatarColor?: Prisma.SortOrder
   title?: Prisma.SortOrder
   role?: Prisma.SortOrder
@@ -634,6 +716,8 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   mustChangePassword?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatarColor?: Prisma.SortOrder
   title?: Prisma.SortOrder
   role?: Prisma.SortOrder
@@ -645,6 +729,10 @@ export type UserMinOrderByAggregateInput = {
   discordUsername?: Prisma.SortOrder
   discordLinkedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type UserSumOrderByAggregateInput = {
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -673,6 +761,14 @@ export type StringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type NullableStringFieldUpdateOperationsInput = {
@@ -943,6 +1039,8 @@ export type UserCreateWithoutNotificationPreferenceInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -975,6 +1073,8 @@ export type UserUncheckedCreateWithoutNotificationPreferenceInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1023,6 +1123,8 @@ export type UserUpdateWithoutNotificationPreferenceInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1055,6 +1157,8 @@ export type UserUncheckedUpdateWithoutNotificationPreferenceInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1087,6 +1191,8 @@ export type UserCreateWithoutLedTeamsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1119,6 +1225,8 @@ export type UserUncheckedCreateWithoutLedTeamsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1156,6 +1264,8 @@ export type UserCreateWithoutTeamInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1188,6 +1298,8 @@ export type UserUncheckedCreateWithoutTeamInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1241,6 +1353,8 @@ export type UserUpdateWithoutLedTeamsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1273,6 +1387,8 @@ export type UserUncheckedUpdateWithoutLedTeamsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1324,6 +1440,8 @@ export type UserScalarWhereInput = {
   email?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringFilter<"User"> | string
   mustChangePassword?: Prisma.BoolFilter<"User"> | boolean
+  isActive?: Prisma.BoolFilter<"User"> | boolean
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   avatarColor?: Prisma.StringFilter<"User"> | string
   title?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.StringFilter<"User"> | string
@@ -1343,6 +1461,8 @@ export type UserCreateWithoutReceivedNotificationsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1375,6 +1495,8 @@ export type UserUncheckedCreateWithoutReceivedNotificationsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1412,6 +1534,8 @@ export type UserCreateWithoutTriggeredNotificationsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1444,6 +1568,8 @@ export type UserUncheckedCreateWithoutTriggeredNotificationsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1492,6 +1618,8 @@ export type UserUpdateWithoutReceivedNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1524,6 +1652,8 @@ export type UserUncheckedUpdateWithoutReceivedNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1567,6 +1697,8 @@ export type UserUpdateWithoutTriggeredNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1599,6 +1731,8 @@ export type UserUncheckedUpdateWithoutTriggeredNotificationsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1631,6 +1765,8 @@ export type UserCreateWithoutOwnedProjectsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1663,6 +1799,8 @@ export type UserUncheckedCreateWithoutOwnedProjectsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1711,6 +1849,8 @@ export type UserUpdateWithoutOwnedProjectsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1743,6 +1883,8 @@ export type UserUncheckedUpdateWithoutOwnedProjectsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1775,6 +1917,8 @@ export type UserCreateWithoutMembershipsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1807,6 +1951,8 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1855,6 +2001,8 @@ export type UserUpdateWithoutMembershipsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1887,6 +2035,8 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1919,6 +2069,8 @@ export type UserCreateWithoutAssignedTasksInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1951,6 +2103,8 @@ export type UserUncheckedCreateWithoutAssignedTasksInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -1988,6 +2142,8 @@ export type UserCreateWithoutCreatedTasksInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2020,6 +2176,8 @@ export type UserUncheckedCreateWithoutCreatedTasksInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2068,6 +2226,8 @@ export type UserUpdateWithoutAssignedTasksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2100,6 +2260,8 @@ export type UserUncheckedUpdateWithoutAssignedTasksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2143,6 +2305,8 @@ export type UserUpdateWithoutCreatedTasksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2175,6 +2339,8 @@ export type UserUncheckedUpdateWithoutCreatedTasksInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2207,6 +2373,8 @@ export type UserCreateWithoutCommentsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2239,6 +2407,8 @@ export type UserUncheckedCreateWithoutCommentsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2287,6 +2457,8 @@ export type UserUpdateWithoutCommentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2319,6 +2491,8 @@ export type UserUncheckedUpdateWithoutCommentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2351,6 +2525,8 @@ export type UserCreateWithoutActivitiesInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2383,6 +2559,8 @@ export type UserUncheckedCreateWithoutActivitiesInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2431,6 +2609,8 @@ export type UserUpdateWithoutActivitiesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2463,6 +2643,8 @@ export type UserUncheckedUpdateWithoutActivitiesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2495,6 +2677,8 @@ export type UserCreateWithoutAttachmentsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2527,6 +2711,8 @@ export type UserUncheckedCreateWithoutAttachmentsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2575,6 +2761,8 @@ export type UserUpdateWithoutAttachmentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2607,6 +2795,8 @@ export type UserUncheckedUpdateWithoutAttachmentsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2639,6 +2829,8 @@ export type UserCreateWithoutDiscordMessageLogsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2671,6 +2863,8 @@ export type UserUncheckedCreateWithoutDiscordMessageLogsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2719,6 +2913,8 @@ export type UserUpdateWithoutDiscordMessageLogsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2751,6 +2947,8 @@ export type UserUncheckedUpdateWithoutDiscordMessageLogsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2783,6 +2981,8 @@ export type UserCreateWithoutZaloMessageLogsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2815,6 +3015,8 @@ export type UserUncheckedCreateWithoutZaloMessageLogsInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2863,6 +3065,8 @@ export type UserUpdateWithoutZaloMessageLogsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2895,6 +3099,8 @@ export type UserUncheckedUpdateWithoutZaloMessageLogsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2927,6 +3133,8 @@ export type UserCreateWithoutZaloLinkCodesInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -2959,6 +3167,8 @@ export type UserUncheckedCreateWithoutZaloLinkCodesInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -3007,6 +3217,8 @@ export type UserUpdateWithoutZaloLinkCodesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3039,6 +3251,8 @@ export type UserUncheckedUpdateWithoutZaloLinkCodesInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3071,6 +3285,8 @@ export type UserCreateManyTeamInput = {
   email: string
   passwordHash: string
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: number
   avatarColor?: string
   title?: string | null
   role?: string
@@ -3089,6 +3305,8 @@ export type UserUpdateWithoutTeamInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3121,6 +3339,8 @@ export type UserUncheckedUpdateWithoutTeamInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3153,6 +3373,8 @@ export type UserUncheckedUpdateManyWithoutTeamInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   mustChangePassword?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatarColor?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3310,6 +3532,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   passwordHash?: boolean
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: boolean
   avatarColor?: boolean
   title?: boolean
   role?: boolean
@@ -3345,6 +3569,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   passwordHash?: boolean
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: boolean
   avatarColor?: boolean
   title?: boolean
   role?: boolean
@@ -3365,6 +3591,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   passwordHash?: boolean
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: boolean
   avatarColor?: boolean
   title?: boolean
   role?: boolean
@@ -3385,6 +3613,8 @@ export type UserSelectScalar = {
   email?: boolean
   passwordHash?: boolean
   mustChangePassword?: boolean
+  isActive?: boolean
+  tokenVersion?: boolean
   avatarColor?: boolean
   title?: boolean
   role?: boolean
@@ -3398,7 +3628,7 @@ export type UserSelectScalar = {
   createdAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "mustChangePassword" | "avatarColor" | "title" | "role" | "teamId" | "phone" | "zaloUserId" | "zaloLinkedAt" | "discordUserId" | "discordUsername" | "discordLinkedAt" | "createdAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "mustChangePassword" | "isActive" | "tokenVersion" | "avatarColor" | "title" | "role" | "teamId" | "phone" | "zaloUserId" | "zaloLinkedAt" | "discordUserId" | "discordUsername" | "discordLinkedAt" | "createdAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   team?: boolean | Prisma.User$teamArgs<ExtArgs>
   ledTeams?: boolean | Prisma.User$ledTeamsArgs<ExtArgs>
@@ -3449,6 +3679,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string
     passwordHash: string
     mustChangePassword: boolean
+    isActive: boolean
+    tokenVersion: number
     avatarColor: string
     title: string | null
     role: string
@@ -3903,6 +4135,8 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly mustChangePassword: Prisma.FieldRef<"User", 'Boolean'>
+  readonly isActive: Prisma.FieldRef<"User", 'Boolean'>
+  readonly tokenVersion: Prisma.FieldRef<"User", 'Int'>
   readonly avatarColor: Prisma.FieldRef<"User", 'String'>
   readonly title: Prisma.FieldRef<"User", 'String'>
   readonly role: Prisma.FieldRef<"User", 'String'>

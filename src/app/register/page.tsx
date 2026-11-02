@@ -1,109 +1,64 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { ShieldCheck, ArrowLeft, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Đăng ký thất bại");
-        return;
-      }
-      router.push("/");
-      router.refresh();
-    } catch {
-      setError("Lỗi kết nối. Vui lòng thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
-            <Zap className="h-6 w-6 text-white" />
+      <div className="w-full max-w-md space-y-6">
+        {/* Header */}
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F05922] font-black text-white text-xl shadow-lg shadow-[#F05922]/20">
+            KZ
           </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">Tạo tài khoản</h1>
-            <p className="mt-1 text-sm text-muted">Bắt đầu quản lý công việc hiệu quả hơn</p>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">KZTEK Work Management</h1>
+            <p className="text-xs text-muted mt-0.5">Hệ thống điều hành & quản lý công việc nội bộ</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-line bg-surface p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Họ và tên</Label>
-              <Input
-                id="name"
-                placeholder="Nguyễn Văn A"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={2}
-              />
+        {/* Security Notification Card */}
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-xl space-y-5">
+          <div className="flex items-center gap-3 border-b border-line pb-4">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600">
+              <Lock className="h-5 w-5" />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="ban@congty.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+            <div>
+              <h2 className="text-sm font-bold text-foreground">Đăng ký tài khoản bị khóa</h2>
+              <p className="text-xs text-muted">Chính sách bảo mật hệ thống nội bộ</p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Mật khẩu</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Tối thiểu 6 ký tự"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
-            {error && (
-              <p className="rounded-md bg-accent-subtle px-3 py-2 text-sm text-accent font-medium">{error}</p>
-            )}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Đang tạo..." : "Đăng ký"}
-            </Button>
-          </form>
-        </div>
+          </div>
 
-        <p className="mt-6 text-center text-sm text-muted">
-          Đã có tài khoản?{" "}
-          <Link href="/login" className="font-medium text-accent hover:underline">
-            Đăng nhập
-          </Link>
-        </p>
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs space-y-2 text-foreground">
+            <div className="flex items-center gap-2 font-semibold text-amber-600">
+              <ShieldCheck className="h-4 w-4 shrink-0" />
+              <span>Tài khoản do Quản trị viên cấp phát</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Tính năng tự đăng ký công khai đã được khóa nhằm đảm bảo an ninh mạng nội bộ KZTEK.
+              Toàn bộ tài khoản và quyền hạn truy cập được khởi tạo tập trung bởi Quản trị viên (ADMIN).
+            </p>
+          </div>
+
+          <div className="text-xs text-muted space-y-1.5 bg-surface-2/50 p-3.5 rounded-xl border border-line/60">
+            <div className="font-semibold text-foreground text-[11px]">Hướng dẫn cấp tài khoản:</div>
+            <ul className="list-disc list-inside text-[11px] space-y-1 text-muted-foreground">
+              <li>Nhân viên mới: Liên hệ người quản lý bộ phận hoặc Admin hệ thống.</li>
+              <li>Khách hàng gửi yêu cầu: Sử dụng cổng gửi Ticket hỗ trợ công khai.</li>
+            </ul>
+          </div>
+
+          <div className="pt-2">
+            <Link href="/login" className="w-full block">
+              <Button className="w-full h-9 text-xs font-bold gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại trang Đăng nhập
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

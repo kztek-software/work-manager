@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const isPasswordValid = verifyPassword(password, user?.passwordHash || "");
+    const isPasswordValid = user ? await verifyPassword(password, user.passwordHash) : false;
 
     if (!user || !isPasswordValid) {
       if (!contentType.includes("application/json")) {
@@ -73,7 +73,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tài khoản hoặc mật khẩu không đúng" }, { status: 401 });
     }
 
-    const token = await createSession(user.id);
+    if (user.isActive === false) {
+      return NextResponse.json({ error: "Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa" }, { status: 403 });
+    }
+
+    const token = await createSession(user.id, user.tokenVersion, user.role);
 
     // Nếu gửi bằng form HTML thông thường (legacy fallback)
     if (!contentType.includes("application/json")) {

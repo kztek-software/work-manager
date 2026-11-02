@@ -43,7 +43,7 @@ export async function POST(
 
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash: hashPassword(password), mustChangePassword: true },
+    data: { passwordHash: await hashPassword(password), mustChangePassword: true, tokenVersion: { increment: 1 } },
   });
 
   // Chưa cấu hình SMTP (Simulated) -> email không thực sự được gửi, trả mật khẩu để Admin tự bàn giao
