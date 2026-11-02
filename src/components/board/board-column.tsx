@@ -42,8 +42,8 @@ export function BoardColumn({
       <div className="flex items-center justify-between px-1.5 py-1 mb-1 shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span
-            className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full shadow-sm"
-            style={{ backgroundColor: status.color, boxShadow: `0 0 8px ${status.color}80` }}
+            className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full"
+            style={{ backgroundColor: status.color }}
           />
           <span className="text-[11.5px] sm:text-xs font-bold uppercase tracking-wider text-foreground">
             {status.label}

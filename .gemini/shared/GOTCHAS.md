@@ -40,6 +40,7 @@
 | G010 | Prisma singleton trong Next.js dev runtime không tự nhận model mới sau `prisma generate` nếu giữ nguyên `globalThis.prisma` | `[CONFIG]` | 2026-08-20 |
 | G011 | Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50` | `[UI-BINDING]` | 2026-11-02 |
 | G012 | Toolbar trong `contenteditable` mất selection và không highlight nút active khi click/gõ phím | `[UI-BINDING]` | 2026-11-02 |
+| G013 | `npm` / `node` không nằm trong default PATH của PowerShell subshell trên Windows | `[CONFIG]` | 2026-11-02 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai, cấu hình routing) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
 
@@ -367,6 +368,24 @@ tạo skill `.gemini/commands/graphify.md` ngay sau đó có ghi lại gotcha n�
 
 **Không cần làm lại:** Không cần thử biến thể tên khác (`graphify-cli`, `pygraphify`, ...) —
 `graphifyy` là tên chính thức duy nhất, đã xác nhận qua `pip index versions`.
+
+---
+
+## G013 — `npm` / `node` không nằm trong default PATH của PowerShell subshell trên Windows
+**Category:** `[CONFIG]`
+
+**Ngày phát hiện:** 2026-11-02
+**Môi trường:** Windows 10/11, PowerShell, Node.js v24
+**Vấn đề:** Khi chạy lệnh `npm`, `npx` hoặc `node` trong PowerShell subshell, gặp lỗi `npm : The term 'npm' is not recognized as the name of a cmdlet, function, script file, or operable program`.
+**Nguyên nhân:** Node.js được cài đặt dạng portable/custom tại `C:\Users\Admin\node\PFiles64\nodejs` và chưa được nạp vào biến môi trường PATH của session subshell mới.
+**Cách xử lý:** 
+Trong lệnh PowerShell, bổ sung prefix nạp PATH:
+```powershell
+$env:PATH = "C:\Users\Admin\node\PFiles64\nodejs;$env:PATH"; npm run build
+```
+hoặc gọi trực tiếp `& "C:\Users\Admin\node\PFiles64\nodejs\node.exe"` và `& "C:\Users\Admin\node\PFiles64\nodejs\npm.cmd"`.
+**Lần đầu gặp:** Task `refactor-kanban-color-palette` khi chạy kiểm tra typecheck và build.
+**Không cần làm lại:** Không cần tìm kiếm `node.exe` trong `Program Files` hay cài đặt lại Node.
 
 ---
 

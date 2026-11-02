@@ -62,7 +62,7 @@ function TaskCardComponent({
       }`}
     >
       {/* Priority strip — the single strong color cue on the card */}
-      <span className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl" style={{ backgroundColor: priority.color }} />
+      <span className="absolute left-0 top-0 bottom-0 w-[2.5px] rounded-l-xl opacity-80" style={{ backgroundColor: priority.color }} />
 
       {/* Drag affordance — purely visual, the whole card stays draggable */}
       <div className="pointer-events-none absolute left-2.5 top-2.5 flex gap-0.5 opacity-0 group-hover:opacity-40 transition-opacity">
@@ -83,8 +83,11 @@ function TaskCardComponent({
               {projectTag.key}
             </span>
           )}
-          <span className="truncate text-[10.5px] font-bold text-muted">
-            #{task.number} · {type.label}
+          <span className="shrink-0 text-[10.5px] font-mono font-bold text-muted">
+            #{task.number}
+          </span>
+          <span className="truncate text-[10.5px] font-medium text-muted/70">
+            · {type.label}
           </span>
         </div>
 
@@ -109,23 +112,29 @@ function TaskCardComponent({
         {task.title}
       </h3>
 
-      {/* Labels — only rendered when labels exist */}
+      {/* Labels — clean neutral palette, color reserved for bug/issue */}
       {(isTicket || labels.length > 0) && (
         <div className="mb-2 flex flex-wrap items-center gap-1">
           {isTicket && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-accent/20 text-accent border border-accent/30">
+            <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-semibold bg-surface-2 text-accent border border-accent/30">
               Ticket KH
             </span>
           )}
-          {labels.slice(0, 3).map(({ label }) => (
-            <span
-              key={label.id}
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight"
-              style={{ backgroundColor: `${label.color}20`, color: label.color, border: `1px solid ${label.color}40` }}
-            >
-              {label.name}
-            </span>
-          ))}
+          {labels.slice(0, 3).map(({ label }) => {
+            const isBug = label.name.toLowerCase().includes("bug") || label.name.toLowerCase().includes("lỗi");
+            return (
+              <span
+                key={label.id}
+                className={`rounded-md px-1.5 py-0.5 text-[10px] tracking-tight border font-medium ${
+                  isBug
+                    ? "bg-rose-500/10 text-rose-500 border-rose-500/25 font-semibold"
+                    : "bg-surface-2 text-muted border-line/80 hover:bg-surface-3"
+                }`}
+              >
+                {label.name}
+              </span>
+            );
+          })}
         </div>
       )}
 

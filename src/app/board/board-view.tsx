@@ -593,7 +593,7 @@ export function BoardView({
   // Options bộ lọc dùng chung cho toolbar desktop & bottom sheet mobile
   const sprintOptions = useMemo(
     () => [
-      { label: "🚀 Tất cả Sprint", value: "ALL" },
+      { label: "Tất cả Sprint", value: "ALL" },
       { label: "Chưa gán Sprint (Backlog)", value: "NONE" },
       ...(data?.sprints ?? []).map((s) => {
         const statusText = s.status === "ACTIVE" ? "Đang chạy" : s.status === "COMPLETED" ? "Đã xong" : "Kế hoạch";
@@ -610,7 +610,7 @@ export function BoardView({
     const seen = new Map<string, string>();
     for (const m of data?.members ?? []) if (!seen.has(m.user.id)) seen.set(m.user.id, m.user.name);
     return [
-      { label: "👤 Tất cả nhân sự", value: "ALL" },
+      { label: "Tất cả nhân sự", value: "ALL" },
       { label: "Chưa giao", value: "UNASSIGNED" },
       ...Array.from(seen, ([id, name]) => ({ label: name, value: id })).sort((a, b) =>
         a.label.localeCompare(b.label)
@@ -956,7 +956,7 @@ export function BoardView({
           <Dropdown
             value={statusFilter}
             options={[
-              { label: "📋 Trạng thái", value: "ALL" },
+              { label: "Trạng thái", value: "ALL" },
               ...STATUSES.map((s) => ({ label: s.label, value: s.id })),
             ]}
             onChange={(e) => setStatusFilter(e.value)}
@@ -967,7 +967,7 @@ export function BoardView({
           <Dropdown
             value={priorityFilter}
             options={[
-              { label: "🔥 Ưu tiên", value: "ALL" },
+              { label: "Ưu tiên", value: "ALL" },
               ...PRIORITIES.map((p) => ({ label: p.label, value: p.id })),
             ]}
             onChange={(e) => setPriorityFilter(e.value)}
@@ -978,10 +978,10 @@ export function BoardView({
           <Dropdown
             value={timeFilter}
             options={[
-              { label: "⏰ Thời gian", value: "ALL" },
+              { label: "Thời hạn", value: "ALL" },
               { label: "Hôm nay", value: "TODAY" },
               { label: "Tuần này", value: "THIS_WEEK" },
-              { label: "⚠️ Quá hạn", value: "OVERDUE" },
+              { label: "Quá hạn", value: "OVERDUE" },
               { label: "Không hạn", value: "NO_DUE_DATE" },
             ]}
             onChange={(e) => setTimeFilter(e.value)}
@@ -992,7 +992,7 @@ export function BoardView({
           <Dropdown
             value={typeFilter}
             options={[
-              { label: "🏷️ Loại task", value: "ALL" },
+              { label: "Loại task", value: "ALL" },
               ...TASK_TYPES.map((t) => ({ label: t.label, value: t.id })),
             ]}
             onChange={(e) => setTypeFilter(e.value)}
@@ -1108,7 +1108,7 @@ export function BoardView({
               <Dropdown
                 value={statusFilter}
                 options={[
-                  { label: "📋 Trạng thái", value: "ALL" },
+                  { label: "Trạng thái", value: "ALL" },
                   ...STATUSES.map((s) => ({ label: s.label, value: s.id })),
                 ]}
                 onChange={(e) => setStatusFilter(e.value)}
@@ -1118,7 +1118,7 @@ export function BoardView({
               <Dropdown
                 value={priorityFilter}
                 options={[
-                  { label: "🔥 Ưu tiên", value: "ALL" },
+                  { label: "Ưu tiên", value: "ALL" },
                   ...PRIORITIES.map((p) => ({ label: p.label, value: p.id })),
                 ]}
                 onChange={(e) => setPriorityFilter(e.value)}
@@ -1128,10 +1128,10 @@ export function BoardView({
               <Dropdown
                 value={timeFilter}
                 options={[
-                  { label: "⏰ Thời gian", value: "ALL" },
+                  { label: "Thời hạn", value: "ALL" },
                   { label: "Hôm nay", value: "TODAY" },
                   { label: "Tuần này", value: "THIS_WEEK" },
-                  { label: "⚠️ Quá hạn", value: "OVERDUE" },
+                  { label: "Quá hạn", value: "OVERDUE" },
                   { label: "Không hạn", value: "NO_DUE_DATE" },
                 ]}
                 onChange={(e) => setTimeFilter(e.value)}
@@ -1141,7 +1141,7 @@ export function BoardView({
               <Dropdown
                 value={typeFilter}
                 options={[
-                  { label: "🏷️ Loại task", value: "ALL" },
+                  { label: "Loại task", value: "ALL" },
                   ...TASK_TYPES.map((t) => ({ label: t.label, value: t.id })),
                 ]}
                 onChange={(e) => setTypeFilter(e.value)}
