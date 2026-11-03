@@ -466,7 +466,7 @@ export function SprintDetailDialog({
         visible={open}
         onHide={() => onOpenChange(false)}
         showHeader={false}
-        className="max-w-5xl w-[96vw] p-0 overflow-hidden border border-line bg-surface shadow-2xl rounded-2xl flex flex-col max-h-[90vh]"
+        className="max-w-6xl w-[96vw] p-0 overflow-hidden border border-line bg-surface shadow-2xl rounded-2xl flex flex-col max-h-[90vh]"
         contentClassName="p-0 overflow-hidden flex flex-col max-h-[90vh] bg-surface"
       >
         <div className="flex flex-col h-full overflow-hidden bg-surface">
@@ -965,7 +965,7 @@ export function SprintDetailDialog({
                     placeholder="Tìm công việc..."
                     value={taskSearch}
                     onChange={(e) => setTaskSearch(e.target.value)}
-                    className="h-8 w-44 pl-8 text-xs bg-surface border-line"
+                    className="h-8.5 w-52 pl-8 text-xs bg-surface border-line rounded-lg"
                   />
                 </div>
 
@@ -978,16 +978,16 @@ export function SprintDetailDialog({
                     ...members.map((m) => ({ label: m.user.name, value: m.user.id })),
                   ]}
                   onChange={(e) => setTaskAssigneeFilter(e.value)}
-                  className="p-inputtext-sm h-8 text-xs bg-surface border border-line rounded-lg"
+                  className="p-inputtext-sm h-8.5 text-xs bg-surface border border-line rounded-lg"
                 />
               </div>
 
               {/* Task Items List Table */}
               <div className="rounded-2xl border border-line bg-surface/50 overflow-hidden shadow-xs">
                 <div className="overflow-x-auto w-full">
-                  <div className="w-full min-w-[850px]">
+                  <div className="w-full min-w-[960px]">
                     {/* Table Header: Cột tiêu đề dùng 1fr nhận trọn width còn lại, trạng thái đẩy sang phải */}
-                    <div className="grid grid-cols-[85px_1fr_95px_50px_75px_110px_115px_30px] items-center gap-2.5 px-4 py-2 text-[10.5px] font-bold text-muted uppercase tracking-wider border-b border-line bg-surface-2/60 w-full">
+                    <div className="grid grid-cols-[115px_1fr_140px_55px_75px_120px_115px_30px] items-center gap-2.5 px-4 py-2 text-[10.5px] font-bold text-muted uppercase tracking-wider border-b border-line bg-surface-2/60 w-full">
                       <span className="flex items-center gap-1">Mã task</span>
                       <span>Tiêu đề công việc</span>
                       <span>Nhãn</span>
@@ -1047,23 +1047,23 @@ export function SprintDetailDialog({
                           key={t.id}
                           onClick={() => onSelectTask(t.id)}
                           className={cn(
-                            "group grid grid-cols-[85px_1fr_95px_50px_75px_110px_115px_30px] items-center gap-2.5 px-4 py-2.5 transition-all cursor-pointer border-b border-line/60 last:border-b-0 w-full",
+                            "group grid grid-cols-[115px_1fr_140px_55px_75px_120px_115px_30px] items-center gap-2.5 px-4 py-2.5 transition-all cursor-pointer border-b border-line/60 last:border-b-0 w-full",
                             isDone
                               ? "bg-surface/35 hover:bg-surface-2/50"
                               : "bg-surface hover:bg-surface-2/70"
                           )}
                         >
-                          {/* Col 1: Type + Task Code + Priority */}
+                          {/* Col 1: Type + Priority + Task Code (Cố định 115px, gom gọn icon bên trái, không tràn sang cột tiêu đề) */}
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <div className="shrink-0 p-0.5 rounded bg-surface-2 border border-line">
+                            <div className="shrink-0 p-0.5 rounded bg-surface-2 border border-line" title={`Loại: ${t.type}`}>
                               <TypeIcon type={t.type} />
+                            </div>
+                            <div className="shrink-0" title={`Độ ưu tiên: ${t.priority}`}>
+                              <PriorityIcon priority={t.priority} />
                             </div>
                             <span className="font-mono text-xs font-bold text-accent shrink-0">
                               #{projectKey}-{t.number}
                             </span>
-                            <div className="shrink-0 ml-0.5" title={`Độ ưu tiên: ${t.priority}`}>
-                              <PriorityIcon priority={t.priority} />
-                            </div>
                           </div>
 
                           {/* Col 2: Title & Checklist (Hiển thị trọn vẹn, chiếm toàn bộ 1fr còn lại, không cắt cụt, không gạch ngang) */}
@@ -1093,7 +1093,7 @@ export function SprintDetailDialog({
                             {t.labels && t.labels.length > 0 ? (
                               <>
                                 <span
-                                  className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[85px]"
+                                  className="text-[9.5px] font-semibold px-2 py-0.5 rounded-full truncate max-w-[105px]"
                                   style={{
                                     backgroundColor: `${t.labels[0].label.color}15`,
                                     color: t.labels[0].label.color,

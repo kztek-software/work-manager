@@ -646,7 +646,7 @@ export default function ProjectDashboardPage() {
               </div>
               <Link
                 href={boardHref(projectId)}
-                className="h-8 px-2.5 sm:px-3 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="h-8.5 px-3 rounded-xl bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 <span>Mở Board</span> <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>

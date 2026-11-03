@@ -259,10 +259,9 @@ export function ProjectAttachmentGallery({
               />
               <Button
                 type="button"
-                size="sm"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-8.5 sm:h-9 text-xs sm:text-sm font-bold px-3.5 sm:px-4 rounded-xl bg-accent hover:bg-accent/90 text-white shadow-sm shadow-accent/20 cursor-pointer"
+                className="h-8.5 sm:h-9 text-xs sm:text-sm font-bold px-4 rounded-xl bg-accent hover:bg-accent/90 text-white shadow-sm shadow-accent/20 cursor-pointer"
               >
                 {uploading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
