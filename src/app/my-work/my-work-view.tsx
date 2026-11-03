@@ -598,6 +598,20 @@ export function MyWorkView({ userId }: { userId: string }) {
                         {project.name}
                       </span>
                       <span className="text-xs font-mono font-bold text-accent shrink-0">{project.key}</span>
+                      <a
+                        href={`/board?projects=${project.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (typeof document !== "undefined") {
+                            document.cookie = `flowboard_active_project=${project.id}; path=/; max-age=2592000; SameSite=Lax`;
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-surface border border-line text-[10.5px] font-semibold text-muted hover:text-accent hover:border-accent transition-all shadow-2xs ml-1"
+                        title={`Mở Board dự án ${project.name}`}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        <span className="hidden sm:inline">Mở Board</span>
+                      </a>
                     </div>
                   </div>
 

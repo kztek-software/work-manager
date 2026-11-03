@@ -196,7 +196,10 @@ export function AppShell({
 
   useEffect(() => {
     setCurrentProjectStatus(project.status || "PLANNING");
-  }, [project.status]);
+    if (project?.id && typeof document !== "undefined") {
+      document.cookie = `flowboard_active_project=${project.id}; path=/; max-age=2592000; SameSite=Lax`;
+    }
+  }, [project.status, project?.id]);
 
   // Recalculate status picker position on open, scroll, or resize
   useLayoutEffect(() => {
@@ -473,7 +476,7 @@ export function AppShell({
   // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work), và số liệu tổng hợp
   const workspaceNav = [
     { href: boardHref(project.id), label: "Board Công Việc", icon: KanbanSquare },
-    { href: "/my-work", label: "Việc Của Tôi", icon: CheckSquare },
+    { href: `/my-work?projectId=${project.id}`, label: "Việc Của Tôi", icon: CheckSquare },
     { href: `/projects/${project.id}/my-stats`, label: "Thống Kê Công Việc", icon: TrendingUp },
   ];
 
@@ -920,8 +923,8 @@ export function AppShell({
               </div>
             )}
 
-            {/* Projects List with Groups & 2-column layout */}
-            <div className="space-y-2 max-h-64 overflow-y-auto py-1 pr-0.5">
+            {/* Projects List with Groups & Clean Spacious Layout */}
+            <div className="space-y-2 max-h-[380px] overflow-y-auto py-1 pr-0.5">
               {groupedProjects.map((group) => (
                 <div key={group.key} className="space-y-1">
                   <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted">
@@ -934,7 +937,6 @@ export function AppShell({
 
                   {group.items.map((p) => {
                     const isActive = p.id === project.id;
-                    const pStatusMeta = projectStatusMeta(p.status);
                     return (
                       <Link
                         key={p.id}
@@ -942,19 +944,22 @@ export function AppShell({
                         onClick={() => {
                           setProjectMenuOpen(false);
                           if (isMobile) setMobileDrawerOpen(false);
+                          if (typeof document !== "undefined") {
+                            document.cookie = `flowboard_active_project=${p.id}; path=/; max-age=2592000; SameSite=Lax`;
+                          }
                         }}
                         className={cn(
                           "flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all group/item",
                           isActive
-                            ? "bg-accent/15 border border-accent/40 shadow-sm border-l-[3.5px] border-l-accent pl-2"
+                            ? "bg-accent/15 border border-accent/40 shadow-xs border-l-[3.5px] border-l-accent pl-2"
                             : "hover:bg-surface-2/90 border border-transparent"
                         )}
                       >
-                        {/* Cột 1: Avatar + Tên + Key (kèm dấu tích chọn nếu là dự án đang active) */}
+                        {/* Avatar + Tên đầy đủ + Key */}
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <div
                             className={cn(
-                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-sm bg-gradient-to-br",
+                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-xs bg-gradient-to-br",
                               getProjectGradient(p.key)
                             )}
                           >
@@ -962,48 +967,29 @@ export function AppShell({
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={cn(
-                                  "truncate text-xs font-bold transition-colors",
-                                  isActive
-                                    ? "text-accent"
-                                    : "text-foreground group-hover/item:text-accent"
-                                )}
-                                title={p.name}
-                              >
-                                {p.name}
-                              </span>
-                              {isActive && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-accent/20 text-accent text-[9px] font-bold shrink-0 border border-accent/40"
-                                  title="Dự án đang chọn"
-                                >
-                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                  Đang chọn
-                                </span>
+                            <div
+                              className={cn(
+                                "text-xs font-bold transition-colors leading-snug line-clamp-2",
+                                isActive
+                                  ? "text-accent"
+                                  : "text-foreground group-hover/item:text-accent"
                               )}
+                              title={p.name}
+                            >
+                              {p.name}
                             </div>
-                            <div className="text-[10px] text-muted font-mono mt-0.5 truncate">
+                            <div className="text-[10px] text-muted font-mono mt-0.5">
                               {p.key}
                             </div>
                           </div>
                         </div>
 
-                        {/* Cột 2: Trạng thái căn phải, kích thước cố định 100% đồng nhất cho tất cả dự án */}
-                        <div className="shrink-0 w-[96px] flex justify-end">
-                          <span
-                            className="w-[96px] h-[22px] px-1.5 flex items-center justify-center rounded text-[10px] font-bold text-center truncate shadow-2xs"
-                            style={{
-                              backgroundColor: pStatusMeta.bg,
-                              color: pStatusMeta.color,
-                              border: `1px solid ${pStatusMeta.border}`,
-                            }}
-                            title={pStatusMeta.label}
-                          >
-                            {pStatusMeta.label}
-                          </span>
-                        </div>
+                        {/* Icon dấu tích xanh tinh tế cho dự án đang chọn */}
+                        {isActive && (
+                          <div className="shrink-0 flex items-center justify-center h-5 w-5 rounded-full bg-accent text-white shadow-xs" title="Dự án đang chọn">
+                            <Check className="h-3 w-3 stroke-[3]" />
+                          </div>
+                        )}
                       </Link>
                     );
                   })}
