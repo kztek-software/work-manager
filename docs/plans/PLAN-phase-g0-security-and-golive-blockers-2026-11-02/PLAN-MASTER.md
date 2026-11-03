@@ -1,8 +1,8 @@
 ---
 task: phase-g0-security-and-golive-blockers
 created: 2026-11-02
-updated: 2026-11-02
-status: in_progress
+updated: 2026-11-03
+status: done
 workflow: WF-HOTFIX
 priority: P0
 ---
@@ -43,18 +43,18 @@ Thực thi trọn vẹn **Giai đoạn 0 (Phase G0: `G0-1` → `G0-6`)** theo qu
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |
 |---|------|-------|--------|-----------|-----------------|
 | 3.1 | **[Real-App Security & Regression QA] Kiểm thử 10 chốt chặn Gate 1 trên App thật:** Chạy ứng dụng thật, xây dựng & thực thi script kiểm thử tự động `scripts/test_gate1_security.ts` kết hợp kiểm thử hồi quy thực tế xác minh: chặn leo thang quyền `401/403`, ẩn `internalNotes`/`isStaff`, khử payload Stored XSS, đăng nhập Cookie `httpOnly` trên HTTP LAN (`COOKIE_SECURE=false`) & HTTPS, che secret `******`, chặn upload độc hại, Rate-limit `429`, thu hồi JWT cũ (`tokenVersion`), chặn `mustChangePassword`, `/desktop` hoạt động 100% & tạo task song song không lỗi `P2002` | `qa-engineer` | ✅ | `steps/STEP-3.1-qa-real-app-gate1-verification.md` | 2026-11-02 22:30 |
-| 3.2 | **[Infra Hardening, Backup Drill & Gate 1 Sign-off] Cứng hóa Docker, Sao lưu `pg_dump` & Ký mở Tier-1 LAN:** Cập nhật `docker-compose.yml` (bind PostgreSQL `127.0.0.1:5432`, cấu hình `healthcheck` `/api/health` cho `app`, cấp quyền volume `/app/data`), viết script sao lưu định kỳ `scripts/backup-postgres.sh` & `.ps1` (UTF-8 BOM), chạy `pg_dump` và **diễn tập khôi phục (restore test) thực tế thành công ≥ 1 lần**, xác nhận đóng băng bản cài C# Mobile cũ (Tiêu chí #9) và ban hành Biên bản Sign-off Gate 1 mở Golive Tier-1 LAN Pilot | `devops-lead` | ⬜ | `steps/STEP-3.2-devops-hardening-backup-and-signoff.md` | - |
+| 3.2 | **[Infra Hardening, Backup Drill & Gate 1 Sign-off] Cứng hóa Docker, Sao lưu `pg_dump` & Ký mở Tier-1 LAN:** Cập nhật `docker-compose.yml` (bind PostgreSQL `127.0.0.1:5432`, cấu hình `healthcheck` `/api/health` cho `app`, cấp quyền volume `/app/data`), viết script sao lưu định kỳ `scripts/backup-postgres.sh` & `.ps1` (UTF-8 BOM), chạy `pg_dump` và **diễn tập khôi phục (restore test) thực tế thành công ≥ 1 lần**, xác nhận đóng băng bản cài C# Mobile cũ (Tiêu chí #9) và ban hành Biên bản Sign-off Gate 1 mở Golive Tier-1 LAN Pilot | `devops-lead` | ✅ | `steps/STEP-3.2-devops-hardening-backup-and-signoff.md` | 2026-11-03 07:15 |
 
 ## Artifacts dự kiến (tổng)
-- [ ] Mã nguồn khắc phục toàn diện `G0-1` → `G0-6`
-- [ ] `code-graph/CODE-GRAPH.md` (+ `.docx`, `.pdf` cập nhật theo Rule R3)
-- [ ] `docs/architecture/SECURITY-AUDIT-gate1-2026-11-02.md` (+ `.docx`, `.pdf`)
+- [x] Mã nguồn khắc phục toàn diện `G0-1` → `G0-6`
+- [x] `code-graph/CODE-GRAPH.md` (+ `.docx`, `.pdf` cập nhật theo Rule R3)
+- [x] `docs/architecture/SECURITY-AUDIT-gate1-2026-11-02.md` (+ `.docx`, `.pdf`)
 - [x] `docs/ux-review/UX-REVIEW-phase-g0-2026-11-02.md` (+ `.docx`, `.pdf` & bộ screenshots thực tế)
 - [x] `docs/test-cases/QA-REPORT-gate1-2026-11-02.md` (+ `.docx`, `.pdf`)
-- [ ] `docs/architecture/GATE1-SIGNOFF-2026-11-02.md` (+ `.docx`, `.pdf`)
+- [x] `docs/architecture/GATE1-SIGNOFF-2026-11-02.md` (+ `.docx`, `.pdf`)
 
 ## Blockers
-Không có
+Không có — Đã hoàn thành 100% Phase G0 và nghiệm thu Gate 1.
 
 ## Quyết định / Ghi chú tổng & Lộ trình 3 Plan Liên hoàn
 - **Chính sách tài khoản:** Đóng đăng ký công khai (`/api/auth/register`), chỉ Admin được tạo tài khoản nội bộ. Ẩn/chặn link register ngoài UI.
@@ -71,6 +71,7 @@ Không có
 | 2026-11-02 21:40 | Hoàn thành Bước 2.1: Code Review 2 trục & Tái kiểm định OWASP/STRIDE Gate 1 | tech-lead |
 | 2026-11-02 21:55 | Hoàn thành Bước 2.2: Đánh giá trực quan App thật C1–C7 Gate 1 | ux-ui-reviewer |
 | 2026-11-02 22:30 | Hoàn thành Bước 3.1: Kiểm thử 10 chốt chặn Gate 1 trên App thật (53/53 PASS) | qa-engineer |
+| 2026-11-03 07:15 | Hoàn thành Bước 3.2: Cứng hóa Docker, Diễn tập Backup/Restore & Ký Sign-off Gate 1 mở Golive Tier-1 LAN Pilot. Plan 1 (Phase G0) hoàn thành 100% | devops-lead |
 
 ---
 **Status icons:** ⬜ Todo | 🔄 In Progress | ✅ Done | 🛑 Blocked | ⏭️ Skipped

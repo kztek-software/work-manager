@@ -59,3 +59,7 @@ scripts/english-scan-results.json
 [Oo]bj/
 *.user
 .vs/
+
+# database backups (du lieu sao luu CSDL, khong commit dump)
+/backups/*
+!/backups/.gitkeep
