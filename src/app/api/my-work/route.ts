@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const user = await requireUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   }
@@ -18,6 +18,7 @@ export async function GET() {
   });
 
   const accessibleProjectIds = projects.map((p) => p.id);
+  const isAdmin = user.role === "ADMIN";
 
   // Lấy toàn bộ công việc được giao cho user trong các dự án đó
   const tasks = await prisma.task.findMany({
@@ -46,6 +47,54 @@ export async function GET() {
       { createdAt: "desc" },
     ],
   });
+
+  // Đối với Quản trị viên: lấy thêm danh sách công việc chưa được phân công để điều phối
+  const unassignedTasks = isAdmin
+    ? await prisma.task.findMany({
+        where: {
+          projectId: { in: accessibleProjectIds },
+          assigneeId: null,
+        },
+        include: {
+          project: { select: { id: true, name: true, key: true, status: true } },
+          assignee: { select: { id: true, name: true, avatarColor: true } },
+          labels: { include: { label: true } },
+          subtasks: { orderBy: { id: "asc" } },
+          attachments: true,
+          customerTicket: {
+            select: {
+              id: true,
+              trackingCode: true,
+              customerName: true,
+              customerEmail: true,
+            },
+          },
+          _count: { select: { comments: true } },
+        },
+        orderBy: [
+          { dueDate: "asc" },
+          { createdAt: "desc" },
+        ],
+      })
+    : [];
+
+  // Danh sách nhân sự các dự án để phân công nhanh
+  const projectMembers = isAdmin
+    ? await prisma.projectMember.findMany({
+        where: { projectId: { in: accessibleProjectIds } },
+        select: {
+          projectId: true,
+          user: {
+            select: {
+              id: true,
+              name: true,
+              avatarColor: true,
+              title: true,
+            },
+          },
+        },
+      })
+    : [];
 
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -76,6 +125,9 @@ export async function GET() {
 
   return NextResponse.json({
     tasks,
+    unassignedTasks,
+    projectMembers: projectMembers.map((m) => ({ projectId: m.projectId, user: m.user })),
+    isAdmin,
     projects,
     stats: {
       total: tasks.length,
@@ -85,6 +137,7 @@ export async function GET() {
       done: doneCount,
       overdue: overdueCount,
       dueToday: dueTodayCount,
+      unassigned: unassignedTasks.length,
     },
   });
 }

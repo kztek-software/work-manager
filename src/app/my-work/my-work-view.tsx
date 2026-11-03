@@ -37,6 +37,9 @@ const TaskDialog = dynamic(() => import("@/components/board/task-dialog").then((
 
 interface MyWorkData {
   tasks: (TaskDto & { project: ProjectDto })[];
+  unassignedTasks?: (TaskDto & { project: ProjectDto })[];
+  projectMembers?: { projectId: string; user: { id: string; name: string; avatarColor: string; title: string | null } }[];
+  isAdmin?: boolean;
   projects: ProjectDto[];
   stats: {
     total: number;
@@ -46,10 +49,14 @@ interface MyWorkData {
     done: number;
     overdue: number;
     dueToday: number;
+    unassigned?: number;
   };
 }
 
 export function MyWorkView({ userId }: { userId: string }) {
+  // Mode: "MY_TASKS" (Việc của tôi) hoặc "UNASSIGNED" (Việc chưa phân công cho Admin)
+  const [workMode, setWorkMode] = useState<"MY_TASKS" | "UNASSIGNED">("MY_TASKS");
+
   // Filters
   const [search, setSearch] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("ALL");
@@ -121,10 +128,41 @@ export function MyWorkView({ userId }: { userId: string }) {
     }
   };
 
+  // Quick assign task to member (dành cho Admin khi ở tab Việc chưa phân công)
+  const handleQuickAssign = async (task: TaskDto, newAssigneeId: string) => {
+    mutateMyWork((prev) => {
+      if (!prev) return prev;
+      const updatedUnassigned = (prev.unassignedTasks ?? []).filter((t) => t.id !== task.id);
+      return {
+        ...prev,
+        unassignedTasks: updatedUnassigned,
+        stats: {
+          ...prev.stats,
+          unassigned: updatedUnassigned.length,
+        },
+      };
+    });
+
+    try {
+      await fetch(`/api/projects/${task.projectId}/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigneeId: newAssigneeId }),
+      });
+      refreshMyWork();
+    } catch {
+      refreshMyWork();
+    }
+  };
+
+  const rawTasks = useMemo(() => {
+    if (!data) return [];
+    return workMode === "UNASSIGNED" ? (data.unassignedTasks || []) : (data.tasks || []);
+  }, [data, workMode]);
+
   // Filtered tasks
   const filteredTasks = useMemo(() => {
-    if (!data) return [];
-    return data.tasks.filter((task) => {
+    return rawTasks.filter((task) => {
       // Search
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -164,7 +202,7 @@ export function MyWorkView({ userId }: { userId: string }) {
 
       return true;
     });
-  }, [data, search, selectedProjectId, selectedStatusFilter, selectedPriorityFilter]);
+  }, [rawTasks, search, selectedProjectId, selectedStatusFilter, selectedPriorityFilter]);
 
   // Grouped tasks by Project
   const tasksByProject = useMemo(() => {
@@ -228,19 +266,56 @@ export function MyWorkView({ userId }: { userId: string }) {
   // Currently open task
   const activeOpenTask = useMemo(() => {
     if (!openTaskId || !data) return null;
-    return data.tasks.find((t) => t.id === openTaskId) || null;
+    return (
+      data.tasks.find((t) => t.id === openTaskId) ||
+      data.unassignedTasks?.find((t) => t.id === openTaskId) ||
+      null
+    );
   }, [openTaskId, data]);
 
-  const stats = data?.stats || {
-    total: 0,
-    todo: 0,
-    inProgress: 0,
-    inReview: 0,
-    done: 0,
-    overdue: 0,
-    dueToday: 0,
-  };
+  const activeStats = useMemo(() => {
+    if (!data) return { total: 0, todo: 0, inProgress: 0, inReview: 0, done: 0, overdue: 0, dueToday: 0 };
+    if (workMode === "MY_TASKS") return data.stats;
 
+    const list = data.unassignedTasks || [];
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    let todoCount = 0;
+    let inProgressCount = 0;
+    let inReviewCount = 0;
+    let doneCount = 0;
+    let overdueCount = 0;
+    let dueTodayCount = 0;
+
+    for (const t of list) {
+      if (t.status === "DONE") doneCount++;
+      else {
+        if (t.status === "IN_PROGRESS") inProgressCount++;
+        else if (t.status === "IN_REVIEW") inReviewCount++;
+        else todoCount++;
+
+        if (t.dueDate) {
+          const d = new Date(t.dueDate);
+          if (d < todayStart) overdueCount++;
+          else if (d >= todayStart && d <= todayEnd) dueTodayCount++;
+        }
+      }
+    }
+
+    return {
+      total: list.length,
+      todo: todoCount,
+      inProgress: inProgressCount,
+      inReview: inReviewCount,
+      done: doneCount,
+      overdue: overdueCount,
+      dueToday: dueTodayCount,
+    };
+  }, [data, workMode]);
+
+  const stats = activeStats;
   const isFirstLoad = loading && !data;
 
   return (
@@ -254,20 +329,71 @@ export function MyWorkView({ userId }: { userId: string }) {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
-                Việc Của Tôi
+                {workMode === "UNASSIGNED" ? "Việc Chưa Phân Công" : "Việc Của Tôi"}
                 <span className="text-xs font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full">
                   {isFirstLoad ? "..." : `${stats.total} nhiệm vụ`}
                 </span>
               </h1>
               <p className="text-xs text-muted mt-0.5">
-                Tổng hợp toàn bộ công việc và nhiệm vụ được giao cho bạn trên tất cả các dự án
+                {workMode === "UNASSIGNED"
+                  ? "Danh sách các nhiệm vụ trong các dự án chưa được giao người phụ trách — dành cho Quản trị viên phân công"
+                  : "Tổng hợp toàn bộ công việc và nhiệm vụ được giao cho bạn trên tất cả các dự án"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
+        {/* Action Controls & Mode Switcher */}
+        <div className="flex items-center gap-2.5 self-start md:self-auto flex-wrap">
+          {data?.isAdmin && (
+            <div className="flex items-center gap-1 p-1 bg-surface-2 border border-line rounded-xl">
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkMode("MY_TASKS");
+                  setSelectedStatusFilter("ALL");
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                  workMode === "MY_TASKS"
+                    ? "bg-surface text-foreground shadow-xs border border-line"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                <User className="h-3.5 w-3.5 text-accent" />
+                <span>Việc của tôi</span>
+                <span className="rounded-full bg-surface-3 px-1.5 py-0.2 text-[10px] font-mono text-foreground font-bold">
+                  {data.tasks.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkMode("UNASSIGNED");
+                  setSelectedStatusFilter("ALL");
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                  workMode === "UNASSIGNED"
+                    ? "bg-accent text-white shadow-sm shadow-accent/25"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                <AlertTriangle className={cn("h-3.5 w-3.5", workMode === "UNASSIGNED" ? "text-white" : "text-amber-500")} />
+                <span>Việc chưa phân công</span>
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.2 text-[10px] font-mono font-bold",
+                    workMode === "UNASSIGNED" ? "bg-white/20 text-white" : "bg-amber-500/15 text-amber-500"
+                  )}
+                >
+                  {data.unassignedTasks?.length ?? 0}
+                </span>
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => refreshMyWork()}
@@ -541,10 +667,33 @@ export function MyWorkView({ userId }: { userId: string }) {
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500 mb-3">
             <Sparkles className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-bold text-foreground">Không có công việc nào cần làm!</h3>
+          <h3 className="text-base font-bold text-foreground">
+            {workMode === "UNASSIGNED"
+              ? "Không có công việc nào chưa phân công!"
+              : "Không có công việc nào cần làm!"}
+          </h3>
           <p className="text-xs text-muted max-w-sm mt-1">
-            Tuyệt vời! Bạn đã xử lý xong toàn bộ công việc hoặc bộ lọc hiện tại không khớp với nhiệm vụ nào.
+            {workMode === "UNASSIGNED"
+              ? "Toàn bộ các nhiệm vụ trong dự án đã được phân bổ cho nhân sự phụ trách."
+              : "Tuyệt vời! Bạn đã xử lý xong toàn bộ công việc hoặc bộ lọc hiện tại không khớp với nhiệm vụ nào."}
           </p>
+
+          {/* Nút chuyển đổi nhanh cho Admin khi ở Việc của tôi mà không có task, nhưng có việc chưa phân công */}
+          {workMode === "MY_TASKS" && data?.isAdmin && (data.unassignedTasks?.length ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setWorkMode("UNASSIGNED");
+                setSelectedProjectId("ALL");
+                setSelectedStatusFilter("ALL");
+              }}
+              className="mt-4 px-3.5 py-1.5 rounded-xl bg-accent text-white text-xs font-bold hover:bg-accent/90 transition-all shadow-md shadow-accent/25 cursor-pointer flex items-center gap-1.5"
+            >
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Chuyển sang xem {data.unassignedTasks?.length} việc chưa phân công →</span>
+            </button>
+          )}
+
           {(search || selectedProjectId !== "ALL" || selectedStatusFilter !== "ALL" || selectedPriorityFilter !== "ALL") && (
             <button
               type="button"
@@ -662,6 +811,13 @@ export function MyWorkView({ userId }: { userId: string }) {
                         task={task}
                         onToggleDone={(e) => toggleTaskStatus(task, e)}
                         onOpenDetail={() => setOpenTaskId(task.id)}
+                        isUnassignedMode={workMode === "UNASSIGNED"}
+                        assignableMembers={
+                          data?.projectMembers
+                            ?.filter((m) => m.projectId === task.projectId)
+                            .map((m) => m.user) || []
+                        }
+                        onQuickAssign={(memberId) => handleQuickAssign(task, memberId)}
                       />
                     ))}
                   </div>
@@ -680,6 +836,13 @@ export function MyWorkView({ userId }: { userId: string }) {
               showProjectBadge={true}
               onToggleDone={(e) => toggleTaskStatus(task, e)}
               onOpenDetail={() => setOpenTaskId(task.id)}
+              isUnassignedMode={workMode === "UNASSIGNED"}
+              assignableMembers={
+                data?.projectMembers
+                  ?.filter((m) => m.projectId === task.projectId)
+                  .map((m) => m.user) || []
+              }
+              onQuickAssign={(memberId) => handleQuickAssign(task, memberId)}
             />
           ))}
         </div>
@@ -691,8 +854,12 @@ export function MyWorkView({ userId }: { userId: string }) {
           projectId={activeOpenTask.projectId}
           projectName={activeOpenTask.project.name}
           taskId={activeOpenTask.id}
-          tasks={data?.tasks || []}
-          members={[]}
+          tasks={[...(data?.tasks || []), ...(data?.unassignedTasks || [])]}
+          members={
+            data?.projectMembers
+              ?.filter((m) => m.projectId === activeOpenTask.projectId)
+              .map((m) => ({ id: m.user.id, role: "MEMBER", user: m.user })) || []
+          }
           labels={activeOpenTask.labels?.map((l) => l.label) || []}
           sprints={[]}
           onClose={() => setOpenTaskId(null)}
@@ -713,11 +880,17 @@ function TaskItemRow({
   showProjectBadge = false,
   onToggleDone,
   onOpenDetail,
+  isUnassignedMode = false,
+  assignableMembers = [],
+  onQuickAssign,
 }: {
   task: TaskDto & { project: ProjectDto };
   showProjectBadge?: boolean;
   onToggleDone: (e: React.MouseEvent) => void;
   onOpenDetail: () => void;
+  isUnassignedMode?: boolean;
+  assignableMembers?: { id: string; name: string; avatarColor: string; title: string | null }[];
+  onQuickAssign?: (memberId: string) => void;
 }) {
   const isDone = task.status === "DONE";
   const isOverdue =
@@ -784,8 +957,33 @@ function TaskItemRow({
         </div>
       </div>
 
-      {/* Right Column: Metadata Badges (Checklist, Due Date, Contact, Status) */}
+      {/* Right Column: Metadata Badges (Checklist, Due Date, Contact, Status, Quick Assign) */}
       <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto text-xs">
+        {/* Quick Assign Dropdown for Unassigned tasks */}
+        {isUnassignedMode && onQuickAssign && assignableMembers.length > 0 && (
+          <div onClick={(e) => e.stopPropagation()} className="w-[140px] shrink-0 flex justify-end">
+            <select
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) {
+                  onQuickAssign(e.target.value);
+                }
+              }}
+              className="w-full h-[24px] px-2 text-[10.5px] font-bold bg-accent/15 border border-accent/40 text-accent rounded-lg cursor-pointer hover:bg-accent/25 focus:outline-none transition-all truncate"
+              title="Phân công ngay cho nhân sự"
+            >
+              <option value="" disabled>
+                ➕ Phân công...
+              </option>
+              {assignableMembers.map((m) => (
+                <option key={m.id} value={m.id} className="bg-surface text-foreground font-medium text-xs">
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Checklist Progress */}
         {totalSubtasks > 0 && (
           <span className="inline-flex items-center gap-1 rounded-lg bg-surface-2 border border-line px-2 py-0.5 text-[10.5px] font-semibold text-muted">

@@ -843,9 +843,12 @@ export function BoardView({
           {projectPicker}
 
           {activeSprint && (
-            <span className="hidden sm:flex rounded-full bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-accent items-center gap-1 shrink-0">
-              <Sparkles className="h-3 w-3" />
-              <span className="truncate max-w-[100px] sm:max-w-none">{activeSprint.name}</span>
+            <span
+              className="hidden sm:flex rounded-full bg-accent/15 border border-accent/30 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-accent items-center gap-1.5 shrink-0 max-w-[200px] md:max-w-[320px] lg:max-w-[420px]"
+              title={`Sprint đang chạy: ${activeSprint.name}`}
+            >
+              <Sparkles className="h-3 w-3 shrink-0 text-accent" />
+              <span className="truncate">{activeSprint.name}</span>
             </span>
           )}
 

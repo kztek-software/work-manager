@@ -41,6 +41,8 @@
 | G011 | Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50` | `[UI-BINDING]` | 2026-11-02 |
 | G012 | Toolbar trong `contenteditable` mất selection và không highlight nút active khi click/gõ phím | `[UI-BINDING]` | 2026-11-02 |
 | G013 | `npm` / `node` không nằm trong default PATH của PowerShell subshell trên Windows | `[CONFIG]` | 2026-11-02 |
+| G014 | Tailwind CSS bỏ qua các class spacing lẻ `h-8.5`, `w-8.5` nếu chưa khai báo trong `spacing` | `[CONFIG]` | 2026-11-03 |
+| G015 | Wrapper flexbox `min-w-0` bị co nhỏ hơn thẻ con `<button>` gây đè lên phần tử kế tiếp | `[UI-BINDING]` | 2026-11-03 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai, cấu hình routing) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
 
@@ -405,3 +407,50 @@ hoặc gọi trực tiếp `& "C:\Users\Admin\node\PFiles64\nodejs\node.exe"` v�
 BẮT BUỘC: Sau khi thêm entry mới → cập nhật bảng "Mục lục nhanh + Bảng lọc theo Category" ở đầu file.
 
 -->
+
+## G014 — Tailwind CSS bỏ qua các class spacing lẻ `h-8.5`, `w-8.5` nếu chưa khai báo trong `spacing`
+**Category:** `[CONFIG]`
+
+**Ngày phát hiện:** 2026-11-03
+**Môi trường:** Next.js 16 / Tailwind CSS
+**Vấn đề:** Các class như `h-8.5`, `w-8.5`, `h-7.5` được viết trong component nhưng không sinh ra CSS, khiến button bị co lại kích thước mặc định hoặc `size="sm"` (chỉ cao 28px `h-7`), người dùng khó bấm / chạm.
+**Nguyên nhân:** Thang đo spacing mặc định của Tailwind chỉ có các số nguyên hoặc bội 0.5 cố định (`h-7` = 28px, `h-8` = 32px, `h-9` = 36px), không có `8.5` (34px) hay `7.5` (30px). Nếu không khai báo trong `theme.extend.spacing`, Tailwind sẽ bỏ qua hoàn toàn.
+**Cách xử lý:** 
+Khai báo trong `tailwind.config.ts`:
+```ts
+theme: {
+  extend: {
+    spacing: {
+      "7.5": "1.875rem", // 30px
+      "8.5": "2.125rem", // 34px
+      "9.5": "2.375rem", // 38px
+    },
+  }
+}
+```
+Đồng thời chuẩn hóa variant `sm` trong `Button` (`src/components/ui/button.tsx`) lên `h-8.5 px-3 text-xs` (34px) thay vì `h-7` (28px).
+**Lần đầu gặp:** Khi sửa các nút bấm không đủ chiều cao theo phản hồi người dùng.
+**Không cần làm lại:** Không viết `h-8.5` mà quên kiểm tra `tailwind.config.ts`.
+
+---
+
+## G015 — Wrapper flexbox thiếu `shrink-0` làm thẻ con tràn ra ngoài và đè lên phần tử kế tiếp
+**Category:** `[UI-BINDING]`
+
+**Ngày phát hiện:** 2026-11-03
+**Môi trường:** Next.js 16 / Tailwind CSS / Chrome / Edge
+**Vấn đề:** Nút chọn dự án (Project Picker) ở header đè lên chữ đầu tiên của thẻ Sprint kế tiếp (ví dụ chữ `Sprint 8:...` bị che mất `Sp` và icon `Sparkles`, chỉ còn thấy `int 8:...`).
+**Nguyên nhân:** Wrapper `<div>` của component con đặt `className="relative min-w-0"`. Khi đặt trong flex container với `gap-2`, flexbox co `<div>` xuống nhỏ hơn nội dung của `<button>` bên trong (button có `max-w-[280px]`). Nút button tràn ra khỏi `<div>` sang bên phải và che khuất phần đầu của phần tử kế tiếp.
+**Cách xử lý:** 
+Đặt `shrink-0` trên thẻ `<div>` bọc ngoài của component:
+```tsx
+// Trước:
+<div className="relative min-w-0" ref={rootRef}>
+  <button className="... max-w-[280px]" ...>
+// Sau:
+<div className="relative shrink-0" ref={rootRef}>
+  <button className="... max-w-[280px]" ...>
+```
+Đảm bảo wrapper không bị co nhỏ hơn nút bấm, ngăn chặn hiện tượng đè lên phần tử lân cận.
+**Lần đầu gặp:** Khi người dùng chụp màn hình header bị che mất `Sp` trong `Sprint 8:...`.
+**Không cần làm lại:** Không dùng `z-index` hay `margin-left` bù trừ mà phải fix đúng flex sizing trên wrapper.

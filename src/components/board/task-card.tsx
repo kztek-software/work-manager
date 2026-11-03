@@ -107,8 +107,15 @@ function TaskCardComponent({
         </div>
       </div>
 
-      {/* Title */}
-      <h3 className="mb-1.5 text-[12.5px] sm:text-[13px] font-semibold text-foreground leading-snug group-hover:text-accent transition-colors line-clamp-2">
+      {/* Title with hover detail tooltip */}
+      <h3
+        className="mb-1.5 text-[12.5px] sm:text-[13px] font-semibold text-foreground leading-snug group-hover:text-accent transition-colors line-clamp-2"
+        title={
+          task.description
+            ? `${task.title}\n\n📄 Mô tả: ${task.description.length > 250 ? task.description.slice(0, 250) + "..." : task.description}`
+            : task.title
+        }
+      >
         {task.title}
       </h3>
 

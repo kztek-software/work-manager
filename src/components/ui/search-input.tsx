@@ -83,11 +83,12 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           style={{
             paddingLeft: `${sizeStyles.padLeft}px`,
             paddingRight: value || shortcut ? `${sizeStyles.padRight}px` : "14px",
+            outline: "none",
             ...props.style,
           }}
           className={cn(
-            "w-full rounded-xl border border-line bg-surface-2/90 text-foreground placeholder:text-muted/60",
-            "focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all font-medium",
+            "w-full rounded-xl border border-line bg-surface text-foreground placeholder:text-muted/60",
+            "outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:border-accent transition-all font-medium",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizeStyles.container,
             sizeStyles.input,

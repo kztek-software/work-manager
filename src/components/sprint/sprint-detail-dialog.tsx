@@ -984,17 +984,17 @@ export function SprintDetailDialog({
 
               {/* Task Items List Table */}
               <div className="rounded-2xl border border-line bg-surface/50 overflow-hidden shadow-xs">
-                <div className="overflow-x-auto">
-                  <div className="min-w-[800px]">
-                    {/* Table Header: Đồng bộ chuẩn xác 8 cột với hàng dữ liệu */}
-                    <div className="grid grid-cols-[100px_minmax(200px,1fr)_115px_55px_80px_115px_110px_28px] items-center gap-3 px-4 py-2 text-[10.5px] font-bold text-muted uppercase tracking-wider border-b border-line bg-surface-2/60">
+                <div className="overflow-x-auto w-full">
+                  <div className="w-full min-w-[850px]">
+                    {/* Table Header: Cột tiêu đề dùng 1fr nhận trọn width còn lại, trạng thái đẩy sang phải */}
+                    <div className="grid grid-cols-[85px_1fr_95px_50px_75px_110px_115px_30px] items-center gap-2.5 px-4 py-2 text-[10.5px] font-bold text-muted uppercase tracking-wider border-b border-line bg-surface-2/60 w-full">
                       <span className="flex items-center gap-1">Mã task</span>
                       <span>Tiêu đề công việc</span>
                       <span>Nhãn</span>
                       <span className="text-center">Points</span>
                       <span className="text-center">Hạn chót</span>
                       <span>Phụ trách</span>
-                      <span>Trạng thái</span>
+                      <span className="text-left">Trạng thái</span>
                       <span></span>
                     </div>
 
@@ -1047,7 +1047,7 @@ export function SprintDetailDialog({
                           key={t.id}
                           onClick={() => onSelectTask(t.id)}
                           className={cn(
-                            "group grid grid-cols-[100px_minmax(200px,1fr)_115px_55px_80px_115px_110px_28px] items-center gap-3 px-4 py-2 transition-all cursor-pointer",
+                            "group grid grid-cols-[85px_1fr_95px_50px_75px_110px_115px_30px] items-center gap-2.5 px-4 py-2.5 transition-all cursor-pointer border-b border-line/60 last:border-b-0 w-full",
                             isDone
                               ? "bg-surface/35 hover:bg-surface-2/50"
                               : "bg-surface hover:bg-surface-2/70"
@@ -1066,14 +1066,14 @@ export function SprintDetailDialog({
                             </div>
                           </div>
 
-                          {/* Col 2: Title & Checklist (Ưu tiên tối đa không gian, không bị cắt cụt) */}
-                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                          {/* Col 2: Title & Checklist (Hiển thị trọn vẹn, chiếm toàn bộ 1fr còn lại, không cắt cụt, không gạch ngang) */}
+                          <div className="flex items-start gap-2 min-w-0 pr-3">
                             <span
                               className={cn(
-                                "text-xs font-semibold leading-snug line-clamp-2",
+                                "text-xs leading-relaxed block break-words",
                                 isDone
-                                  ? "line-through text-muted/70 decoration-muted/40"
-                                  : "text-foreground group-hover:text-accent transition-colors"
+                                  ? "text-foreground/80 font-medium"
+                                  : "text-foreground font-semibold group-hover:text-accent transition-colors"
                               )}
                               title={t.title}
                             >
@@ -1081,7 +1081,7 @@ export function SprintDetailDialog({
                             </span>
 
                             {t.subtasks && t.subtasks.length > 0 && (
-                              <span className="text-[10px] font-mono text-muted flex items-center gap-0.5 shrink-0 bg-surface-2 px-1.5 py-0.5 rounded border border-line">
+                              <span className="text-[10px] font-mono text-muted flex items-center gap-0.5 shrink-0 bg-surface-2 px-1.5 py-0.5 rounded border border-line mt-0.5">
                                 <CheckSquare className="h-3 w-3 text-accent" />
                                 {t.subtasks.filter((s) => s.done).length}/{t.subtasks.length}
                               </span>

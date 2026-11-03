@@ -103,7 +103,7 @@ export function BoardProjectPicker({
     : `${selectedProjects.length} dự án`;
 
   return (
-    <div className="relative min-w-0" ref={rootRef}>
+    <div className="relative shrink-0" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -113,7 +113,13 @@ export function BoardProjectPicker({
             ? "bg-surface-3 border-accent ring-2 ring-accent/30 text-foreground"
             : "bg-surface border-line hover:border-line-strong hover:bg-surface-2 text-foreground"
         )}
-        title="Chọn dự án hiển thị trên Board"
+        title={
+          isAll
+            ? `Tất cả dự án (${memberProjectIds.length}) — Bấm để chọn dự án`
+            : selectedProjects.length === 1
+            ? `[${selectedProjects[0].key}] ${selectedProjects[0].name} — Bấm để đổi dự án`
+            : `Đang chọn ${selectedProjects.length} dự án: ${selectedProjects.map((p) => `[${p.key}] ${p.name}`).join(", ")}`
+        }
       >
         {isAll || selectedProjects.length > 1 ? (
           <Layers className="h-3.5 w-3.5 shrink-0 text-accent" />
@@ -123,7 +129,9 @@ export function BoardProjectPicker({
         {!isAll && selectedProjects.length === 1 && (
           <span className="shrink-0 font-mono text-[10px] text-accent">{selectedProjects[0].key}</span>
         )}
-        <span className="truncate">{triggerLabel}</span>
+        <span className="truncate" title={selectedProjects.length === 1 ? selectedProjects[0].name : triggerLabel}>
+          {triggerLabel}
+        </span>
         <ChevronsUpDown className={cn("h-3.5 w-3.5 shrink-0 text-muted", open && "text-accent")} />
       </button>
 
