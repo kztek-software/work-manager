@@ -74,7 +74,7 @@ deps: [3.1]
 - next_inputs: Plan 1 (Phase G0) đã hoàn thành 100%. Chuyển giao sang Kế hoạch Phase G1 (Gate 2 — Outbox, AuditLog, Strict CI, Avalonia Mobile R9).
 
 ## Commit
-- Hash: (Sẽ điền sau khi commit)
+- Hash: e4c5c08
 - Đã push: true
 
 ---
