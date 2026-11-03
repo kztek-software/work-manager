@@ -71,10 +71,12 @@ function TaskCardComponent({
         <span className="h-[3px] w-[3px] rounded-full bg-muted" />
       </div>
 
-      {/* Top row: Type + code & Priority */}
+      {/* Top row: Type + code & Priority — thoáng đãng, không bị cắt cụt chữ loại việc */}
       <div className="mb-1.5 flex items-center justify-between gap-1.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <TypeIcon type={task.type} />
+        <div className="flex min-w-0 items-center gap-1.5" title={`Loại công việc: ${type.label}`}>
+          <div className="shrink-0" title={type.label}>
+            <TypeIcon type={task.type} />
+          </div>
           {projectTag && (
             <span
               className="shrink-0 rounded px-1 py-0.2 text-[9.5px] font-mono font-bold bg-surface-3 border border-line-strong text-muted-light"
@@ -83,11 +85,8 @@ function TaskCardComponent({
               {projectTag.key}
             </span>
           )}
-          <span className="shrink-0 text-[10.5px] font-mono font-bold text-muted">
+          <span className="shrink-0 text-[11px] font-mono font-bold text-muted group-hover:text-foreground transition-colors">
             #{task.number}
-          </span>
-          <span className="truncate text-[10.5px] font-medium text-muted/70">
-            · {type.label}
           </span>
         </div>
 
@@ -98,8 +97,9 @@ function TaskCardComponent({
             </span>
           )}
           <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-2xs"
             style={{ backgroundColor: `${priority.color}18`, color: priority.color, border: `1px solid ${priority.color}40` }}
+            title={`Độ ưu tiên: ${priority.label}`}
           >
             <PriorityIcon priority={task.priority} className="h-2.5 w-2.5" />
             {priority.label}

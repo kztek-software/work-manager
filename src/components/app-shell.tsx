@@ -223,6 +223,12 @@ export function AppShell({
     };
   }, [statusPickerOpen]);
 
+  // Collapsible Project Switcher Groups State
+  const [collapsedProjectGroups, setCollapsedProjectGroups] = useState<Record<string, boolean>>({});
+  const toggleProjectGroup = (groupKey: string) => {
+    setCollapsedProjectGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
+
   // Collapsible Sidebar Sections State
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
     if (typeof window === "undefined") return {};
@@ -923,78 +929,92 @@ export function AppShell({
               </div>
             )}
 
-            {/* Projects List with Groups & Clean Spacious Layout */}
-            <div className="space-y-2 max-h-[380px] overflow-y-auto py-1 pr-0.5">
-              {groupedProjects.map((group) => (
-                <div key={group.key} className="space-y-1">
-                  <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
-                      <span>{group.label}</span>
-                    </div>
-                    <span className="text-[9px] font-mono font-medium text-muted/70">{group.items.length}</span>
-                  </div>
+            {/* Projects List with Groups & Ultra-Compact Single-Line Layout */}
+            <div className="space-y-1.5 max-h-[380px] overflow-y-auto py-1 pr-0.5">
+              {groupedProjects.map((group) => {
+                const isCollapsed = collapsedProjectGroups[group.key] ?? false;
+                return (
+                  <div key={group.key} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleProjectGroup(group.key)}
+                      className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors cursor-pointer rounded-lg hover:bg-surface-2/60"
+                      title={isCollapsed ? `Mở rộng ${group.label}` : `Thu gọn ${group.label}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <ChevronDown className={cn("h-3 w-3 text-muted/80 transition-transform duration-200", isCollapsed && "-rotate-90")} />
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
+                        <span>{group.label}</span>
+                      </div>
+                      <span className="text-[9px] font-mono font-medium text-muted/70 bg-surface-2 px-1.5 py-0.2 rounded border border-line">
+                        {group.items.length}
+                      </span>
+                    </button>
 
-                  {group.items.map((p) => {
-                    const isActive = p.id === project.id;
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/projects/${p.id}/dashboard`}
-                        onClick={() => {
-                          setProjectMenuOpen(false);
-                          if (isMobile) setMobileDrawerOpen(false);
-                          if (typeof document !== "undefined") {
-                            document.cookie = `flowboard_active_project=${p.id}; path=/; max-age=2592000; SameSite=Lax`;
-                          }
-                        }}
-                        className={cn(
-                          "flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all group/item",
-                          isActive
-                            ? "bg-accent/15 border border-accent/40 shadow-xs border-l-[3.5px] border-l-accent pl-2"
-                            : "hover:bg-surface-2/90 border border-transparent"
-                        )}
-                      >
-                        {/* Avatar + Tên đầy đủ + Key */}
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-xs bg-gradient-to-br",
-                              getProjectGradient(p.key)
-                            )}
-                          >
-                            {p.key.slice(0, 3)}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div
+                    {!isCollapsed && (
+                      <div className="space-y-0.5 pl-0.5">
+                        {group.items.map((p) => {
+                          const isActive = p.id === project.id;
+                          return (
+                            <Link
+                              key={p.id}
+                              href={`/projects/${p.id}/dashboard`}
+                              onClick={() => {
+                                setProjectMenuOpen(false);
+                                if (isMobile) setMobileDrawerOpen(false);
+                                if (typeof document !== "undefined") {
+                                  document.cookie = `flowboard_active_project=${p.id}; path=/; max-age=2592000; SameSite=Lax`;
+                                }
+                              }}
                               className={cn(
-                                "text-xs font-bold transition-colors leading-snug line-clamp-2",
+                                "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-all group/item text-xs",
                                 isActive
-                                  ? "text-accent"
-                                  : "text-foreground group-hover/item:text-accent"
+                                  ? "bg-accent/15 border border-accent/40 shadow-2xs font-semibold text-accent border-l-[3px] border-l-accent pl-1.5"
+                                  : "hover:bg-surface-2/90 border border-transparent text-foreground"
                               )}
-                              title={p.name}
+                              title={`${p.name} (${p.key})`}
                             >
-                              {p.name}
-                            </div>
-                            <div className="text-[10px] text-muted font-mono mt-0.5">
-                              {p.key}
-                            </div>
-                          </div>
-                        </div>
+                              {/* Mini Avatar + Tên đầy đủ trên 1 dòng + Key */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <div
+                                  className={cn(
+                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono font-bold text-[9px] text-white shadow-2xs bg-gradient-to-br",
+                                    getProjectGradient(p.key)
+                                  )}
+                                >
+                                  {p.key.slice(0, 2)}
+                                </div>
 
-                        {/* Icon dấu tích xanh tinh tế cho dự án đang chọn */}
-                        {isActive && (
-                          <div className="shrink-0 flex items-center justify-center h-5 w-5 rounded-full bg-accent text-white shadow-xs" title="Dự án đang chọn">
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          </div>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
+                                <span
+                                  className={cn(
+                                    "truncate text-xs transition-colors",
+                                    isActive
+                                      ? "font-bold text-accent"
+                                      : "text-foreground group-hover/item:text-accent"
+                                  )}
+                                >
+                                  {p.name}
+                                </span>
+
+                                <span className="shrink-0 text-[10px] font-mono text-muted/70 group-hover/item:text-muted">
+                                  {p.key}
+                                </span>
+                              </div>
+
+                              {/* Icon dấu tích xanh tinh tế cho dự án đang chọn */}
+                              {isActive && (
+                                <div className="shrink-0 flex items-center justify-center h-4 w-4 rounded-full bg-accent text-white shadow-2xs" title="Dự án đang chọn">
+                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                </div>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {filteredProjects.length === 0 && (
                 <div className="p-3 text-center text-xs text-muted">
