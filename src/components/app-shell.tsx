@@ -854,7 +854,7 @@ export function AppShell({
 
               {/* Project Title, Key & Quick Status Badge */}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-bold text-foreground group-hover:text-accent transition-colors">
+                <div className="text-xs font-bold text-foreground group-hover:text-accent transition-colors leading-snug line-clamp-2" title={project.name}>
                   {project.name}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -907,7 +907,7 @@ export function AppShell({
 
         {/* Flyout Workspace Menu Dropdown */}
         {projectMenuOpen && (
-          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[410px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
+          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[460px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
             {/* Header */}
             <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between border-b border-line/50 pb-2">
               <span>{isAdmin ? `Toàn bộ dự án (${projects.length})` : `Dự án của bạn (${projects.length})`}</span>
@@ -974,11 +974,11 @@ export function AppShell({
                               )}
                               title={`${p.name} (${p.key})`}
                             >
-                              {/* Cột 1: Mini Avatar + Tên dự án (co giãn, truncate) */}
-                              <div className="flex items-center gap-2 min-w-0 flex-1 pr-1">
+                              {/* Cột 1: Mini Avatar + Tên dự án (không cắt cụt chữ, cho phép hiển thị trọn vẹn) */}
+                              <div className="flex items-start gap-2 min-w-0 flex-1 pr-1">
                                 <div
                                   className={cn(
-                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono font-bold text-[9px] text-white shadow-2xs bg-gradient-to-br",
+                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono font-bold text-[9px] text-white shadow-2xs bg-gradient-to-br mt-0.5",
                                     getProjectGradient(p.key)
                                   )}
                                 >
@@ -987,11 +987,12 @@ export function AppShell({
 
                                 <span
                                   className={cn(
-                                    "truncate text-xs transition-colors",
+                                    "text-xs transition-colors leading-snug line-clamp-2",
                                     isActive
                                       ? "font-bold text-accent"
                                       : "text-foreground group-hover/item:text-accent"
                                   )}
+                                  title={p.name}
                                 >
                                   {p.name}
                                 </span>
