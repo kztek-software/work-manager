@@ -974,8 +974,8 @@ export function AppShell({
                               )}
                               title={`${p.name} (${p.key})`}
                             >
-                              {/* Mini Avatar + Tên đầy đủ trên 1 dòng + Key */}
-                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                              {/* Cột 1: Mini Avatar + Tên dự án (co giãn, truncate) */}
+                              <div className="flex items-center gap-2 min-w-0 flex-1 pr-1">
                                 <div
                                   className={cn(
                                     "flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono font-bold text-[9px] text-white shadow-2xs bg-gradient-to-br",
@@ -995,18 +995,32 @@ export function AppShell({
                                 >
                                   {p.name}
                                 </span>
-
-                                <span className="shrink-0 text-[10px] font-mono text-muted/70 group-hover/item:text-muted">
-                                  {p.key}
-                                </span>
                               </div>
 
-                              {/* Icon dấu tích xanh tinh tế cho dự án đang chọn */}
-                              {isActive && (
-                                <div className="shrink-0 flex items-center justify-center h-4 w-4 rounded-full bg-accent text-white shadow-2xs" title="Dự án đang chọn">
-                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
+                              {/* Cột 2 (Cột ngoài cùng thẳng hàng tuyệt đối): Mã dự án + Slot icon check */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span
+                                  className={cn(
+                                    "font-mono text-[10.5px] font-medium transition-colors text-right",
+                                    isActive
+                                      ? "text-accent font-bold"
+                                      : "text-muted/80 group-hover/item:text-foreground"
+                                  )}
+                                >
+                                  {p.key}
+                                </span>
+
+                                <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+                                  {isActive && (
+                                    <div
+                                      className="flex items-center justify-center h-4 w-4 rounded-full bg-accent text-white shadow-2xs"
+                                      title="Dự án đang chọn"
+                                    >
+                                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              </div>
                             </Link>
                           );
                         })}
