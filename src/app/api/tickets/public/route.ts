@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
+import { hasInlineDataUri } from "@/lib/ticket-status";
 import { createTicket } from "@/lib/tickets";
-import { sendNotification } from "@/lib/notifications";
-import { publish } from "@/lib/bus";
+import { notifyTicketCoordinators } from "@/lib/ticket-access";
 
+const MAX_PUBLIC_ATTACHMENTS = 10;
+// Khớp URL do /api/upload trả về (không có "/" hay "\" sau tiền tố -> không thể trỏ ra ngoài thư mục uploads)
+const PUBLIC_UPLOAD_URL_PATTERN = /^\/uploads\/\d+-[a-f0-9]{16}-[^/\\]*$/;
+
+// Khách hàng KHÔNG chọn dự án: mọi ticket từ portal được tạo với projectId = null,
+// người có quyền tickets.assign sẽ điều phối tới dự án phù hợp.
 const publicTicketSchema = z.object({
-  projectId: z.string().optional().nullable(),
-  projectKey: z.string().optional().nullable(),
   title: z.string().min(3, "Tiêu đề phải có ít nhất 3 ký tự").max(200),
-  description: z.string().min(5, "Mô tả sự cố phải có ít nhất 5 ký tự").max(5000),
+  description: z
+    .string()
+    .min(5, "Mô tả sự cố phải có ít nhất 5 ký tự")
+    .max(20000, "Mô tả quá dài (tối đa 20.000 ký tự)")
+    .refine((v) => !hasInlineDataUri(v), { message: "Ảnh trong mô tả phải được tải lên, không nhúng trực tiếp. Vui lòng dán lại ảnh." }),
   type: z.enum(["BUG", "SUPPORT", "INQUIRY", "FEATURE_REQ"]).default("BUG"),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
   customerName: z.string().min(2, "Họ và tên ít nhất 2 ký tự").max(100),
@@ -20,13 +27,15 @@ const publicTicketSchema = z.object({
   attachments: z
     .array(
       z.object({
-        fileName: z.string(),
-        fileUrl: z.string(),
+        fileName: z.string().max(255),
+        // Chỉ nhận file đã tải lên qua /api/upload: `/uploads/<timestamp>-<16 hex>-<tên đã làm sạch><ext>`
+        fileUrl: z.string().regex(PUBLIC_UPLOAD_URL_PATTERN, "Đường dẫn tệp đính kèm không hợp lệ"),
         fileType: z.string().optional(),
         fileSize: z.number().optional().nullable(),
         mimeType: z.string().optional().nullable(),
       })
     )
+    .max(MAX_PUBLIC_ATTACHMENTS, `Tối đa ${MAX_PUBLIC_ATTACHMENTS} tệp đính kèm`)
     .optional(),
 });
 
@@ -50,23 +59,9 @@ export async function POST(req: NextRequest) {
 
     const d = parsed.data;
 
-    // Tìm Project nếu có cung cấp explicit (không bắt buộc)
-    let targetProject = null;
-    if (d.projectId) {
-      targetProject = await prisma.project.findUnique({
-        where: { id: d.projectId },
-        select: { id: true, name: true, key: true },
-      });
-    } else if (d.projectKey) {
-      targetProject = await prisma.project.findUnique({
-        where: { key: d.projectKey.toUpperCase() },
-        select: { id: true, name: true, key: true },
-      });
-    }
-
-    // Tạo ticket mới (projectId có thể null nếu chờ Admin điều phối)
+    // Tạo ticket mới, luôn chưa gán dự án (chờ điều phối)
     const ticket = await createTicket({
-      projectId: targetProject?.id || null,
+      projectId: null,
       title: d.title,
       description: d.description,
       type: d.type,
@@ -79,37 +74,11 @@ export async function POST(req: NextRequest) {
       attachments: d.attachments,
     });
 
-    // Gửi thông báo đến TẤT CẢ các tài khoản ADMIN để điều phối tới dự án phù hợp
+    // Thông báo tới người có quyền điều phối (tickets.assign); realtime đã phát trong createTicket
     try {
-      const admins = await prisma.user.findMany({
-        where: { role: "ADMIN" },
-        select: { id: true, name: true, email: true },
-      });
-
-      // Lấy 1 project bất kỳ nếu có để làm đường dẫn xem ticket
-      const anyProject = targetProject || (await prisma.project.findFirst({ select: { id: true } }));
-      const ticketLink = anyProject
-        ? `/projects/${anyProject.id}/tickets?ticketId=${ticket.id}`
-        : `/portal/tickets/${ticket.trackingCode}`;
-
-      for (const admin of admins) {
-        await sendNotification({
-          userId: admin.id,
-          type: "TICKET_CREATED",
-          title: `🎫 Báo lỗi mới: ${ticket.title}`,
-          message: `Khách hàng ${ticket.customerName} (${ticket.customerEmail}) vừa gửi ticket "${ticket.trackingCode}". Cần Admin điều phối tới dự án phù hợp.`,
-          link: ticketLink,
-        });
-      }
-
-      // Publish global SSE event
-      publish("GLOBAL", {
-        type: "TICKET_CREATED",
-        ticketId: ticket.id,
-        actorId: "customer",
-      });
+      await notifyTicketCoordinators(ticket);
     } catch (notifyErr) {
-      console.error("Lỗi khi gửi thông báo cho admin:", notifyErr);
+      console.error("Lỗi khi gửi thông báo cho người điều phối:", notifyErr);
     }
 
     return NextResponse.json(
@@ -121,7 +90,6 @@ export async function POST(req: NextRequest) {
           title: ticket.title,
           status: ticket.status,
           customerName: ticket.customerName,
-          project: targetProject || null,
           createdAt: ticket.createdAt,
         },
       },

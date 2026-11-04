@@ -173,8 +173,7 @@ export function CommandPalette({
       icon: Ticket,
       action: () => {
         onClose();
-        if (projectId) router.push(`/projects/${projectId}/tickets`);
-        else router.push("/portal");
+        router.push(projectId ? `/tickets?projectId=${projectId}` : "/tickets");
       },
     },
     {

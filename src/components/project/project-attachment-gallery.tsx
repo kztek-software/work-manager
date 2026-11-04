@@ -26,6 +26,7 @@ import type { AttachmentDto } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "primereact/dialog";
 import { Avatar, AvatarFallback, initials } from "@/components/ui/avatar";
+import { findOversizedFileError } from "@/lib/upload-limits";
 
 function formatFileSize(bytes?: number | null): string {
   if (!bytes || bytes <= 0) return "";
@@ -126,6 +127,12 @@ export function ProjectAttachmentGallery({
 
   async function handleFilesUpload(files: FileList | File[]) {
     if (!files || files.length === 0) return;
+
+    const oversizedError = findOversizedFileError(Array.from(files));
+    if (oversizedError) {
+      setUploadError(oversizedError);
+      return;
+    }
 
     setUploadError("");
     setUploading(true);
@@ -332,7 +339,7 @@ export function ProjectAttachmentGallery({
                 Kéo thả tài liệu, ảnh hoặc video đặc tả dự án vào đây
               </div>
               <div className="text-[10px] text-muted">
-                Hỗ trợ PNG, JPG, MP4, WebM, MOV, PDF, Word, Excel, PowerPoint, Zip, Logs (Tối đa 25MB/ảnh & tài liệu, 100MB/video)
+                Hỗ trợ PNG, JPG, MP4, WebM, MOV, PDF, Word, Excel, PowerPoint, Zip, Logs (Tối đa dưới 50MB/tệp)
               </div>
             </div>
           ) : (

@@ -6,27 +6,15 @@ import {
   LifeBuoy,
   Search,
   Plus,
-  Filter,
   ExternalLink,
   KanbanSquare,
   Bug,
   HelpCircle,
   Sparkles,
   Wrench,
-  AlertCircle,
   CheckCircle2,
-  Clock,
-  User,
-  Building,
   RefreshCw,
-  Copy,
-  Check,
-  ChevronRight,
-  Flame,
-  ArrowUpDown,
-  Mail,
   FolderKanban,
-  ArrowRightLeft,
   AlertTriangle,
   Globe,
 } from "lucide-react";
@@ -40,50 +28,52 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { TicketDrawer } from "./ticket-drawer";
-import type { CustomerTicketDto, SprintDto, MemberDto, ProjectDto } from "@/lib/types";
+import type { CustomerTicketDto } from "@/lib/types";
+import type { TicketStats } from "@/lib/tickets";
+import { TICKET_STATUSES, TICKET_STATUS_META } from "@/lib/ticket-status";
+import { TicketStatusBadge } from "./ticket-status-ui";
+
+type TicketStatsState = TicketStats;
 
 interface TicketListViewProps {
-  project: ProjectDto;
-  sprints: SprintDto[];
-  members: MemberDto[];
+  // Dự án user được xem ticket (người điều phối: mọi dự án) — dùng cho bộ lọc & điều phối
+  projects: Array<{ id: string; name: string; key: string }>;
+  canAssign: boolean;
+  canCreate: boolean;
+  // "ALL" | "UNASSIGNED" | projectId
+  initialProjectFilter: string;
+  // Mở sẵn drawer ticket (từ ?ticketId= trên URL / link thông báo)
+  initialTicket?: CustomerTicketDto | null;
   initialTickets: CustomerTicketDto[];
-  initialStats: {
-    total: number;
-    open: number;
-    triaged: number;
-    inProgress: number;
-    resolved: number;
-    closed: number;
-  };
+  initialStats: TicketStatsState;
+  // Người dùng hiện tại (bộ lọc "Của tôi", nhận biết người xử lý)
+  currentUserId: string;
 }
 
 export function TicketListView({
-  project,
-  sprints,
-  members,
+  projects,
+  canAssign,
+  canCreate,
+  initialProjectFilter,
+  initialTicket = null,
   initialTickets,
   initialStats,
+  currentUserId,
 }: TicketListViewProps) {
   const [tickets, setTickets] = useState<CustomerTicketDto[]>(initialTickets);
-  const [stats, setStats] = useState<{
-    total: number;
-    open: number;
-    triaged: number;
-    inProgress: number;
-    resolved: number;
-    closed: number;
-    unassigned?: number;
-  }>(initialStats);
+  const [stats, setStats] = useState<TicketStatsState>(initialStats);
   const [loading, setLoading] = useState(false);
 
-  // Scope & Admin Dispatch filters
-  const [scopeFilter, setScopeFilter] = useState<"PROJECT" | "UNASSIGNED" | "ALL">("PROJECT");
-  const [allProjects, setAllProjects] = useState<Array<{ id: string; name: string; key: string }>>([]);
-  const [userRole, setUserRole] = useState<string>("");
+  // Bộ lọc dự án: ALL | UNASSIGNED (chỉ người điều phối) | projectId
+  const [projectFilter, setProjectFilter] = useState<string>(initialProjectFilter);
+  const [projectOptions, setProjectOptions] = useState(projects);
+  const selectedProject = projectOptions.find((p) => p.id === projectFilter) || null;
 
   // Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  // Người xử lý: ALL | ME | NONE
+  const [assigneeFilter, setAssigneeFilter] = useState("ALL");
   const [priorityFilter, setPriorityFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
 
@@ -92,8 +82,9 @@ export function TicketListView({
   const [rows, setRows] = useState(10);
 
   // Selected Ticket for Drawer
-  const [selectedTicket, setSelectedTicket] = useState<CustomerTicketDto | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<CustomerTicketDto | null>(initialTicket);
+  const [drawerOpen, setDrawerOpen] = useState(Boolean(initialTicket));
+  const selectedTicketIdRef = useRef<string | null>(initialTicket?.id ?? null);
 
   // Create Ticket Modal State
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -106,26 +97,29 @@ export function TicketListView({
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerCompany, setNewCustomerCompany] = useState("");
   const [newEnvironment, setNewEnvironment] = useState("");
+  // Chỉ người điều phối mới chọn được dự án khi ghi nhận ticket ("" = chưa gán)
+  const [newProjectId, setNewProjectId] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [createNotice, setCreateNotice] = useState("");
 
   async function fetchTickets() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("scope", scopeFilter);
+      params.set("projectId", projectFilter);
       if (statusFilter !== "ALL") params.set("status", statusFilter);
+      if (assigneeFilter !== "ALL") params.set("assignee", assigneeFilter);
       if (priorityFilter !== "ALL") params.set("priority", priorityFilter);
       if (typeFilter !== "ALL") params.set("type", typeFilter);
       if (search.trim()) params.set("search", search.trim());
 
-      const res = await fetch(`/api/projects/${project.id}/tickets?${params.toString()}`);
+      const res = await fetch(`/api/tickets?${params.toString()}`);
       const data = await res.json();
       if (res.ok) {
         setTickets(data.tickets);
         setStats(data.stats);
-        if (data.allProjects) setAllProjects(data.allProjects);
-        if (data.userRole) setUserRole(data.userRole);
+        if (data.projects) setProjectOptions(data.projects);
       }
     } catch (err) {
       console.error("Lỗi tải danh sách ticket:", err);
@@ -133,6 +127,72 @@ export function TicketListView({
       setLoading(false);
     }
   }
+
+  // Tải lại chi tiết ticket đang mở trong drawer
+  async function refreshSelectedTicket(ticketId: string) {
+    const res = await fetch(`/api/tickets/${ticketId}`);
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ticket) {
+      setSelectedTicket(data.ticket);
+    } else if (res.status === 404) {
+      // Ticket đã ra khỏi phạm vi xem (vd: bị điều phối sang dự án khác)
+      setDrawerOpen(false);
+      setSelectedTicket(null);
+    }
+  }
+
+  // Đồng bộ ?projectId= & ?ticketId= trên URL (không điều hướng lại trang server)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (projectFilter === "ALL") url.searchParams.delete("projectId");
+    else url.searchParams.set("projectId", projectFilter);
+    if (drawerOpen && selectedTicket) url.searchParams.set("ticketId", selectedTicket.id);
+    else url.searchParams.delete("ticketId");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }, [projectFilter, drawerOpen, selectedTicket]);
+
+  // Realtime: nhận sự kiện ticket (kể cả ticket chưa gán) qua /api/tickets/stream.
+  // Ref giữ hàm/ticket mới nhất để kết nối SSE chỉ mở 1 lần.
+  const fetchTicketsRef = useRef(fetchTickets);
+  useEffect(() => {
+    fetchTicketsRef.current = fetchTickets;
+    selectedTicketIdRef.current = drawerOpen ? selectedTicket?.id ?? null : null;
+  });
+  useEffect(() => {
+    const es = new EventSource("/api/tickets/stream");
+    let errorCount = 0;
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+    es.onopen = () => {
+      errorCount = 0;
+    };
+    es.onerror = () => {
+      errorCount++;
+      // Server từ chối (401/403 -> CLOSED) hoặc lỗi lặp lại -> dừng hẳn
+      if (es.readyState === EventSource.CLOSED || errorCount >= 5) es.close();
+    };
+    es.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (typeof msg.type !== "string" || !msg.type.startsWith("TICKET_")) return;
+        // Gom nhiều sự kiện liên tiếp thành 1 lần tải lại
+        if (reloadTimer) clearTimeout(reloadTimer);
+        reloadTimer = setTimeout(() => {
+          reloadTimer = null;
+          fetchTicketsRef.current();
+          const openId = selectedTicketIdRef.current;
+          if (openId && msg.ticketId === openId) refreshSelectedTicket(openId);
+        }, 400);
+      } catch {
+        // ignore
+      }
+    };
+
+    return () => {
+      if (reloadTimer) clearTimeout(reloadTimer);
+      es.close();
+    };
+  }, []);
 
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -143,12 +203,12 @@ export function TicketListView({
       return;
     }
     fetchTickets();
-  }, [scopeFilter, statusFilter, priorityFilter, typeFilter]);
+  }, [projectFilter, statusFilter, assigneeFilter, priorityFilter, typeFilter]);
 
   // Reset trang về 1 khi thay đổi bộ lọc hoặc tìm kiếm.
   // Điều chỉnh ngay trong lúc render (thay vì useEffect) để tránh render thừa
   // với danh sách đã phân trang sai — xem "Adjusting state when a prop changes".
-  const filterKey = `${scopeFilter}|${statusFilter}|${priorityFilter}|${typeFilter}|${search}`;
+  const filterKey = `${projectFilter}|${statusFilter}|${assigneeFilter}|${priorityFilter}|${typeFilter}|${search}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
@@ -176,10 +236,11 @@ export function TicketListView({
 
     setCreating(true);
     try {
-      const res = await fetch(`/api/projects/${project.id}/tickets`, {
+      const res = await fetch("/api/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          projectId: canAssign && newProjectId ? newProjectId : null,
           title: newTitle.trim(),
           description: newDescription.trim(),
           type: newType,
@@ -205,9 +266,17 @@ export function TicketListView({
         setNewCustomerPhone("");
         setNewCustomerCompany("");
         setNewEnvironment("");
+        setNewProjectId("");
         await fetchTickets();
-        setSelectedTicket(data.ticket);
-        setDrawerOpen(true);
+        if (canAssign) {
+          await refreshSelectedTicket(data.ticket.id);
+          setDrawerOpen(true);
+        } else {
+          // Ticket chưa gán dự án -> user không có quyền điều phối sẽ không thấy cho tới khi được gán
+          setCreateNotice(
+            `Đã ghi nhận ticket ${data.ticket.trackingCode}. Ticket đang chờ điều phối và sẽ hiển thị khi được gán vào dự án bạn tham gia.`
+          );
+        }
       }
     } catch (err) {
       console.error("Lỗi tạo ticket:", err);
@@ -217,20 +286,11 @@ export function TicketListView({
     }
   }
 
-  const statusBadges: Record<string, { label: string; bg: string; text: string; border: string }> = {
-    OPEN: { label: "Mới tiếp nhận", bg: "bg-blue-500/15", text: "text-blue-600", border: "border-blue-500/30" },
-    TRIAGED: { label: "Đã phân loại", bg: "bg-purple-500/15", text: "text-purple-600", border: "border-purple-500/30" },
-    IN_PROGRESS: { label: "Đang xử lý", bg: "bg-amber-500/15", text: "text-amber-600", border: "border-amber-500/30" },
-    RESOLVED: { label: "Đã giải quyết", bg: "bg-emerald-500/15", text: "text-emerald-600", border: "border-emerald-500/30" },
-    CLOSED: { label: "Đã đóng", bg: "bg-slate-500/15", text: "text-slate-600", border: "border-slate-500/30" },
-    REJECTED: { label: "Từ chối", bg: "bg-accent/15", text: "text-accent", border: "border-accent/30" },
-  };
-
   const priorityBadges: Record<string, { label: string; bg: string; text: string; border: string }> = {
     LOW: { label: "Thấp", bg: "bg-slate-500/15", text: "text-slate-400", border: "border-slate-500/30" },
     MEDIUM: { label: "Trung bình", bg: "bg-yellow-500/15", text: "text-yellow-600", border: "border-yellow-500/30" },
     HIGH: { label: "Cao", bg: "bg-orange-500/15", text: "text-orange-500", border: "border-orange-500/30" },
-    URGENT: { label: "Khẩn cấp", bg: "bg-accent/15", text: "text-accent", border: "border-accent/30" },
+    URGENT: { label: "Khẩn cấp", bg: "bg-[#F05922]/15", text: "text-accent", border: "border-[#F05922]/30" },
   };
 
   const typeIcons: Record<string, any> = {
@@ -246,17 +306,19 @@ export function TicketListView({
       <div className="p-4 sm:p-6 border-b border-line bg-surface/80 backdrop-blur-md shrink-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent border border-accent/30 shadow-md">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F05922]/15 text-accent border border-[#F05922]/30 shadow-md">
               <LifeBuoy className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-                  Hộp Thư Ticket & Báo Lỗi Khách Hàng
+                  Ticket & Báo Lỗi Khách Hàng
                 </h1>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-accent/20 text-accent border border-accent/30">
-                  {project.key}
-                </span>
+                {selectedProject && (
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#F05922]/20 text-accent border border-[#F05922]/30">
+                    {selectedProject.key}
+                  </span>
+                )}
               </div>
               <p className="text-xs text-muted">
                 Tiếp nhận sự cố từ portal công khai, phân loại và chuyển đổi trực tiếp sang Kanban Board.
@@ -267,7 +329,7 @@ export function TicketListView({
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5 flex-wrap">
             <Link
-              href={`/portal/${project.key}`}
+              href="/portal"
               target="_blank"
               className="h-9 px-3.5 rounded-xl border border-line bg-surface-2 hover:bg-surface-3 text-muted hover:text-foreground text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
@@ -275,114 +337,159 @@ export function TicketListView({
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
 
+            {canCreate && (
             <Button
               type="button"
-              onClick={() => setCreateModalOpen(true)}
-              className="h-9 px-4 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-md shadow-accent/25 cursor-pointer flex items-center gap-1.5"
+              onClick={() => {
+                setCreateNotice("");
+                setCreateModalOpen(true);
+              }}
+              className="h-9 px-4 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-md shadow-[#F05922]/25 cursor-pointer flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               <span>Ghi Nhận Ticket Mới</span>
             </Button>
+            )}
           </div>
         </div>
 
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-          <div
-            onClick={() => setStatusFilter("ALL")}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-              statusFilter === "ALL"
-                ? "border-accent bg-accent/10 shadow-md ring-1 ring-accent/30"
-                : "border-line bg-surface-2/60 hover:bg-surface-2"
-            }`}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-wider text-muted">Tổng số ticket</div>
-            <div className="text-xl font-black text-foreground mt-1">{stats.total}</div>
-          </div>
+        {/* KPI Summary Cards — bấm để lọc */}
+        {/* Các thẻ trạng thái cộng lại bằng Tổng; "Của tôi" là bộ lọc người xử lý riêng */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mt-5">
+          {[
+            { key: "ALL", label: "Tổng số ticket", value: stats.total, tone: "text-foreground" },
+            {
+              key: "OPEN",
+              label: "Mới (chưa tiếp nhận)",
+              value: stats.open,
+              tone: "text-[#FFAA80] [[data-theme=light]_&]:text-[#C2410C]",
+            },
+            {
+              key: "ACKNOWLEDGED",
+              label: "Đã tiếp nhận",
+              value: stats.acknowledged,
+              tone: "text-[#B8B3D6] [[data-theme=light]_&]:text-[#4A3F8C]",
+            },
+            {
+              key: "TRIAGED",
+              label: "Đã phân loại",
+              value: stats.triaged,
+              tone: "text-[#D6D2EE] [[data-theme=light]_&]:text-[#251C53]",
+            },
+            {
+              key: "IN_PROGRESS",
+              label: "Đang xử lý",
+              value: stats.inProgress,
+              tone: "text-amber-400 [[data-theme=light]_&]:text-amber-700",
+            },
+            {
+              key: "CLOSED",
+              label: "Đã đóng",
+              value: stats.closed,
+              tone: "text-emerald-400 [[data-theme=light]_&]:text-emerald-700",
+            },
+            {
+              key: "CANCELLED",
+              label: "Đã hủy",
+              value: stats.cancelled,
+              tone: "text-slate-300 [[data-theme=light]_&]:text-slate-600",
+            },
+          ].map((card) => (
+            <button
+              type="button"
+              key={card.key}
+              onClick={() => {
+                setStatusFilter(card.key);
+                setAssigneeFilter("ALL");
+              }}
+              className={cn(
+                "p-3.5 rounded-xl border transition-all cursor-pointer text-left",
+                statusFilter === card.key && assigneeFilter === "ALL"
+                  ? "border-accent bg-[#F05922]/10 shadow-md ring-1 ring-[#F05922]/30"
+                  : "border-line bg-surface-2/60 hover:bg-surface-2"
+              )}
+            >
+              <div className={cn("text-[10px] font-bold uppercase tracking-wider", card.key === "ALL" ? "text-muted" : card.tone)}>
+                {card.label}
+              </div>
+              <div className={cn("text-xl font-black mt-1", card.tone)}>{card.value}</div>
+            </button>
+          ))}
 
-          <div
-            onClick={() => setStatusFilter("OPEN")}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-              statusFilter === "OPEN"
-                ? "border-blue-500 bg-blue-950/30 shadow-md ring-1 ring-blue-500/40"
+          <button
+            type="button"
+            onClick={() => {
+              setAssigneeFilter(assigneeFilter === "ME" ? "ALL" : "ME");
+              setStatusFilter("ALL");
+            }}
+            className={cn(
+              "p-3.5 rounded-xl border transition-all cursor-pointer text-left",
+              assigneeFilter === "ME"
+                ? "border-accent bg-[#F05922]/10 shadow-md ring-1 ring-[#F05922]/30"
                 : "border-line bg-surface-2/60 hover:bg-surface-2"
-            }`}
+            )}
+            title="Ticket chưa kết thúc mà bạn là người xử lý"
           >
-            <div className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Mới tiếp nhận</div>
-            <div className="text-xl font-black text-blue-400 mt-1">{stats.open}</div>
-          </div>
-
-          <div
-            onClick={() => setStatusFilter("IN_PROGRESS")}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-              statusFilter === "IN_PROGRESS"
-                ? "border-amber-500 bg-amber-950/30 shadow-md ring-1 ring-amber-500/40"
-                : "border-line bg-surface-2/60 hover:bg-surface-2"
-            }`}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Đang xử lý / Kanban</div>
-            <div className="text-xl font-black text-amber-400 mt-1">{stats.inProgress}</div>
-          </div>
-
-          <div
-            onClick={() => setStatusFilter("RESOLVED")}
-            className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
-              statusFilter === "RESOLVED"
-                ? "border-emerald-500 bg-emerald-950/30 shadow-md ring-1 ring-emerald-500/40"
-                : "border-line bg-surface-2/60 hover:bg-surface-2"
-            }`}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Đã giải quyết</div>
-            <div className="text-xl font-black text-emerald-400 mt-1">{stats.resolved}</div>
-          </div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-[#B8B3D6] [[data-theme=light]_&]:text-[#4A3F8C]">
+              Của tôi (đang mở)
+            </div>
+            <div className="text-xl font-black mt-1 text-[#B8B3D6] [[data-theme=light]_&]:text-[#4A3F8C]">{stats.mine}</div>
+          </button>
         </div>
       </div>
 
-      {/* Scope Navigation Tabs */}
+      {/* Bộ lọc dự án: Tất cả / Chưa gán (người điều phối) / từng dự án được xem */}
       <div className="flex items-center gap-1 border-b border-line bg-surface-2/40 px-3 sm:px-6 pt-2 overflow-x-auto no-scrollbar">
         <button
           type="button"
-          onClick={() => setScopeFilter("PROJECT")}
+          onClick={() => setProjectFilter("ALL")}
           className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            scopeFilter === "PROJECT"
+            projectFilter === "ALL"
               ? "border-accent text-accent bg-surface/50 rounded-t-lg"
               : "border-transparent text-muted hover:text-foreground"
           }`}
         >
-          <FolderKanban className="w-3.5 h-3.5 text-accent" />
-          <span>Dự án này ({project.name})</span>
+          <Globe className="w-3.5 h-3.5 text-accent" />
+          <span>{canAssign ? "Tất Cả Tickets" : "Tất Cả Dự Án Của Tôi"}</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setScopeFilter("UNASSIGNED")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            scopeFilter === "UNASSIGNED"
-              ? "border-amber-500 text-amber-700 dark:text-amber-400 bg-surface/50 rounded-t-lg"
-              : "border-transparent text-muted hover:text-amber-700 dark:hover:text-amber-300"
-          }`}
-        >
-          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          <span>Chờ Admin Điều Phối</span>
-          {typeof stats.unassigned === "number" && stats.unassigned > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-mono font-black border border-amber-400/50 dark:border-amber-500/30">
-              {stats.unassigned}
-            </span>
-          )}
-        </button>
+        {canAssign && (
+          <button
+            type="button"
+            onClick={() => setProjectFilter("UNASSIGNED")}
+            className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+              projectFilter === "UNASSIGNED"
+                ? "border-amber-500 text-amber-700 dark:text-amber-400 bg-surface/50 rounded-t-lg"
+                : "border-transparent text-muted hover:text-amber-700 dark:hover:text-amber-300"
+            }`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span>Chưa Gán / Chờ Điều Phối</span>
+            {typeof stats.unassigned === "number" && stats.unassigned > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/15 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 text-[10px] font-mono font-black border border-amber-400/50 dark:border-amber-500/30">
+                {stats.unassigned}
+              </span>
+            )}
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={() => setScopeFilter("ALL")}
-          className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-            scopeFilter === "ALL"
-              ? "border-purple-400 text-purple-400 bg-surface/50 rounded-t-lg"
-              : "border-transparent text-muted hover:text-purple-300"
-          }`}
-        >
-          <Globe className="w-3.5 h-3.5 text-purple-400" />
-          <span>Tất Cả Tickets Hệ Thống</span>
-        </button>
+        <div className="flex items-center gap-2 px-2 pb-1.5 shrink-0">
+          <FolderKanban className={cn("w-3.5 h-3.5", selectedProject ? "text-accent" : "text-muted")} />
+          <Dropdown
+            value={selectedProject ? selectedProject.id : null}
+            options={projectOptions.map((p) => ({ label: `${p.name} (${p.key})`, value: p.id }))}
+            onChange={(e) => setProjectFilter(e.value || "ALL")}
+            placeholder="Lọc theo dự án..."
+            filter
+            filterPlaceholder="Tìm dự án..."
+            showClear={Boolean(selectedProject)}
+            emptyMessage="Không có dự án"
+            className={cn(
+              "p-inputtext-sm h-8 min-w-[200px] text-xs font-semibold bg-surface-2 border rounded-lg",
+              selectedProject ? "border-accent" : "border-line"
+            )}
+          />
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -403,14 +510,21 @@ export function TicketListView({
             value={statusFilter}
             options={[
               { label: "Mọi trạng thái", value: "ALL" },
-              { label: "Mới (OPEN)", value: "OPEN" },
-              { label: "Đã phân loại (TRIAGED)", value: "TRIAGED" },
-              { label: "Đang xử lý (IN_PROGRESS)", value: "IN_PROGRESS" },
-              { label: "Đã giải quyết (RESOLVED)", value: "RESOLVED" },
-              { label: "Đã đóng (CLOSED)", value: "CLOSED" },
-              { label: "Từ chối (REJECTED)", value: "REJECTED" },
+              ...TICKET_STATUSES.map((st) => ({ label: TICKET_STATUS_META[st].label, value: st })),
             ]}
             onChange={(e) => setStatusFilter(e.value)}
+            className="p-inputtext-sm h-8 text-xs font-semibold bg-surface-2 border border-line rounded-lg"
+          />
+
+          {/* Người xử lý */}
+          <Dropdown
+            value={assigneeFilter}
+            options={[
+              { label: "Mọi người xử lý", value: "ALL" },
+              { label: "Của tôi", value: "ME" },
+              { label: "Chưa có người xử lý", value: "NONE" },
+            ]}
+            onChange={(e) => setAssigneeFilter(e.value)}
             className="p-inputtext-sm h-8 text-xs font-semibold bg-surface-2 border border-line rounded-lg"
           />
 
@@ -456,6 +570,19 @@ export function TicketListView({
 
       {/* Main Table / List View */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {createNotice && (
+          <div className="mb-4 p-3 rounded-xl bg-[#F05922]/10 border border-[#F05922]/30 text-xs text-foreground flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+            <span className="flex-1">{createNotice}</span>
+            <button
+              type="button"
+              onClick={() => setCreateNotice("")}
+              className="text-muted hover:text-foreground cursor-pointer text-[11px] font-semibold"
+            >
+              Đóng
+            </button>
+          </div>
+        )}
         {loading && tickets.length === 0 ? (
           <div className="py-20 text-center">
             <div className="text-xs font-semibold text-muted flex items-center justify-center gap-2">
@@ -470,7 +597,9 @@ export function TicketListView({
             </div>
             <h3 className="text-sm font-bold text-foreground">Chưa có ticket nào phù hợp</h3>
             <p className="text-xs text-muted max-w-sm mx-auto">
-              Không tìm thấy ticket báo lỗi theo tiêu chí lọc hiện tại, hoặc chưa có khách hàng gửi báo lỗi.
+              {canAssign
+                ? "Không tìm thấy ticket báo lỗi theo tiêu chí lọc hiện tại, hoặc chưa có khách hàng gửi báo lỗi."
+                : "Không có ticket phù hợp trong các dự án bạn tham gia. Ticket mới cần được điều phối vào dự án trước khi hiển thị ở đây."}
             </p>
           </div>
         ) : (
@@ -489,6 +618,7 @@ export function TicketListView({
                     <th className="py-3 px-4">Dự Án Phụ Trách</th>
                     <th className="py-3 px-4">Khách Hàng</th>
                     <th className="py-3 px-4">Trạng Thái</th>
+                    <th className="py-3 px-4">Người Xử Lý</th>
                     <th className="py-3 px-4">Ưu Tiên</th>
                     <th className="py-3 px-4">Kanban Task</th>
                     <th className="py-3 px-4 text-right">Thời Gian</th>
@@ -496,7 +626,6 @@ export function TicketListView({
                 </thead>
                 <tbody className="divide-y divide-line/60">
                   {paginatedTickets.map((t) => {
-                    const statusMeta = statusBadges[t.status] || statusBadges.OPEN;
                     const priorityMeta = priorityBadges[t.priority] || priorityBadges.MEDIUM;
                     const TypeIcon = typeIcons[t.type] || Bug;
 
@@ -506,6 +635,10 @@ export function TicketListView({
                         onClick={() => {
                           setSelectedTicket(t);
                           setDrawerOpen(true);
+                          // Tải chi tiết mới nhất — mở lần đầu tự động chuyển Mới → Đã tiếp nhận (server)
+                          refreshSelectedTicket(t.id).then(() => {
+                            if (t.status === "OPEN") fetchTickets();
+                          });
                         }}
                         className="hover:bg-surface-2/80 transition-colors cursor-pointer group"
                       >
@@ -552,11 +685,25 @@ export function TicketListView({
 
                         {/* Status */}
                         <td className="py-3.5 px-4">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusMeta.bg} ${statusMeta.text} ${statusMeta.border}`}
-                          >
-                            {statusMeta.label}
-                          </span>
+                          <TicketStatusBadge status={t.status} />
+                        </td>
+
+                        {/* Assignee */}
+                        <td className="py-3.5 px-4">
+                          {t.assignee ? (
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-foreground">
+                              <span
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white shrink-0"
+                                style={{ backgroundColor: t.assignee.avatarColor }}
+                              >
+                                {t.assignee.name.charAt(0).toUpperCase()}
+                              </span>
+                              <span className="truncate max-w-[120px]">{t.assignee.name}</span>
+                              {t.assignee.id === currentUserId && <span className="text-[10px] text-muted">(bạn)</span>}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted">Chưa có</span>
+                          )}
                         </td>
 
                         {/* Priority */}
@@ -617,20 +764,14 @@ export function TicketListView({
       {/* Ticket Details Drawer */}
       <TicketDrawer
         ticket={selectedTicket}
-        projectId={project.id}
-        sprints={sprints}
-        members={members}
-        allProjects={allProjects}
-        userRole={userRole}
+        assignableProjects={canAssign ? projectOptions : []}
+        canAssign={canAssign}
+        currentUserId={currentUserId}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onTicketUpdated={async () => {
           await fetchTickets();
-          if (selectedTicket) {
-            const res = await fetch(`/api/tickets/${selectedTicket.id}`);
-            const data = await res.json();
-            if (res.ok && data.ticket) setSelectedTicket(data.ticket);
-          }
+          if (selectedTicket) await refreshSelectedTicket(selectedTicket.id);
         }}
       />
 
@@ -647,8 +788,31 @@ export function TicketListView({
       >
         <form onSubmit={handleCreateTicket} className="space-y-4 pt-2 text-xs">
           {createError && (
-            <div className="p-3 rounded-xl bg-accent/10 border border-accent/30 text-accent">
+            <div className="p-3 rounded-xl bg-[#F05922]/10 border border-[#F05922]/30 text-accent">
               {createError}
+            </div>
+          )}
+
+          {/* Chỉ người có quyền điều phối mới gán được dự án khi ghi nhận */}
+          {canAssign ? (
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Dự án phụ trách</Label>
+              <Dropdown
+                value={newProjectId}
+                options={[
+                  { label: "-- Chưa gán (chờ điều phối) --", value: "" },
+                  ...projectOptions.map((p) => ({ label: `${p.name} (${p.key})`, value: p.id })),
+                ]}
+                onChange={(e) => setNewProjectId(e.value)}
+                filter
+                filterPlaceholder="Tìm dự án..."
+                className="w-full h-8 text-xs font-medium bg-surface-2 border border-line rounded-lg"
+              />
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-surface-2 border border-line text-muted flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span>Ticket sẽ vào hàng chờ điều phối. Người có quyền điều phối sẽ gán dự án phụ trách.</span>
             </div>
           )}
 

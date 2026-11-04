@@ -3,8 +3,15 @@ export type BoardEvent = {
   taskId?: string;
   ticketId?: string;
   actorId?: string;
+  // Sự kiện ticket: dự án hiện tại / dự án trước khi điều phối (để lọc quyền xem phía stream)
+  projectId?: string | null;
+  prevProjectId?: string | null;
   at: number;
 };
+
+// Kênh realtime riêng của module Ticket (/tickets) — nhận MỌI sự kiện ticket, kể cả ticket chưa gán dự án.
+// Stream /api/tickets/stream tự lọc theo phạm vi xem của từng user trước khi gửi xuống client.
+export const TICKETS_ROOM = "TICKETS";
 
 type Listener = (event: BoardEvent) => void;
 

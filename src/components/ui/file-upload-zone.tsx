@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { AttachmentDto } from "@/lib/types";
+import { findOversizedFileError } from "@/lib/upload-limits";
 
 export type UploadedFileItem = {
   id?: string;
@@ -39,7 +40,7 @@ export function FileUploadZone({
   maxFiles = 10,
   compact = false,
   label = "Đính kèm ảnh, video quay màn hình hoặc tài liệu lỗi",
-  helperText = "Hỗ trợ PNG, JPG, GIF, WebP, MP4, WebM, MOV, PDF, DOCX, XLSX, LOG (Tối đa 20MB/ảnh & tài liệu, 100MB/video)",
+  helperText = "Hỗ trợ PNG, JPG, GIF, WebP, MP4, WebM, MOV, PDF, DOCX, XLSX, LOG (Tối đa dưới 50MB/tệp)",
   disabled = false,
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -52,6 +53,13 @@ export function FileUploadZone({
 
     if (files.length + selectedFiles.length > maxFiles) {
       setUploadError(`Chỉ được đính kèm tối đa ${maxFiles} tệp tin.`);
+      return;
+    }
+
+    const oversizedError = findOversizedFileError(Array.from(selectedFiles));
+    if (oversizedError) {
+      setUploadError(oversizedError);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
 

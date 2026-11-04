@@ -41,21 +41,108 @@ namespace KztekWorkManagement.Mobile.ViewModels
         public ObservableCollection<CustomerTicket> Tickets { get; } = new();
 
         public RelayCommand RefreshCommand { get; }
-        public RelayCommand<CustomerTicket> ResolveTicketCommand { get; }
+
+        // ---- Dialog Đóng / Hủy ticket (lý do + mô tả bắt buộc, khớp src/lib/ticket-status.ts) ----
+        public static readonly string[] CloseReasons =
+        {
+            "Đã khắc phục", "Đã hướng dẫn / giải đáp", "Hoạt động đúng thiết kế", "Khác",
+        };
+        public static readonly string[] CancelReasons =
+        {
+            "Trùng lặp", "Khách hàng rút yêu cầu", "Không đủ thông tin", "Ngoài phạm vi hỗ trợ", "Khác",
+        };
+
+        private CustomerTicket? _finishTicket;
+        private string _finishAction = "close";
+        private string? _selectedFinishReason;
+        private string _finishDescription = "";
+        private string? _finishError;
+
+        public ObservableCollection<string> FinishReasons { get; } = new();
+
+        public bool IsFinishDialogOpen => _finishTicket != null;
+        public string FinishTitle => _finishAction == "close"
+            ? $"Đóng ticket {_finishTicket?.TrackingCode}"
+            : $"Hủy ticket {_finishTicket?.TrackingCode}";
+
+        public string? SelectedFinishReason
+        {
+            get => _selectedFinishReason;
+            set => SetProperty(ref _selectedFinishReason, value);
+        }
+
+        public string FinishDescription
+        {
+            get => _finishDescription;
+            set => SetProperty(ref _finishDescription, value);
+        }
+
+        public string? FinishError
+        {
+            get => _finishError;
+            set => SetProperty(ref _finishError, value);
+        }
+
+        public RelayCommand<CustomerTicket> CloseTicketCommand { get; }
+        public RelayCommand<CustomerTicket> CancelTicketCommand { get; }
+        public RelayCommand SubmitFinishCommand { get; }
+        public RelayCommand DismissFinishCommand { get; }
 
         public TicketsViewModel(ITicketService ticketService)
         {
             _ticketService = ticketService;
             RefreshCommand = new RelayCommand(async () => await LoadTicketsAsync());
-            ResolveTicketCommand = new RelayCommand<CustomerTicket>(async (t) =>
+            CloseTicketCommand = new RelayCommand<CustomerTicket>(t => OpenFinishDialog(t, "close"));
+            CancelTicketCommand = new RelayCommand<CustomerTicket>(t => OpenFinishDialog(t, "cancel"));
+            SubmitFinishCommand = new RelayCommand(async () => await SubmitFinishAsync());
+            DismissFinishCommand = new RelayCommand(() => SetFinishTicket(null));
+        }
+
+        private void OpenFinishDialog(CustomerTicket? ticket, string action)
+        {
+            if (ticket == null) return;
+            _finishAction = action;
+            FinishReasons.Clear();
+            foreach (var r in action == "close" ? CloseReasons : CancelReasons) FinishReasons.Add(r);
+            SelectedFinishReason = null;
+            FinishDescription = "";
+            FinishError = null;
+            SetFinishTicket(ticket);
+        }
+
+        private void SetFinishTicket(CustomerTicket? ticket)
+        {
+            _finishTicket = ticket;
+            OnPropertyChanged(nameof(IsFinishDialogOpen));
+            OnPropertyChanged(nameof(FinishTitle));
+        }
+
+        private async Task SubmitFinishAsync()
+        {
+            if (_finishTicket == null) return;
+            if (string.IsNullOrWhiteSpace(SelectedFinishReason))
             {
-                if (t != null)
-                {
-                    await _ticketService.UpdateTicketStatusAsync(t.Id, "RESOLVED", "Xử lý thành công từ Mobile App");
-                    t.Status = "RESOLVED";
-                    OnPropertyChanged(nameof(Tickets));
-                }
-            });
+                FinishError = "Vui lòng chọn lý do";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(FinishDescription))
+            {
+                FinishError = "Vui lòng nhập mô tả gửi cho khách hàng";
+                return;
+            }
+
+            // Mô tả text thuần -> HTML an toàn (escape + xuống dòng thành <br>)
+            var html = System.Net.WebUtility.HtmlEncode(FinishDescription.Trim())
+                .Replace("\r\n", "<br>").Replace("\n", "<br>");
+            var error = await _ticketService.FinishTicketAsync(_finishTicket.Id, _finishAction, SelectedFinishReason, html);
+            if (error != null)
+            {
+                FinishError = error;
+                return;
+            }
+
+            SetFinishTicket(null);
+            await LoadTicketsAsync();
         }
 
         public override async Task InitializeAsync()

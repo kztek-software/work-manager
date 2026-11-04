@@ -5,6 +5,7 @@ import { publish } from "@/lib/bus";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { findOversizedFileError } from "@/lib/upload-limits";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
@@ -73,6 +74,12 @@ export async function POST(
 
       if (!files || files.length === 0) {
         return NextResponse.json({ error: "Không tìm thấy file để upload" }, { status: 400 });
+      }
+
+      // Giới hạn dung lượng: mỗi tệp phải nhỏ hơn 50MB
+      const oversizedError = findOversizedFileError(files.filter((f): f is File => f instanceof File));
+      if (oversizedError) {
+        return NextResponse.json({ error: oversizedError }, { status: 400 });
       }
 
       await fs.mkdir(UPLOAD_DIR, { recursive: true });

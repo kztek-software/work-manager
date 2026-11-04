@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { findAccessibleTicket, getTicketAccess, getTicketCapabilities } from "@/lib/ticket-access";
 
 const createAttachmentSchema = z.object({
   projectId: z.string().optional().nullable(),
@@ -30,11 +31,30 @@ export async function POST(req: NextRequest) {
 
     const user = await getSessionUser();
 
+    // Đính kèm vào ticket: chỉ nhân viên trong phạm vi xem & có quyền xử lý ticket
+    // (khách hàng đính kèm qua payload của POST /api/tickets/public).
+    // Lưu theo id thật của ticket đã kiểm quyền (ticketId gửi lên có thể là mã tra cứu).
+    let resolvedTicketId: string | null = null;
+    if (ticketId) {
+      if (!user) {
+        return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+      }
+      const access = await getTicketAccess(user);
+      const ticket = await findAccessibleTicket(access, ticketId);
+      if (!ticket) {
+        return NextResponse.json({ error: "Không tìm thấy ticket" }, { status: 404 });
+      }
+      if (!getTicketCapabilities(access, ticket.projectId).canWrite) {
+        return NextResponse.json({ error: "Bạn chỉ có quyền xem ticket này" }, { status: 403 });
+      }
+      resolvedTicketId = ticket.id;
+    }
+
     const attachment = await prisma.attachment.create({
       data: {
         projectId: projectId || null,
         taskId: taskId || null,
-        ticketId: ticketId || null,
+        ticketId: resolvedTicketId,
         uploaderId: user?.id || null,
         fileName,
         fileUrl,

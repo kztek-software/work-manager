@@ -538,7 +538,13 @@ export function TaskDialog({
                     </span>
                   </div>
                   <Link
-                    href={`/projects/${projectId}/tickets`}
+                    href={
+                      task?.customerTicket?.id
+                        ? `/tickets?ticketId=${task.customerTicket.id}`
+                        : `/tickets?projectId=${projectId}`
+                    }
+                    // Không prefetch: mở /tickets?ticketId= sẽ tự "tiếp nhận" ticket phía server
+                    prefetch={false}
                     className="text-xs font-bold text-accent hover:underline flex items-center gap-1 shrink-0"
                   >
                     <span>Mở Hộp Thư Ticket</span>

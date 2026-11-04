@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
 import { PermissionsProvider } from "@/lib/permissions-context";
 import { getUserPermissionContext } from "@/lib/permissions-server";
+import { canUserViewTicketModule } from "@/lib/ticket-access";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,10 @@ export default async function ProjectLayout({
 
   if (!project) redirect("/");
 
-  const permCtx = await getUserPermissionContext(user.id, project.id, user.role);
+  const [permCtx, canViewTickets] = await Promise.all([
+    getUserPermissionContext(user.id, project.id, user.role),
+    canUserViewTicketModule(user),
+  ]);
 
   return (
     <PermissionsProvider
@@ -98,6 +102,7 @@ export default async function ProjectLayout({
           })),
         }}
         projects={projects}
+        canViewTickets={canViewTickets}
       >
         {children}
       </AppShell>

@@ -46,11 +46,7 @@ const priorityOptions = [
   { id: "URGENT", label: "Khẩn cấp", desc: "Hệ thống dừng hoàn toàn", color: "text-accent border-accent/40 hover:bg-accent-subtle font-bold" },
 ] as const;
 
-export default function CustomerPortalPage({
-  initialProjectKey,
-}: {
-  initialProjectKey?: string;
-} = {}) {
+export default function CustomerPortalPage() {
   const router = useRouter();
 
   // Search state
@@ -125,7 +121,6 @@ export default function CustomerPortalPage({
         body: JSON.stringify({
           type,
           priority,
-          projectKey: initialProjectKey || null,
           customerName: customerName.trim(),
           customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim() || null,
@@ -243,12 +238,12 @@ export default function CustomerPortalPage({
         {/* Success View */}
         {submittedTicket ? (
           <div className="p-8 sm:p-10 rounded-2xl border border-emerald-500/30 bg-surface/95 shadow-2xl animate-fade-in-up text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 border border-emerald-500/30">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 [[data-theme=light]_&]:text-emerald-700 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 border border-emerald-500/30">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 [[data-theme=light]_&]:text-emerald-700 border border-emerald-500/30">
                 Gửi báo lỗi thành công
               </span>
               <h2 className="text-2xl font-black text-foreground tracking-tight">

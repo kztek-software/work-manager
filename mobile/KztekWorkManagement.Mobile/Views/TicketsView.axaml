@@ -73,13 +73,21 @@
                     <TextBlock Text="{Binding CustomerEmail}" FontSize="11" Foreground="{DynamicResource KzTextMuted}" />
                   </StackPanel>
 
-                  <!-- Resolve Button -->
-                  <Button Grid.Column="1" Classes="kz-btn-outline"
-                          Command="{Binding $parent[UserControl].((vm:TicketsViewModel)DataContext).ResolveTicketCommand}"
-                          CommandParameter="{Binding}" Padding="10,6" MinHeight="32"
-                          IsVisible="{Binding Status, Converter={x:Static conv:BooleanToVisibilityConverter.Instance}}">
-                    <TextBlock Text="Xong ✓" FontSize="11" />
-                  </Button>
+                  <!-- Đóng / Hủy (bắt buộc lý do + mô tả) -->
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Classes="kz-btn-outline"
+                            Command="{Binding $parent[UserControl].((vm:TicketsViewModel)DataContext).CancelTicketCommand}"
+                            CommandParameter="{Binding}" Padding="10,6" MinHeight="32"
+                            IsVisible="{Binding CanCancel}">
+                      <TextBlock Text="Hủy" FontSize="11" />
+                    </Button>
+                    <Button Classes="kz-btn-primary"
+                            Command="{Binding $parent[UserControl].((vm:TicketsViewModel)DataContext).CloseTicketCommand}"
+                            CommandParameter="{Binding}" Padding="10,6" MinHeight="32"
+                            IsVisible="{Binding CanClose}">
+                      <TextBlock Text="Đóng ✓" FontSize="11" />
+                    </Button>
+                  </StackPanel>
                 </Grid>
 
               </StackPanel>
@@ -88,6 +96,31 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </Grid>
+
+    <!-- Dialog Đóng / Hủy ticket (overlay trong view — app chưa có dịch vụ dialog dùng chung) -->
+    <Border Grid.Row="0" Grid.RowSpan="2" Background="#99000000" IsVisible="{Binding IsFinishDialogOpen}">
+      <Border Classes="kz-card" Margin="16" Padding="16" VerticalAlignment="Center" MaxWidth="480">
+        <StackPanel Spacing="10">
+          <TextBlock Text="{Binding FinishTitle}" FontSize="15" FontWeight="Bold" />
+          <TextBlock Text="{Binding FinishError}" FontSize="12" Foreground="#C2410C" TextWrapping="Wrap"
+                     IsVisible="{Binding FinishError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <TextBlock Text="Lý do *" FontSize="12" FontWeight="SemiBold" />
+          <ComboBox ItemsSource="{Binding FinishReasons}" SelectedItem="{Binding SelectedFinishReason, Mode=TwoWay}"
+                    PlaceholderText="-- Chọn lý do --" HorizontalAlignment="Stretch" />
+          <TextBlock Text="Mô tả gửi cho khách hàng *" FontSize="12" FontWeight="SemiBold" />
+          <TextBox Classes="kz-input" Text="{Binding FinishDescription, Mode=TwoWay}" AcceptsReturn="True"
+                   TextWrapping="Wrap" MinHeight="90" Watermark="Mô tả kết quả xử lý / lý do..." />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="kz-btn-outline" Command="{Binding DismissFinishCommand}" Padding="12,8">
+              <TextBlock Text="Quay lại" FontSize="12" />
+            </Button>
+            <Button Classes="kz-btn-primary" Command="{Binding SubmitFinishCommand}" Padding="12,8">
+              <TextBlock Text="Xác nhận &amp; gửi email" FontSize="12" />
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
 
   </Grid>
 </UserControl>

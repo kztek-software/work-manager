@@ -44,6 +44,27 @@ namespace KztekWorkManagement.Mobile.Models
 
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; }
+
+        // Quyền thao tác do server tính (luồng trạng thái ticket)
+        [JsonPropertyName("capabilities")]
+        public TicketCapabilities? Capabilities { get; set; }
+
+        [JsonIgnore]
+        public bool CanClose => Capabilities?.CanClose ?? false;
+
+        [JsonIgnore]
+        public bool CanCancel => Capabilities?.CanCancel ?? false;
+    }
+
+    public class TicketCapabilities
+    {
+        // Đóng: chỉ khi ticket Đang xử lý
+        [JsonPropertyName("canClose")]
+        public bool CanClose { get; set; }
+
+        // Hủy: mọi trạng thái chưa kết thúc
+        [JsonPropertyName("canCancel")]
+        public bool CanCancel { get; set; }
     }
 
     public class TicketsResponse

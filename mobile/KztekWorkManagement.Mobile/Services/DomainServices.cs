@@ -124,7 +124,9 @@ namespace KztekWorkManagement.Mobile.Services
     {
         Task<List<CustomerTicket>> GetTicketsAsync(string? status = null, string? priority = null, string? search = null);
         Task<CustomerTicket?> GetTicketAsync(string ticketIdOrCode);
-        Task<bool> UpdateTicketStatusAsync(string ticketId, string newStatus, string? note = null);
+        // Luồng trạng thái mới: không đổi status tự do. Đóng / Hủy bắt buộc lý do + mô tả (POST api/tickets/{id}/actions).
+        // action: "close" | "cancel". Trả về null nếu thành công, ngược lại là thông báo lỗi từ server.
+        Task<string?> FinishTicketAsync(string ticketId, string action, string reason, string descriptionHtml);
     }
 
     public class TicketService : ITicketService
@@ -157,11 +159,30 @@ namespace KztekWorkManagement.Mobile.Services
             return null;
         }
 
-        public async Task<bool> UpdateTicketStatusAsync(string ticketId, string newStatus, string? note = null)
+        public async Task<string?> FinishTicketAsync(string ticketId, string action, string reason, string descriptionHtml)
         {
-            var payload = new { status = newStatus, internalNotes = note };
-            var res = await _apiService.PatchAsync<object>($"api/tickets/{ticketId}", payload);
-            return res != null;
+            var payload = new { action, reason, description = descriptionHtml };
+            try
+            {
+                await _apiService.PostAsync<object>($"api/tickets/{ticketId}/actions", payload);
+                return null;
+            }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                // ApiService ném "API Error (...): {json}" -> lấy trường "error" nếu có
+                var msg = ex.Message;
+                var idx = msg.IndexOf('{');
+                if (idx >= 0)
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(msg.Substring(idx));
+                        if (doc.RootElement.TryGetProperty("error", out var err)) return err.GetString() ?? msg;
+                    }
+                    catch (System.Text.Json.JsonException) { }
+                }
+                return msg;
+            }
         }
     }
 

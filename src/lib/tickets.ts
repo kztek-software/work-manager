@@ -1,6 +1,16 @@
-import { publish } from "@/lib/bus";
+import { publish, TICKETS_ROOM, type BoardEvent } from "@/lib/bus";
 import { prisma } from "@/lib/prisma";
+import { TICKET_FINAL_STATUSES, TicketWorkflowError } from "@/lib/ticket-status";
 import type { CustomerTicketDto, TicketCommentDto, AttachmentDto } from "@/lib/types";
+
+// Quan hệ cần nạp kèm ticket (dùng chung list / chi tiết / tạo mới)
+const TICKET_INCLUDE = {
+  comments: { orderBy: { createdAt: "asc" as const } },
+  attachments: { orderBy: { createdAt: "asc" as const } },
+  project: { select: { id: true, name: true, key: true } },
+  convertedTask: { select: { id: true, number: true, title: true, status: true, type: true } },
+  assignee: { select: { id: true, name: true, avatarColor: true, title: true } },
+};
 
 export function generateTrackingCode(): string {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -12,8 +22,30 @@ export function generateTrackingCode(): string {
   return `TK-${dateStr}-${random}`;
 }
 
+/**
+ * Phát sự kiện ticket CHỈ vào TICKETS_ROOM (trang /tickets qua /api/tickets/stream).
+ * Không phát vào room dự án: Board bỏ qua sự kiện TICKET_* và không có client nào khác
+ * nghe ticket qua /api/projects/[id]/stream — tránh lộ id ticket cho thành viên không có tickets.view.
+ */
+export function publishTicketEvent(
+  event: { type: Extract<BoardEvent["type"], "TICKET_CREATED" | "TICKET_UPDATED">; ticketId: string; actorId?: string },
+  projectId: string | null | undefined,
+  prevProjectId?: string | null
+) {
+  publish(TICKETS_ROOM, { ...event, projectId: projectId ?? null, prevProjectId: prevProjectId ?? null });
+}
+
+// Client Prisma dùng cho thao tác ticket: prisma mặc định hoặc tx trong $transaction
+// (prisma dùng $extends nên lấy kiểu tx trực tiếp từ callback của prisma.$transaction)
+export type TicketTx = Parameters<Extract<Parameters<typeof prisma.$transaction>[0], (...args: never[]) => unknown>>[0];
+type TicketDb = TicketTx | typeof prisma;
+
+// Tùy chọn khi gọi trong transaction: dùng tx và để caller tự phát sự kiện sau khi commit
+type TicketWriteOptions = { db?: TicketDb; publishEvent?: boolean };
+
 export type CreateTicketParams = {
   projectId?: string | null;
+  actorId?: string;
   title: string;
   description: string;
   type?: string;
@@ -66,21 +98,13 @@ export async function createTicket(params: CreateTicketParams): Promise<Customer
         }))
       } : undefined,
     },
-    include: {
-      comments: { orderBy: { createdAt: "asc" } },
-      attachments: { orderBy: { createdAt: "asc" } },
-      project: { select: { id: true, name: true, key: true } },
-      convertedTask: { select: { id: true, number: true, title: true, status: true, type: true } },
-    }
+    include: TICKET_INCLUDE
   });
 
-  if (params.projectId) {
-    publish(params.projectId, {
-      type: "TICKET_CREATED",
-      ticketId: created.id,
-      actorId: "customer",
-    });
-  }
+  publishTicketEvent(
+    { type: "TICKET_CREATED", ticketId: created.id, actorId: params.actorId || "customer" },
+    created.projectId
+  );
 
   return formatPrismaTicket(created, false);
 }
@@ -111,6 +135,7 @@ export async function getTicketById(id: string, includeInternal = true): Promise
       attachments: { orderBy: { createdAt: "asc" } },
       project: { select: { id: true, name: true, key: true } },
       convertedTask: { select: { id: true, number: true, title: true, status: true, type: true } },
+      assignee: { select: { id: true, name: true, avatarColor: true, title: true } },
     }
   });
 
@@ -118,207 +143,219 @@ export async function getTicketById(id: string, includeInternal = true): Promise
   return formatPrismaTicket(row, includeInternal);
 }
 
-export async function getTicketsByProject(
-  projectId: string,
-  options?: {
-    status?: string;
-    priority?: string;
-    type?: string;
-    search?: string;
-    unassignedOnly?: boolean;
-    includeUnassigned?: boolean;
-  }
-): Promise<{
-  tickets: CustomerTicketDto[];
-  stats: {
-    total: number;
-    open: number;
-    triaged: number;
-    inProgress: number;
-    resolved: number;
-    closed: number;
-    unassigned: number;
-  };
-}> {
-  const whereClause: any = {};
+export type TicketStats = {
+  total: number;
+  open: number;
+  acknowledged: number;
+  triaged: number;
+  inProgress: number;
+  closed: number;
+  cancelled: number;
+  // Ticket chưa gán dự án (chỉ đếm cho người điều phối)
+  unassigned: number;
+  // Ticket đang chưa kết thúc mà user hiện tại là người xử lý
+  mine: number;
+};
 
-  if (options?.unassignedOnly || projectId === "UNASSIGNED") {
-    whereClause.projectId = null;
-  } else if (projectId === "ALL") {
-    // No project restriction
-  } else if (options?.includeUnassigned) {
-    whereClause.OR = [{ projectId }, { projectId: null }];
-  } else {
-    whereClause.projectId = projectId;
-  }
+/**
+ * Danh sách ticket trong phạm vi xem của user.
+ * - scopeWhere: điều kiện phạm vi (buildTicketScopeWhere) — bắt buộc truyền từ phía server.
+ * - project: "ALL" | "UNASSIGNED" | projectId — bộ lọc dự án trong phạm vi đó.
+ * - includeUnassignedCount: chỉ đếm ticket chưa gán cho người có tickets.assign.
+ */
+export async function getTickets(options: {
+  scopeWhere: Record<string, unknown>;
+  project?: string;
+  status?: string;
+  priority?: string;
+  type?: string;
+  search?: string;
+  // Lọc người xử lý: "ALL" | "ME" | "NONE" (chưa có người xử lý) | userId
+  assignee?: string;
+  currentUserId?: string;
+  includeUnassignedCount?: boolean;
+}): Promise<{ tickets: CustomerTicketDto[]; stats: TicketStats }> {
+  const project = options.project || "ALL";
+  const projectWhere =
+    project === "ALL" ? {} : project === "UNASSIGNED" ? { projectId: null } : { projectId: project };
 
-  if (options?.status && options.status !== "ALL") {
-    whereClause.status = options.status;
-  }
+  // Phạm vi + bộ lọc dự án: dùng chung cho danh sách và thống kê theo trạng thái
+  const baseAnd: any[] = [options.scopeWhere, projectWhere];
+  const listAnd: any[] = [...baseAnd];
 
-  if (options?.priority && options.priority !== "ALL") {
-    whereClause.priority = options.priority;
-  }
+  if (options.status && options.status !== "ALL") listAnd.push({ status: options.status });
+  if (options.priority && options.priority !== "ALL") listAnd.push({ priority: options.priority });
+  if (options.type && options.type !== "ALL") listAnd.push({ type: options.type });
 
-  if (options?.type && options.type !== "ALL") {
-    whereClause.type = options.type;
-  }
+  const assignee = options.assignee || "ALL";
+  if (assignee === "ME") listAnd.push({ assigneeId: options.currentUserId ?? "__none__" });
+  else if (assignee === "NONE") listAnd.push({ assigneeId: null });
+  else if (assignee !== "ALL") listAnd.push({ assigneeId: assignee });
 
-  if (options?.search && options.search.trim()) {
+  if (options.search && options.search.trim()) {
     const term = options.search.trim();
-    whereClause.AND = [
-      ...(whereClause.AND || []),
-      {
-        OR: [
-          { title: { contains: term, mode: "insensitive" } },
-          { trackingCode: { contains: term, mode: "insensitive" } },
-          { customerName: { contains: term, mode: "insensitive" } },
-          { customerEmail: { contains: term, mode: "insensitive" } },
-        ]
-      }
-    ];
+    listAnd.push({
+      OR: [
+        { title: { contains: term, mode: "insensitive" } },
+        { trackingCode: { contains: term, mode: "insensitive" } },
+        { customerName: { contains: term, mode: "insensitive" } },
+        { customerEmail: { contains: term, mode: "insensitive" } },
+      ],
+    });
   }
 
-  const [rows, allStatusCounts, unassignedCount] = await Promise.all([
+  const [rows, allStatusCounts, unassignedCount, mineCount] = await Promise.all([
     prisma.customerTicket.findMany({
-      where: whereClause,
+      where: { AND: listAnd },
       orderBy: { createdAt: "desc" },
-      include: {
-        comments: { orderBy: { createdAt: "asc" } },
-        attachments: { orderBy: { createdAt: "asc" } },
-        project: { select: { id: true, name: true, key: true } },
-        convertedTask: { select: { id: true, number: true, title: true, status: true, type: true } },
-      }
+      include: TICKET_INCLUDE
     }),
     prisma.customerTicket.groupBy({
       by: ["status"],
       _count: { _all: true },
-      where: projectId === "ALL"
-        ? undefined
-        : options?.includeUnassigned
-        ? { OR: [{ projectId }, { projectId: null }] }
-        : { projectId }
+      where: { AND: baseAnd },
     }),
-    prisma.customerTicket.count({ where: { projectId: null } })
+    options.includeUnassignedCount
+      ? prisma.customerTicket.count({ where: { projectId: null } })
+      : Promise.resolve(0),
+    options.currentUserId
+      ? prisma.customerTicket.count({
+          where: {
+            AND: [
+              ...baseAnd,
+              { assigneeId: options.currentUserId, status: { notIn: [...TICKET_FINAL_STATUSES] } },
+            ],
+          },
+        })
+      : Promise.resolve(0),
   ]);
 
-  const stats = {
+  const stats: TicketStats = {
     total: 0,
     open: 0,
+    acknowledged: 0,
     triaged: 0,
     inProgress: 0,
-    resolved: 0,
     closed: 0,
+    cancelled: 0,
     unassigned: unassignedCount,
+    mine: mineCount,
   };
 
   for (const r of allStatusCounts) {
     const count = r._count._all;
     stats.total += count;
     if (r.status === "OPEN") stats.open = count;
+    else if (r.status === "ACKNOWLEDGED") stats.acknowledged = count;
     else if (r.status === "TRIAGED") stats.triaged = count;
     else if (r.status === "IN_PROGRESS") stats.inProgress = count;
-    else if (r.status === "RESOLVED") stats.resolved = count;
-    else if (r.status === "CLOSED" || r.status === "REJECTED") stats.closed += count;
+    else if (r.status === "CLOSED") stats.closed = count;
+    else if (r.status === "CANCELLED") stats.cancelled = count;
   }
 
   const tickets = rows.map((r) => formatPrismaTicket(r, true));
   return { tickets, stats };
 }
 
+/**
+ * Gán / đổi / bỏ gán (targetProjectId = null) dự án phụ trách của ticket.
+ * Route gọi hàm này PHẢI kiểm tra quyền tickets.assign trước.
+ */
 export async function dispatchTicketToProject(params: {
   ticketId: string;
-  targetProjectId: string;
+  targetProjectId: string | null;
   adminUser: { id: string; name: string };
-}): Promise<CustomerTicketDto | null> {
-  const targetProject = await prisma.project.findUnique({
-    where: { id: params.targetProjectId },
-    select: { id: true, name: true, key: true },
-  });
+}, options?: TicketWriteOptions): Promise<CustomerTicketDto | null> {
+  const db = options?.db ?? prisma;
+  const targetProject = params.targetProjectId
+    ? await db.project.findUnique({
+        where: { id: params.targetProjectId },
+        select: { id: true, name: true, key: true },
+      })
+    : null;
 
-  if (!targetProject) throw new Error("Không tìm thấy dự án đích để điều phối");
+  if (params.targetProjectId && !targetProject) throw new Error("Không tìm thấy dự án đích để điều phối");
 
-  const current = await prisma.customerTicket.findUnique({
+  const current = await db.customerTicket.findUnique({
     where: { id: params.ticketId },
-    select: { status: true },
+    select: { status: true, projectId: true },
   });
   if (!current) throw new Error("Không tìm thấy ticket cần điều phối");
 
-  const newStatus = current.status === "OPEN" ? "TRIAGED" : current.status;
-
-  await prisma.customerTicket.update({
-    where: { id: params.ticketId },
+  // Chỉ đổi dự án. Trạng thái & người xử lý (không còn hợp lệ ở dự án mới) do
+  // applyAutoStatusTransitions (src/lib/ticket-workflow.ts) xử lý — caller PHẢI gọi sau hàm này.
+  // Có điều kiện: ticket chưa Đóng / Hủy (request khác đóng đồng thời -> 409, transaction rollback)
+  const moved = await db.customerTicket.updateMany({
+    where: { id: params.ticketId, projectId: current.projectId, status: { notIn: [...TICKET_FINAL_STATUSES] } },
     data: {
-      projectId: targetProject.id,
-      status: newStatus,
+      projectId: targetProject?.id ?? null,
     },
   });
+  if (moved.count === 0) {
+    throw new TicketWorkflowError(409, "Ticket vừa được đóng / hủy hoặc điều phối bởi người khác. Vui lòng tải lại.");
+  }
 
   await addTicketComment({
     ticketId: params.ticketId,
     authorName: params.adminUser.name,
     isStaff: true,
     isInternalOnly: true,
-    message: `[Điều phối hệ thống] Quản trị viên ${params.adminUser.name} đã điều phối ticket này tới dự án ${targetProject.name} (${targetProject.key}).`,
-  });
+    message: targetProject
+      ? `[Điều phối hệ thống] ${params.adminUser.name} đã điều phối ticket này tới dự án ${targetProject.name} (${targetProject.key}).`
+      : `[Điều phối hệ thống] ${params.adminUser.name} đã bỏ gán dự án của ticket này (chờ điều phối lại).`,
+  }, { db, publishEvent: false });
 
-  publish(targetProject.id, {
-    type: "TICKET_UPDATED",
-    ticketId: params.ticketId,
-    actorId: params.adminUser.id,
-  });
+  if (options?.publishEvent !== false) {
+    publishTicketEvent(
+      { type: "TICKET_UPDATED", ticketId: params.ticketId, actorId: params.adminUser.id },
+      targetProject?.id ?? null,
+      current.projectId
+    );
+  }
 
-  return getTicketById(params.ticketId);
+  // Trong transaction: dữ liệu chưa commit -> caller tự đọc lại sau khi commit
+  return options?.db ? null : getTicketById(params.ticketId);
 }
 
+/**
+ * Cập nhật các trường thông tin của ticket. KHÔNG đổi trạng thái / kết quả xử lý ở đây —
+ * chuyển trạng thái đi qua src/lib/ticket-workflow.ts (server là nguồn sự thật).
+ */
 export async function updateTicket(
   id: string,
   data: {
     projectId?: string | null;
-    status?: string;
-    priority?: string;
     type?: string;
     internalNotes?: string | null;
-    resolutionNotes?: string | null;
     convertedTaskId?: string | null;
-  }
+  },
+  actorId?: string,
+  options?: TicketWriteOptions
 ): Promise<CustomerTicketDto | null> {
-  const current = await prisma.customerTicket.findUnique({ where: { id } });
+  const db = options?.db ?? prisma;
+  const current = await db.customerTicket.findUnique({ where: { id }, select: { projectId: true } });
   if (!current) return null;
 
-  const now = new Date();
-  let resolvedAt = current.resolvedAt;
-
-  if (data.status === "RESOLVED" && current.status !== "RESOLVED") {
-    resolvedAt = now;
-  } else if (data.status && data.status !== "RESOLVED") {
-    resolvedAt = null;
-  }
-
-  await prisma.customerTicket.update({
+  await db.customerTicket.update({
     where: { id },
     data: {
       projectId: data.projectId !== undefined ? data.projectId : undefined,
-      status: data.status,
-      priority: data.priority,
       type: data.type,
       internalNotes: data.internalNotes !== undefined ? data.internalNotes : undefined,
-      resolutionNotes: data.resolutionNotes !== undefined ? data.resolutionNotes : undefined,
       convertedTaskId: data.convertedTaskId !== undefined ? data.convertedTaskId : undefined,
-      resolvedAt,
     },
   });
 
   const finalProjectId = data.projectId !== undefined ? data.projectId : current.projectId;
-  if (finalProjectId) {
-    publish(finalProjectId, {
-      type: "TICKET_UPDATED",
-      ticketId: id,
-      actorId: "staff",
-    });
+  if (options?.publishEvent !== false) {
+    publishTicketEvent(
+      { type: "TICKET_UPDATED", ticketId: id, actorId: actorId || "staff" },
+      finalProjectId,
+      current.projectId !== finalProjectId ? current.projectId : null
+    );
   }
 
-  return getTicketById(id);
+  return options?.db ? null : getTicketById(id);
 }
 
 export async function addTicketComment(params: {
@@ -328,8 +365,11 @@ export async function addTicketComment(params: {
   isStaff?: boolean;
   isInternalOnly?: boolean;
   message: string;
-}): Promise<TicketCommentDto> {
-  const comment = await prisma.ticketComment.create({
+  actorId?: string;
+}, options?: TicketWriteOptions): Promise<TicketCommentDto> {
+  // publishEvent = false khi caller tự phát sự kiện (vd: điều phối, transaction) để tránh bắn trùng
+  const db = options?.db ?? prisma;
+  const comment = await db.ticketComment.create({
     data: {
       ticketId: params.ticketId,
       authorName: params.authorName,
@@ -341,18 +381,21 @@ export async function addTicketComment(params: {
   });
 
   // Touch ticket's updatedAt
-  const ticket = await prisma.customerTicket.update({
+  const ticket = await db.customerTicket.update({
     where: { id: params.ticketId },
     data: { updatedAt: new Date() },
     select: { projectId: true }
   });
 
-  if (ticket && ticket.projectId) {
-    publish(ticket.projectId, {
-      type: "TICKET_UPDATED",
-      ticketId: params.ticketId,
-      actorId: params.isStaff ? "staff" : "customer",
-    });
+  if (options?.publishEvent !== false) {
+    publishTicketEvent(
+      {
+        type: "TICKET_UPDATED",
+        ticketId: params.ticketId,
+        actorId: params.actorId || (params.isStaff ? "staff" : "customer"),
+      },
+      ticket.projectId
+    );
   }
 
   return {
@@ -389,6 +432,11 @@ export async function getTicketComments(
     message: r.message,
     createdAt: r.createdAt.toISOString(),
   }));
+}
+
+function toIso(value: unknown): string | null {
+  if (!value) return null;
+  return value instanceof Date ? value.toISOString() : String(value);
 }
 
 function formatPrismaTicket(row: any, includeInternal: boolean): CustomerTicketDto {
@@ -434,15 +482,61 @@ function formatPrismaTicket(row: any, includeInternal: boolean): CustomerTicketD
     convertedTask: row.convertedTask,
     internalNotes: includeInternal ? row.internalNotes : undefined,
     resolutionNotes: row.resolutionNotes,
-    resolvedAt: row.resolvedAt
-      ? row.resolvedAt instanceof Date
-        ? row.resolvedAt.toISOString()
-        : String(row.resolvedAt)
-      : null,
+    resolvedAt: toIso(row.resolvedAt),
+    // Luồng trạng thái mới (src/lib/ticket-status.ts)
+    closeReason: row.closeReason ?? null,
+    closedAt: toIso(row.resolvedAt),
+    closedById: row.closedById ?? null,
+    acknowledgedAt: toIso(row.acknowledgedAt),
+    acknowledgedById: row.acknowledgedById ?? null,
+    priorityConfirmedAt: toIso(row.priorityConfirmedAt),
+    priorityConfirmedById: row.priorityConfirmedById ?? null,
+    assigneeId: row.assigneeId ?? null,
+    assignee: row.assignee ?? null,
+    startedAt: toIso(row.startedAt),
+    // Các mốc đã thực sự đi qua (stepper; an toàn để trả cho khách — chỉ là cờ)
+    progress: {
+      acknowledged: Boolean(row.acknowledgedAt) || (row.status !== "OPEN" && row.status !== "CANCELLED"),
+      triaged:
+        Boolean(row.projectId && row.priorityConfirmedAt) ||
+        ["TRIAGED", "IN_PROGRESS", "CLOSED"].includes(row.status),
+      started: Boolean(row.startedAt) || ["IN_PROGRESS", "CLOSED"].includes(row.status),
+    },
     createdAt: row.createdAt instanceof Date ? row.createdAt.toISOString() : String(row.createdAt),
     updatedAt: row.updatedAt instanceof Date ? row.updatedAt.toISOString() : String(row.updatedAt),
     comments,
     attachments,
     _count: { comments: comments.length },
+  };
+}
+
+/**
+ * Dữ liệu ticket an toàn để trả cho khách hàng (portal tra cứu):
+ * bỏ dự án nội bộ, ghi chú nội bộ và task Kanban đã chuyển đổi.
+ */
+export function toPublicTicketDto(ticket: CustomerTicketDto): CustomerTicketDto {
+  /* eslint-disable @typescript-eslint/no-unused-vars -- loại bỏ trường nội bộ khỏi object trả về */
+  const {
+    project,
+    projectId,
+    internalNotes,
+    convertedTask,
+    convertedTaskId,
+    // Không lộ người xử lý / nhân viên nội bộ cho khách
+    assignee,
+    assigneeId,
+    acknowledgedById,
+    priorityConfirmedById,
+    closedById,
+    capabilities,
+    ...rest
+  } = ticket;
+  /* eslint-enable @typescript-eslint/no-unused-vars */
+  return {
+    ...rest,
+    // Không trả email người gửi (email nhân viên) cho khách
+    comments: (ticket.comments || [])
+      .filter((c) => !c.isInternalOnly)
+      .map((c) => ({ ...c, authorEmail: null })),
   };
 }

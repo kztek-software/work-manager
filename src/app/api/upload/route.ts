@@ -3,12 +3,10 @@ import { getSessionUser } from "@/lib/auth";
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
+import { findOversizedFileError } from "@/lib/upload-limits";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
-// 25MB for images/documents, 100MB for video captures
-const MAX_IMAGE_SIZE = 25 * 1024 * 1024;
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 
 function getFileType(mimeType: string, extension: string): "image" | "video" | "document" | "other" {
   if (mimeType.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg|bmp|ico)$/i.test(extension)) {
@@ -49,6 +47,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Không tìm thấy tệp để tải lên" }, { status: 400 });
     }
 
+    // Giới hạn dung lượng: mỗi tệp phải nhỏ hơn 50MB (kiểm tra trước khi ghi bất kỳ tệp nào)
+    const oversizedError = findOversizedFileError(files.filter((f): f is File => f instanceof File));
+    if (oversizedError) {
+      return NextResponse.json({ error: oversizedError }, { status: 400 });
+    }
+
     // Ensure uploads directory exists
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
 
@@ -60,18 +64,6 @@ export async function POST(req: NextRequest) {
       const originalName = file.name || "upload";
       const ext = path.extname(originalName).toLowerCase();
       const fileType = getFileType(file.type || "", ext);
-      const maxSize = fileType === "video" ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-
-      if (file.size > maxSize) {
-        return NextResponse.json(
-          {
-            error: `Tệp "${originalName}" vượt quá dung lượng tối đa cho phép (${
-              fileType === "video" ? "100MB cho video" : "25MB cho ảnh/tài liệu"
-            })`,
-          },
-          { status: 400 }
-        );
-      }
 
       const randomSuffix = crypto.randomBytes(8).toString("hex");
       const sanitizedBaseName = path

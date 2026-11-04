@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getTicketById, getTicketByTrackingCode, addTicketComment } from "@/lib/tickets";
+import { hasInlineDataUri, INLINE_DATA_URI_ERROR } from "@/lib/ticket-status";
+import { addTicketComment } from "@/lib/tickets";
+import { requireUser } from "@/lib/auth";
+import { notifyCustomerAboutTicket } from "@/lib/ticket-mail";
+import {
+  findAccessibleTicket,
+  getTicketAccess,
+  getTicketCapabilities,
+  ticketRouteError,
+} from "@/lib/ticket-access";
 
+// POST /api/tickets/[ticketId]/comments -> Nhân viên phản hồi ticket.
+// Khách hàng phản hồi qua /api/tickets/public/[trackingCode]/comments.
 const commentSchema = z.object({
-  authorName: z.string().min(1, "Vui lòng nhập tên người gửi").max(100),
-  authorEmail: z.string().email("Email không hợp lệ").optional().nullable(),
-  message: z.string().min(1, "Nội dung phản hồi không được để trống").max(3000),
-  isStaff: z.boolean().default(false),
+  message: z.string().min(1, "Nội dung phản hồi không được để trống").max(10000, "Nội dung phản hồi quá dài (tối đa 10.000 ký tự)")
+    .refine((v) => !hasInlineDataUri(v), { message: INLINE_DATA_URI_ERROR }),
   isInternalOnly: z.boolean().default(false),
 });
 
@@ -15,14 +24,19 @@ export async function POST(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
+    const user = await requireUser(req);
     const { ticketId } = await params;
-    let ticket = await getTicketById(ticketId);
-    if (!ticket) {
-      ticket = await getTicketByTrackingCode(ticketId);
-    }
 
-    if (!ticket) {
+    const access = await getTicketAccess(user);
+    const row = await findAccessibleTicket(access, ticketId);
+    if (!row) {
       return NextResponse.json({ error: "Không tìm thấy ticket" }, { status: 404 });
+    }
+    if (!getTicketCapabilities(access, row.projectId).canWrite) {
+      return NextResponse.json(
+        { error: "Bạn chỉ có quyền xem ticket này, không thể phản hồi" },
+        { status: 403 }
+      );
     }
 
     const body = await req.json().catch(() => null);
@@ -35,20 +49,22 @@ export async function POST(
     }
 
     const comment = await addTicketComment({
-      ticketId: ticket.id,
-      authorName: parsed.data.authorName,
-      authorEmail: parsed.data.authorEmail,
+      ticketId: row.id,
+      authorName: user.name,
+      authorEmail: user.email,
       message: parsed.data.message,
-      isStaff: parsed.data.isStaff,
+      isStaff: true,
       isInternalOnly: parsed.data.isInternalOnly,
+      actorId: user.id,
     });
+
+    // Phản hồi công khai -> gửi email cho khách hàng (bình luận nội bộ không gửi)
+    if (!parsed.data.isInternalOnly) {
+      notifyCustomerAboutTicket({ ticketId: row.id, kind: "REPLY", replyHtml: parsed.data.message, staffName: user.name });
+    }
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (error) {
-    console.error("Lỗi khi thêm bình luận ticket:", error);
-    return NextResponse.json(
-      { error: "Không thể thêm phản hồi vào lúc này" },
-      { status: 500 }
-    );
+    return ticketRouteError(error, "Lỗi khi thêm bình luận ticket:", "Không thể thêm phản hồi vào lúc này");
   }
 }
