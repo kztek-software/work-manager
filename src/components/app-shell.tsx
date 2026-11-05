@@ -67,6 +67,7 @@ import { useTheme } from "@/lib/theme-context";
 import { prefetchTab } from "@/lib/tab-cache";
 import { useLocalStorageRaw, writeLocalStorage } from "@/lib/client-store";
 import { boardHref } from "@/lib/board-link";
+import { SETTINGS_PERMISSION_KEYS } from "@/lib/permissions";
 
 type ProjectInfo = {
   id: string;
@@ -90,8 +91,14 @@ const PROJECT_GRADIENTS = [
 // Href ghim cũ của Board theo từng dự án (/projects/<id>/board) — nay Board là route cấp ngoài /board
 const LEGACY_BOARD_HREF = /^\/projects\/[^/]+\/board$/;
 
+// Nhóm "Hệ thống & Tích hợp" đã chuyển ra route cấp ngoài (/users, /settings...) — gộp khóa ghim cũ
+// ("project:users" hoặc /projects/<id>/users) về khóa mới để mục đã ghim không bị mất.
+const SYSTEM_PAGE_KEY = /^(?:project:|\/projects\/[^/]+\/)(all-projects|users|settings|notion)$/;
+
 function pinKeyOf(href: string) {
   if (LEGACY_BOARD_HREF.test(href) || href.startsWith("/board")) return "/board";
+  const systemMatch = href.match(SYSTEM_PAGE_KEY);
+  if (systemMatch) return `/${systemMatch[1]}`;
   if (href.startsWith("/my-work")) return "/my-work";
   if (href.startsWith("/tickets")) return "/tickets";
   if (href.endsWith("/my-stats")) return "workspace:my-stats";
@@ -497,25 +504,26 @@ export function AppShell({
 
   const systemNav = [
     {
-      href: `/projects/${project.id}/all-projects`,
+      href: "/all-projects",
       label: "Tất Cả Dự Án",
       icon: FolderKanban,
       visible: isAdmin || can("projects.view_all"),
     },
     {
-      href: `/projects/${project.id}/users`,
+      href: "/users",
       label: "Người Dùng & Phân Quyền",
       icon: Users,
       visible: isAdmin || isOwner || can("users.manage") || can("roles.manage"),
     },
     {
-      href: `/projects/${project.id}/settings`,
+      href: "/settings",
       label: "Cấu hình & Cài đặt",
       icon: Settings,
-      visible: isAdmin || isOwner || can("projects.edit") || can("email.config"),
+      // Theo ma trận phân quyền nhóm "Cấu hình & Cài đặt Hệ thống" (xét theo vai trò hệ thống)
+      visible: isAdmin || SETTINGS_PERMISSION_KEYS.some((key) => can(key)),
     },
     {
-      href: `/projects/${project.id}/notion`,
+      href: "/notion",
       label: "Tích Hợp Notion Hub",
       icon: ArrowRightLeft,
       visible: isAdmin || isOwner || can("notion.migrate"),
@@ -1052,7 +1060,7 @@ export function AppShell({
             <div className="border-t border-line/60 pt-1.5 mt-1 space-y-1">
               {(isAdmin || can("projects.view_all")) && (
                 <Link
-                  href={`/projects/${project.id}/all-projects`}
+                  href="/all-projects"
                   onClick={() => {
                     setProjectMenuOpen(false);
                     if (isMobile) setMobileDrawerOpen(false);
@@ -1499,7 +1507,7 @@ export function AppShell({
                   {/* Quick Navigation Links */}
                   <div className="space-y-1">
                     <Link
-                      href={`/projects/${project.id}/users`}
+                      href="/users"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-2 transition-colors"
                     >
@@ -1508,7 +1516,7 @@ export function AppShell({
                     </Link>
 
                     <Link
-                      href={`/projects/${project.id}/settings`}
+                      href="/settings"
                       onClick={() => setUserMenuOpen(false)}
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-2 transition-colors"
                     >

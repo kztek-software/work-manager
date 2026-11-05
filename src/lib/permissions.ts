@@ -100,10 +100,37 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
     permissions: [
       { key: "users.manage", name: "Quản lý Tài khoản người dùng", description: "Tạo, sửa, cấp lại mật khẩu và xóa user" },
       { key: "roles.manage", name: "Cấu hình Ma trận Phân quyền", description: "Chỉnh sửa quyền và thêm vai trò mới" },
-      { key: "email.config", name: "Cấu hình Email & SMTP", description: "Thiết lập máy chủ gửi email và thông báo" },
+    ],
+  },
+  {
+    id: "settings",
+    name: "Cấu hình & Cài đặt Hệ thống",
+    description: "Quyền xem và chỉnh từng nhóm cấu hình trên trang Cấu hình & Cài đặt (/settings). Chỉ có hiệu lực theo vai trò hệ thống của tài khoản",
+    permissions: [
+      { key: "settings.view", name: "Xem trang Cấu hình", description: "Xem toàn bộ cấu hình (mật khẩu/khóa bí mật luôn bị che) và tab Chẩn đoán & Trạng thái, không được sửa" },
+      { key: "email.config", name: "Cấu hình Email & SMTP", description: "Sửa máy chủ gửi email SMTP và gửi email thử nghiệm" },
+      { key: "settings.branding", name: "Thương hiệu & Base URL", description: "Sửa tên hệ thống, thông tin công ty, hotline và địa chỉ truy cập ứng dụng (dùng trong link email)" },
+      { key: "settings.notifications", name: "Quy tắc Thông báo", description: "Bật/tắt công tắc tổng gửi thông báo và cập nhật thời gian thực" },
+      { key: "settings.zalo", name: "Tích hợp Zalo (ZNS/OA)", description: "Sửa cấu hình Zalo, kết nối OA (OAuth) và gửi tin thử nghiệm" },
+      { key: "settings.discord", name: "Tích hợp Discord", description: "Sửa cấu hình Bot/Webhook Discord và gửi tin thử nghiệm" },
     ],
   },
 ];
+
+// Mỗi tab sửa được trên trang Cấu hình & Cài đặt ứng với 1 quyền. Có bất kỳ quyền sửa nào cũng được xem trang.
+export const SETTINGS_SECTION_PERMISSIONS = {
+  smtp: "email.config",
+  branding: "settings.branding",
+  notifications: "settings.notifications",
+  zalo: "settings.zalo",
+  discord: "settings.discord",
+} as const;
+
+export type SettingsSection = keyof typeof SETTINGS_SECTION_PERMISSIONS;
+export const SETTINGS_SECTIONS = Object.keys(SETTINGS_SECTION_PERMISSIONS) as SettingsSection[];
+
+// Toàn bộ quyền của nhóm Cấu hình & Cài đặt (xem + sửa từng tab)
+export const SETTINGS_PERMISSION_KEYS: string[] = ["settings.view", ...Object.values(SETTINGS_SECTION_PERMISSIONS)];
 
 // Tất cả các permission keys phẳng
 export const ALL_PERMISSION_KEYS: string[] = PERMISSION_CATEGORIES.flatMap((c) =>
@@ -115,6 +142,7 @@ export const ALL_PERMISSION_KEYS: string[] = PERMISSION_CATEGORIES.flatMap((c) =
 export function isSystemLevelPermission(key: string): boolean {
   return (
     key.startsWith("system.") ||
+    key.startsWith("settings.") ||
     key === "users.manage" ||
     key === "roles.manage" ||
     key === "email.config" ||
@@ -122,8 +150,9 @@ export function isSystemLevelPermission(key: string): boolean {
   );
 }
 
-// Quyền được xét CHỈ theo vai trò hệ thống (User.role), không cộng dồn từ vai trò trong dự án
-export const GLOBAL_ROLE_ONLY_PERMISSIONS: string[] = ["tickets.assign"];
+// Quyền được xét CHỈ theo vai trò hệ thống (User.role), không cộng dồn từ vai trò trong dự án.
+// Cấu hình & Cài đặt áp dụng cho toàn hệ thống nên vai trò trong 1 dự án không được cấp các quyền này.
+export const GLOBAL_ROLE_ONLY_PERMISSIONS: string[] = ["tickets.assign", ...SETTINGS_PERMISSION_KEYS];
 
 // Bảng cấu hình mặc định (Default Presets)
 export const DEFAULT_ROLE_PRESETS: {
@@ -148,9 +177,11 @@ export const DEFAULT_ROLE_PRESETS: {
     description: "Toàn quyền trong phạm vi dự án, quản lý công việc, sprint, báo cáo và thành viên",
     color: "#8B5CF6",
     isSystem: true,
-    // Vai trò hệ thống OWNER (tài khoản quản trị) được điều phối ticket.
-    // tickets.assign nằm trong GLOBAL_ROLE_ONLY_PERMISSIONS nên chủ của 1 dự án KHÔNG nhận quyền này qua vai trò dự án.
-    permissions: ALL_PERMISSION_KEYS.filter((k) => !isSystemLevelPermission(k) || k === "tickets.assign"),
+    // Vai trò hệ thống OWNER (tài khoản quản trị) được điều phối ticket và cấu hình hệ thống.
+    // Các quyền này nằm trong GLOBAL_ROLE_ONLY_PERMISSIONS nên chủ của 1 dự án KHÔNG nhận qua vai trò dự án.
+    permissions: ALL_PERMISSION_KEYS.filter(
+      (k) => !isSystemLevelPermission(k) || GLOBAL_ROLE_ONLY_PERMISSIONS.includes(k)
+    ),
   },
   {
     key: "TECH_LEAD",

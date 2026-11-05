@@ -403,7 +403,7 @@ export default function ProjectDashboardPage() {
 
           {hasManageRight && (
             <Link
-              href={`/projects/${projectId}/all-projects`}
+              href="/all-projects"
               className="h-8.5 sm:h-9 px-3 text-xs font-bold border border-accent/40 text-accent hover:bg-accent/10 shadow-sm gap-1.5 inline-flex items-center justify-center rounded-md cursor-pointer transition-colors shrink-0"
             >
               <FolderKanban className="h-3.5 w-3.5 text-accent" />
