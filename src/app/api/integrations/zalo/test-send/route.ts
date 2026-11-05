@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
+import { getSettingsAccess } from "@/lib/settings-access";
 import { prisma } from "@/lib/prisma";
 import { sendOaTextMessage, sendZnsTemplateMessage, ZaloApiError } from "@/lib/zalo/client";
 import { getEffectiveZaloConfig } from "@/lib/system-config";
@@ -20,8 +21,8 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
   }
-  if (user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Chỉ Quản trị viên (ADMIN) mới có quyền gửi thử" }, { status: 403 });
+  if (!(await getSettingsAccess(user)).canEdit.zalo) {
+    return NextResponse.json({ error: "Bạn chưa được cấp quyền Tích hợp Zalo để gửi thử" }, { status: 403 });
   }
 
   const body = await req.json().catch(() => null);

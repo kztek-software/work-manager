@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
 import { getMaskedSystemConfigAsync, updateSystemConfigAsync } from "@/lib/system-config";
+import { getSettingsAccess } from "@/lib/settings-access";
+import { PERMISSION_CATEGORIES, SETTINGS_SECTION_PERMISSIONS, SETTINGS_SECTIONS } from "@/lib/permissions";
+
+function permissionName(key: string): string {
+  for (const cat of PERMISSION_CATEGORIES) {
+    const found = cat.permissions.find((p) => p.key === key);
+    if (found) return found.name;
+  }
+  return key;
+}
 
 export async function GET() {
   try {
@@ -10,16 +20,18 @@ export async function GET() {
       return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
     }
 
-    // Bảo mật: Chỉ ADMIN mới có quyền truy cập cấu hình hệ thống
-    if (user.role !== "ADMIN") {
+    // Phân quyền theo ma trận (nhóm "Cấu hình & Cài đặt Hệ thống"), xét theo vai trò hệ thống
+    const access = await getSettingsAccess(user);
+    if (!access.canView) {
       return NextResponse.json(
-        { error: "Truy cập bị từ chối. Chỉ Quản trị viên (ADMIN) mới có quyền xem cấu hình hệ thống." },
+        { error: "Truy cập bị từ chối. Bạn chưa được cấp quyền xem Cấu hình & Cài đặt hệ thống." },
         { status: 403 }
       );
     }
 
+    // Khóa bí mật luôn được che (getMaskedSystemConfigAsync) kể cả với người có quyền sửa
     const config = await getMaskedSystemConfigAsync();
-    return NextResponse.json({ config, currentUserRole: user.role });
+    return NextResponse.json({ config, access, currentUserRole: user.role });
   } catch (error) {
     console.error("Lỗi khi tải cấu hình hệ thống:", error);
     return NextResponse.json({ error: "Lỗi máy chủ khi lấy cấu hình" }, { status: 500 });
@@ -109,14 +121,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
     }
 
-    // Bảo mật: Chỉ ADMIN mới có quyền lưu cấu hình
-    if (user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Truy cập bị từ chối. Chỉ Quản trị viên (ADMIN) mới có quyền thay đổi cấu hình hệ thống." },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json().catch(() => ({}));
 
     const parsed = updateConfigSchema.safeParse(body);
@@ -124,6 +128,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Dữ liệu cấu hình không hợp lệ", details: parsed.error.issues },
         { status: 400 }
+      );
+    }
+
+    // Mỗi nhóm cấu hình gửi lên phải có quyền sửa tương ứng (ma trận phân quyền)
+    const access = await getSettingsAccess(user);
+    const submitted = SETTINGS_SECTIONS.filter((section) => parsed.data[section] !== undefined);
+    if (submitted.length === 0) {
+      return NextResponse.json({ error: "Không có nhóm cấu hình nào để lưu" }, { status: 400 });
+    }
+    const denied = submitted.filter((section) => !access.canEdit[section]);
+    if (denied.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Truy cập bị từ chối. Bạn chưa được cấp quyền: ${denied
+            .map((section) => permissionName(SETTINGS_SECTION_PERMISSIONS[section]))
+            .join(", ")}.`,
+        },
+        { status: 403 }
       );
     }
 

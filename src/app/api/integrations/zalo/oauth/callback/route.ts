@@ -1,29 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { getSettingsAccess } from "@/lib/settings-access";
 import { exchangeZaloAuthCode, ZaloApiError } from "@/lib/zalo/client";
 import { getAppBaseUrl } from "@/lib/system-config";
 
 /**
- * Zalo redirect người dùng (Admin) về đây sau khi họ đồng ý cấp quyền cho App, kèm `?code=...&state=<projectId>`.
- * `state` được trang Cài đặt gán = projectId hiện tại để biết đường quay lại đúng trang sau khi xử lý.
+ * Zalo redirect người dùng (Admin) về đây sau khi họ đồng ý cấp quyền cho App, kèm `?code=...&state=...`.
  * Route này đổi code lấy access_token/refresh_token và lưu vào SystemSetting, rồi redirect
  * lại trang Cài đặt Hệ thống (tab Zalo) kèm thông báo kết quả.
  */
 export async function GET(req: NextRequest) {
-  const rawState = req.nextUrl.searchParams.get("state") || "";
-  // Chỉ chấp nhận state dạng projectId hợp lệ (chữ/số) để tránh open-redirect ra path lạ
-  const projectId = /^[a-zA-Z0-9_-]+$/.test(rawState) ? rawState : "";
-
   const redirectTo = (status: "connected" | "error", message?: string) => {
-    const url = new URL(`/projects/${projectId || "unknown"}/settings`, getAppBaseUrl());
+    const url = new URL("/settings", getAppBaseUrl());
     url.searchParams.set("zalo_oauth", status);
     if (message) url.searchParams.set("zalo_oauth_message", message);
     return NextResponse.redirect(url);
   };
 
   const currentUser = await getSessionUser(req);
-  if (!currentUser || currentUser.role !== "ADMIN") {
-    return redirectTo("error", "Chỉ Quản trị viên (ADMIN) mới có thể kết nối Zalo OA");
+  if (!currentUser || !(await getSettingsAccess(currentUser)).canEdit.zalo) {
+    return redirectTo("error", "Bạn chưa được cấp quyền Tích hợp Zalo để kết nối Zalo OA");
   }
 
   const code = req.nextUrl.searchParams.get("code");
