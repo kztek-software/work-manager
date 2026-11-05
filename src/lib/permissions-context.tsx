@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { isSystemLevelPermission } from "@/lib/permissions";
 
 type PermissionsContextType = {
   permissions: string[];
@@ -97,13 +98,8 @@ export function PermissionsProvider({
     (perm: string) => {
       if (isAdmin) return true;
       if (isOwner) {
-        // Owner có toàn quyền trong dự án (trừ system.*)
-        const isSystem =
-          perm.startsWith("system.") ||
-          perm === "users.manage" ||
-          perm === "roles.manage" ||
-          perm === "email.config";
-        if (!isSystem) return true;
+        // Owner có toàn quyền trong dự án (trừ quyền cấp hệ thống: system.*, tickets.assign...)
+        if (!isSystemLevelPermission(perm)) return true;
       }
       return permissions.includes(perm);
     },

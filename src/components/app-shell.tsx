@@ -93,6 +93,7 @@ const LEGACY_BOARD_HREF = /^\/projects\/[^/]+\/board$/;
 function pinKeyOf(href: string) {
   if (LEGACY_BOARD_HREF.test(href) || href.startsWith("/board")) return "/board";
   if (href.startsWith("/my-work")) return "/my-work";
+  if (href.startsWith("/tickets")) return "/tickets";
   if (href.endsWith("/my-stats")) return "workspace:my-stats";
   const match = href.match(/^\/projects\/[^/]+\/([a-z0-9-]+)$/);
   if (match) {
@@ -132,11 +133,15 @@ export function AppShell({
   user,
   project,
   projects,
+  canViewTickets,
   children,
 }: {
   user: UserLite;
   project: ProjectInfo;
   projects: { id: string; name: string; key: string; status?: string }[];
+  // Server tính sẵn: có tickets.view ở bất kỳ dự án nào hoặc có tickets.assign (không phụ thuộc dự án đang chọn).
+  // Thiếu prop -> dùng quyền của dự án ngữ cảnh.
+  canViewTickets?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -474,17 +479,21 @@ export function AppShell({
 
   const mainNav = [
     { href: `/projects/${project.id}/dashboard`, label: "Dashboard Dự Án", icon: LayoutDashboard },
-    { href: `/projects/${project.id}/tickets`, label: "Hộp Thư Ticket KH", icon: LifeBuoy },
     { href: `/projects/${project.id}/sprints`, label: "Sprints & Kế Hoạch", icon: Rocket },
     { href: `/projects/${project.id}/reports`, label: "Báo Cáo & KPI", icon: BarChart3 },
   ];
 
-  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work), và số liệu tổng hợp
+  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work) và số liệu tổng hợp
   const workspaceNav = [
     { href: boardHref(project.id), label: "Board Công Việc", icon: KanbanSquare },
     { href: `/my-work?projectId=${project.id}`, label: "Việc Của Tôi", icon: CheckSquare },
     { href: `/projects/${project.id}/my-stats`, label: "Thống Kê Công Việc", icon: TrendingUp },
   ];
+
+  // Nhóm riêng "Hỗ trợ khách hàng": Ticket Khách Hàng (/tickets — module riêng, dự án chỉ là thuộc tính/bộ lọc)
+  const supportNav = (canViewTickets ?? can("tickets.view"))
+    ? [{ href: "/tickets", label: "Ticket Khách Hàng", icon: LifeBuoy }]
+    : [];
 
   const systemNav = [
     {
@@ -663,6 +672,7 @@ export function AppShell({
         (pathname === `/projects/${project.id}` || pathname === `/projects/${project.id}/dashboard`))
     );
   });
+  const hasActiveInSupport = supportNav.length > 0 && pathname.startsWith("/tickets");
   const hasActiveInSystem = systemNav.some((item) => item.visible && pathname === item.href);
 
   // Compute current page label once — used for both breadcrumb text and title tooltip
@@ -672,7 +682,7 @@ export function AppShell({
     pathname.endsWith("/sprints") ? "Sprints & Kế Hoạch" :
     pathname.endsWith("/reports") ? "Báo Cáo & KPI" :
     pathname.endsWith("/my-stats") ? "Thống Kê Công Việc" :
-    pathname.endsWith("/tickets") ? "Tickets Khách Hàng" :
+    pathname.startsWith("/tickets") ? "Ticket Khách Hàng" :
     pathname.endsWith("/notion") ? "Tích Hợp Notion Hub" :
     pathname.endsWith("/users") ? "Người Dùng & Phân Quyền" :
     pathname.endsWith("/settings") ? "Cấu Hình Hệ Thống" :
@@ -681,12 +691,13 @@ export function AppShell({
     "";
 
   // Danh sách phẳng toàn bộ mục nav (đã lọc visible) — dùng để tra cứu icon/label cho mục đã ghim
-  const allVisibleNavItems = [...workspaceNav, ...mainNav, ...systemNav.filter((item) => item.visible)];
+  const allVisibleNavItems = [...workspaceNav, ...supportNav, ...mainNav, ...systemNav.filter((item) => item.visible)];
   // Board Công Việc (/board) và Việc Của Tôi (/my-work) không thuộc riêng 1 dự án -> breadcrumb hiển thị danh mục Công Việc
   const isBoardPage = pathname === "/board" || pathname.startsWith("/board");
   const isMyWorkPage = pathname === "/my-work" || pathname.startsWith("/my-work");
-  // Trang thuộc nhóm "Công việc" -> breadcrumb không hiển thị như trang con của dự án
-  const isWorkspacePage = isBoardPage || isMyWorkPage || pathname.endsWith("/my-stats");
+  // Trang thuộc nhóm "Công việc" / "Hỗ trợ khách hàng" -> breadcrumb không hiển thị như trang con của dự án
+  const isTicketsPage = pathname === "/tickets" || pathname.startsWith("/tickets/");
+  const isWorkspacePage = isBoardPage || isMyWorkPage || isTicketsPage || pathname.endsWith("/my-stats");
   const pinnedNavItems = pinnedHrefs
     .map((href) => allVisibleNavItems.find((item) => pinKeyOf(item.href) === href))
     .filter((item): item is (typeof allVisibleNavItems)[number] => Boolean(item));
@@ -721,9 +732,8 @@ export function AppShell({
         prefetchTab(`/api/roles`);
       } else if (item.href.endsWith("/all-projects")) {
         prefetchTab(`/api/projects`);
-      } else if (item.href.endsWith("/tickets")) {
-        prefetchTab(`/api/projects/${project.id}/tickets`);
       }
+      // /tickets render dữ liệu phía server (không dùng tab-cache) -> chỉ cần Link prefetch mặc định
     };
 
     return (
@@ -1120,6 +1130,35 @@ export function AppShell({
           )}
         </div>
 
+        {/* Customer Support Section — module Ticket tách riêng, không phụ thuộc dự án đang chọn */}
+        {supportNav.length > 0 && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => toggleSection("support")}
+              className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+            >
+              <div className="flex items-center gap-1.5">
+                <span>Hỗ trợ khách hàng</span>
+                {collapsedSections["support"] && hasActiveInSupport && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" title="Đang mở trang trong nhóm này" />
+                )}
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                  collapsedSections["support"] && "-rotate-90 text-muted/60"
+                )}
+              />
+            </button>
+            {!collapsedSections["support"] && (
+              <div className="space-y-0.5 animate-in fade-in-50 duration-150">
+                {supportNav.map((item) => renderNavItem(item, isMobile))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Main Workspace Section */}
         <div className="space-y-1">
           <button
@@ -1310,6 +1349,11 @@ export function AppShell({
               <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
                 <CheckSquare className="h-3.5 w-3.5 text-accent" />
                 Công việc
+              </span>
+            ) : isTicketsPage ? (
+              <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
+                <LifeBuoy className="h-3.5 w-3.5 text-accent" />
+                Hỗ trợ khách hàng
               </span>
             ) : isWorkspacePage ? (
               <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
@@ -1569,17 +1613,6 @@ export function AppShell({
           <span>Sprints</span>
         </Link>
 
-        <Link
-          href={`/projects/${project.id}/tickets`}
-          className={cn(
-            "flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition-all duration-150 active:scale-90 cursor-pointer",
-            pathname.endsWith("/tickets") ? "text-accent font-bold" : "text-muted hover:text-foreground"
-          )}
-        >
-          <LifeBuoy className={cn("h-5 w-5 mb-0.5", pathname.endsWith("/tickets") && "text-accent")} />
-          <span>Tickets</span>
-        </Link>
-
         <button
           type="button"
           onClick={() => setMobileDrawerOpen(true)}
@@ -1753,7 +1786,7 @@ export function AppShell({
               files={newProjectAttachments}
               onChange={setNewProjectAttachments}
               label="Tài liệu, hình ảnh & video dự án (Tùy chọn)"
-              helperText="Hỗ trợ đính kèm tài liệu đặc tả, bản vẽ sơ đồ hoặc video demo (PNG, JPG, WebP, MP4, WebM, MOV, PDF, Word, Excel, Zip... Tối đa 25MB/file & 100MB/video)"
+              helperText="Hỗ trợ đính kèm tài liệu đặc tả, bản vẽ sơ đồ hoặc video demo (PNG, JPG, WebP, MP4, WebM, MOV, PDF, Word, Excel, Zip... Tối đa dưới 50MB/tệp)"
               maxFiles={10}
             />
           </div>

@@ -452,13 +452,18 @@ export async function GET(
       ticketStatusCountMap[row.status] = row._count._all;
       totalTickets += row._count._all;
     }
+    // Luồng trạng thái ticket: src/lib/ticket-status.ts
     const openTickets = ticketStatusCountMap["OPEN"] ?? 0;
+    const acknowledgedTickets = ticketStatusCountMap["ACKNOWLEDGED"] ?? 0;
     const triagedTickets = ticketStatusCountMap["TRIAGED"] ?? 0;
     const inProgressTickets = ticketStatusCountMap["IN_PROGRESS"] ?? 0;
-    const resolvedTickets = ticketStatusCountMap["RESOLVED"] ?? 0;
     const closedTickets = ticketStatusCountMap["CLOSED"] ?? 0;
+    const cancelledTickets = ticketStatusCountMap["CANCELLED"] ?? 0;
+    // Tỉ lệ giải quyết = Đã đóng / (Tổng - Đã hủy): ticket Đã hủy không phải "đã xử lý xong",
+    // nên loại khỏi cả tử lẫn mẫu (số Đã hủy vẫn trả riêng trong ticketStats.cancelled)
+    const resolvableTickets = totalTickets - cancelledTickets;
     const ticketResolutionRate =
-      totalTickets > 0 ? Math.round(((resolvedTickets + closedTickets) / totalTickets) * 100) : 0;
+      resolvableTickets > 0 ? Math.round((closedTickets / resolvableTickets) * 100) : 0;
 
     // ── 10. Assemble response — shape identical to previous version ───────────────
     const dashboardData: ProjectDashboardData = {
@@ -533,10 +538,11 @@ export async function GET(
       ticketStats: {
         total: totalTickets,
         open: openTickets,
+        acknowledged: acknowledgedTickets,
         triaged: triagedTickets,
         inProgress: inProgressTickets,
-        resolved: resolvedTickets,
         closed: closedTickets,
+        cancelled: cancelledTickets,
         resolutionRate: ticketResolutionRate,
       },
     };

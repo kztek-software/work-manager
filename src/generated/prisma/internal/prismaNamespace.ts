@@ -2255,6 +2255,14 @@ export const CustomerTicketScalarFieldEnum = {
   internalNotes: 'internalNotes',
   resolutionNotes: 'resolutionNotes',
   resolvedAt: 'resolvedAt',
+  closeReason: 'closeReason',
+  closedById: 'closedById',
+  acknowledgedAt: 'acknowledgedAt',
+  acknowledgedById: 'acknowledgedById',
+  priorityConfirmedAt: 'priorityConfirmedAt',
+  priorityConfirmedById: 'priorityConfirmedById',
+  startedAt: 'startedAt',
+  assigneeId: 'assigneeId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

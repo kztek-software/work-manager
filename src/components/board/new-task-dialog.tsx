@@ -691,7 +691,7 @@ export function NewTaskDialog({
               compact={true}
               maxFiles={10}
               label=""
-              helperText="Hỗ trợ ảnh chụp, video lỗi và tài liệu (Tối đa 25MB/tệp, 100MB/video)"
+              helperText="Hỗ trợ ảnh chụp, video lỗi và tài liệu (Tối đa dưới 50MB/tệp)"
             />
           </div>
 

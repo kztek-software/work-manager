@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { canManageMembers } from "@/lib/permissions";
 import { checkUserPermission } from "@/lib/permissions-server";
+import { publishTicketEvent } from "@/lib/tickets";
+import { computeAutoStatus } from "@/lib/ticket-status";
 
 export async function GET(
   req: NextRequest,
@@ -189,6 +191,9 @@ export async function DELETE(
       return NextResponse.json({ error: permCheck.reason || "Chỉ Chủ dự án hoặc Quản trị viên mới có thể xóa dự án này" }, { status: 403 });
     }
 
+    // Ticket bị bỏ gán / gỡ task — phát realtime sau khi transaction commit
+    let affectedTickets: { id: string; prevProjectId: string | null }[] = [];
+
     // Xóa toàn bộ dữ liệu phụ thuộc một cách an toàn và triệt để trong Transaction
     await prisma.$transaction(async (tx) => {
       // 1. Tìm tất cả task IDs trong project
@@ -206,21 +211,51 @@ export async function DELETE(
         await tx.attachment.deleteMany({ where: { taskId: { in: taskIds } } });
       }
 
-      // 2. Tìm tất cả customer tickets trong project
+      // 2. Ticket khách hàng là module riêng: KHÔNG xóa ticket / comment / attachment của ticket.
+      //    Bỏ gán dự án để ticket quay lại hàng chờ điều phối; gỡ liên kết task đã convert (task sắp bị xóa,
+      //    FK convertedTaskId là NoAction nên phải gỡ trước khi xóa task).
       const tickets = await tx.customerTicket.findMany({
-        where: { projectId: resolvedProjectId },
-        select: { id: true },
+        where: {
+          OR: [
+            { projectId: resolvedProjectId },
+            ...(taskIds.length > 0 ? [{ convertedTaskId: { in: taskIds } }] : []),
+          ],
+        },
+        select: { id: true, projectId: true, status: true, acknowledgedAt: true, priorityConfirmedAt: true },
       });
-      const ticketIds = tickets.map((t) => t.id);
 
-      if (ticketIds.length > 0) {
-        await tx.ticketComment.deleteMany({ where: { ticketId: { in: ticketIds } } });
-        await tx.attachment.deleteMany({ where: { ticketId: { in: ticketIds } } });
-        await tx.customerTicket.deleteMany({ where: { projectId: resolvedProjectId } });
+      for (const t of tickets) {
+        const inThisProject = t.projectId === resolvedProjectId;
+        // Ticket của dự án bị xóa: bỏ dự án + người xử lý; trạng thái đang xử lý dở lùi theo luồng
+        // (Đã phân loại / Đang xử lý -> Đã tiếp nhận). Ticket đã Đóng / Hủy giữ nguyên.
+        const nextStatus = inThisProject
+          ? computeAutoStatus({ ...t, projectId: null, assigneeId: null }).status
+          : t.status;
+        await tx.customerTicket.update({
+          where: { id: t.id },
+          data: {
+            convertedTaskId: null,
+            ...(inThisProject ? { projectId: null, assigneeId: null, status: nextStatus } : {}),
+          },
+        });
       }
 
-      // 3. Xóa các thực thể cấp dự án
-      await tx.attachment.deleteMany({ where: { projectId: resolvedProjectId } });
+      const unassignedTicketIds = tickets.filter((t) => t.projectId === resolvedProjectId).map((t) => t.id);
+      if (unassignedTicketIds.length > 0) {
+        await tx.ticketComment.createMany({
+          data: unassignedTicketIds.map((ticketId) => ({
+            ticketId,
+            authorName: user.name,
+            isStaff: true,
+            isInternalOnly: true,
+            message: `[Điều phối hệ thống] Dự án ${project.name} (${project.key}) đã bị xóa — ticket được bỏ gán dự án và chờ điều phối lại.`,
+          })),
+        });
+      }
+      affectedTickets = tickets.map((t) => ({ id: t.id, prevProjectId: t.projectId }));
+
+      // 3. Xóa các thực thể cấp dự án (giữ nguyên attachment gắn với ticket)
+      await tx.attachment.deleteMany({ where: { projectId: resolvedProjectId, ticketId: null } });
       await tx.task.deleteMany({ where: { projectId: resolvedProjectId } });
       await tx.sprint.deleteMany({ where: { projectId: resolvedProjectId } });
       await tx.label.deleteMany({ where: { projectId: resolvedProjectId } });
@@ -229,6 +264,14 @@ export async function DELETE(
       // 4. Xóa chính Project
       await tx.project.delete({ where: { id: resolvedProjectId } });
     });
+
+    for (const t of affectedTickets) {
+      publishTicketEvent(
+        { type: "TICKET_UPDATED", ticketId: t.id, actorId: user.id },
+        t.prevProjectId === resolvedProjectId ? null : t.prevProjectId,
+        t.prevProjectId === resolvedProjectId ? resolvedProjectId : null
+      );
+    }
 
     return NextResponse.json({ ok: true, message: `Đã xóa vĩnh viễn dự án ${project.name}` });
   } catch (err: any) {

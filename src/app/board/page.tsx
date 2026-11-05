@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
 import { PermissionsProvider } from "@/lib/permissions-context";
 import { getUserPermissionContext } from "@/lib/permissions-server";
+import { canUserViewTicketModule } from "@/lib/ticket-access";
 import { parseBoardProjectsParam } from "@/lib/board-access";
 import { BoardView } from "./board-view";
 
@@ -54,7 +55,7 @@ export default async function BoardPage({
     memberProjectIds[0] ||
     projects[0].id;
 
-  const [contextProject, permCtx] = await Promise.all([
+  const [contextProject, permCtx, canViewTickets] = await Promise.all([
     prisma.project.findUnique({
       where: { id: contextProjectId },
       include: {
@@ -74,6 +75,7 @@ export default async function BoardPage({
       },
     }),
     getUserPermissionContext(user.id, contextProjectId, user.role),
+    canUserViewTicketModule(user),
   ]);
   if (!contextProject) redirect("/");
 
@@ -101,6 +103,7 @@ export default async function BoardPage({
           })),
         }}
         projects={projects}
+        canViewTickets={canViewTickets}
       >
         <BoardView
           userId={user.id}

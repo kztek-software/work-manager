@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { findAccessibleTicket, getTicketAccess, getTicketCapabilities } from "@/lib/ticket-access";
 
 export async function DELETE(
   req: NextRequest,
@@ -23,32 +24,44 @@ export async function DELETE(
       return NextResponse.json({ error: "Không tìm thấy tệp đính kèm" }, { status: 404 });
     }
 
-    // Kiểm tra quyền xóa: ADMIN | Người tải lên (uploader) | Quản lý dự án (OWNER / MANAGER)
-    let canDelete = false;
-
-    if (user.role === "ADMIN") {
-      canDelete = true;
-    } else if (attachment.uploaderId && attachment.uploaderId === user.id) {
-      canDelete = true;
-    } else if (attachment.projectId) {
-      const membership = await prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: {
-            projectId: attachment.projectId,
-            userId: user.id,
-          },
-        },
-      });
-      if (membership && (membership.role === "OWNER" || membership.role === "MANAGER")) {
-        canDelete = true;
+    // Tệp của ticket: kiểm tra phạm vi xem & quyền xử lý ticket
+    if (attachment.ticketId) {
+      const access = await getTicketAccess(user);
+      const ticket = await findAccessibleTicket(access, attachment.ticketId);
+      if (!ticket) {
+        return NextResponse.json({ error: "Không tìm thấy tệp đính kèm" }, { status: 404 });
       }
-    }
+      if (!getTicketCapabilities(access, ticket.projectId).canWrite) {
+        return NextResponse.json({ error: "Bạn chỉ có quyền xem ticket này" }, { status: 403 });
+      }
+    } else {
+      // Kiểm tra quyền xóa: ADMIN | Người tải lên (uploader) | Quản lý dự án (OWNER / MANAGER)
+      let canDelete = false;
 
-    if (!canDelete) {
-      return NextResponse.json(
-        { error: "Bạn không có quyền xóa tệp đính kèm này" },
-        { status: 403 }
-      );
+      if (user.role === "ADMIN") {
+        canDelete = true;
+      } else if (attachment.uploaderId && attachment.uploaderId === user.id) {
+        canDelete = true;
+      } else if (attachment.projectId) {
+        const membership = await prisma.projectMember.findUnique({
+          where: {
+            projectId_userId: {
+              projectId: attachment.projectId,
+              userId: user.id,
+            },
+          },
+        });
+        if (membership && (membership.role === "OWNER" || membership.role === "MANAGER")) {
+          canDelete = true;
+        }
+      }
+
+      if (!canDelete) {
+        return NextResponse.json(
+          { error: "Bạn không có quyền xóa tệp đính kèm này" },
+          { status: 403 }
+        );
+      }
     }
 
     await prisma.attachment.delete({

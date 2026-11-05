@@ -23,6 +23,12 @@ import {
   Check,
 } from "lucide-react";
 import { Dropdown } from "primereact/dropdown";
+import {
+  TICKET_CANCEL_REASONS,
+  TICKET_CLOSE_REASONS,
+  plainTextToHtml,
+  ticketStatusLabel,
+} from "@/lib/ticket-status";
 
 // Ghi cookie + chuyển trang nằm ngoài component: react-hooks/immutability không
 // cho gán biến toàn cục (document/window) bên trong component.
@@ -241,24 +247,62 @@ export default function MobileSimulatorPage() {
     }
   };
 
-  const handleResolveTicket = async (ticketId: string) => {
-    if (!token) return;
+  // Dialog Đóng / Hủy ticket: bắt buộc lý do (danh sách chung) + mô tả (gửi email kết quả cho khách)
+  const [finishDialog, setFinishDialog] = useState<{ ticketId: string; kind: "close" | "cancel" } | null>(null);
+  const [finishReason, setFinishReason] = useState("");
+  const [finishDescription, setFinishDescription] = useState("");
+  const [finishError, setFinishError] = useState("");
+  const [finishing, setFinishing] = useState(false);
+
+  const openFinishDialog = (ticketId: string, kind: "close" | "cancel") => {
+    setFinishDialog({ ticketId, kind });
+    setFinishReason("");
+    setFinishDescription("");
+    setFinishError("");
+  };
+
+  const handleSubmitFinish = async () => {
+    if (!token || !finishDialog) return;
+    if (!finishReason) {
+      setFinishError(finishDialog.kind === "close" ? "Vui lòng chọn lý do đóng" : "Vui lòng chọn lý do hủy");
+      return;
+    }
+    if (!finishDescription.trim()) {
+      setFinishError("Vui lòng nhập mô tả gửi cho khách hàng");
+      return;
+    }
+    setFinishing(true);
+    setFinishError("");
     try {
-      await fetch(`/api/tickets/${ticketId}`, {
-        method: "PATCH",
+      const res = await fetch(`/api/tickets/${finishDialog.ticketId}/actions`, {
+        method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status: "RESOLVED" }),
+        body: JSON.stringify({
+          action: finishDialog.kind,
+          reason: finishReason,
+          // Mô tả text thuần -> HTML an toàn (escape + xuống dòng thành <br>)
+          description: plainTextToHtml(finishDescription.trim()),
+        }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setFinishError(data.error || "Không thể cập nhật ticket");
+        return;
+      }
+      setFinishDialog(null);
       const ticketRes = await fetch("/api/tickets", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const ticketData = await ticketRes.json();
       setTickets(ticketData.tickets || []);
     } catch (err) {
-      console.error("Error resolving ticket:", err);
+      console.error("Error finishing ticket:", err);
+      setFinishError("Lỗi kết nối máy chủ");
+    } finally {
+      setFinishing(false);
     }
   };
 
@@ -676,14 +720,16 @@ export default function MobileSimulatorPage() {
                           <span className="text-xs font-bold text-[#F05922]">{t.trackingCode}</span>
                           <span
                             className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              t.status === "RESOLVED"
+                              t.status === "CLOSED"
                                 ? "bg-emerald-100 text-emerald-800"
+                                : t.status === "CANCELLED"
+                                ? "bg-slate-100 text-slate-700"
                                 : t.status === "OPEN"
                                 ? "bg-orange-100 text-orange-700"
                                 : "bg-amber-100 text-amber-800"
                             }`}
                           >
-                            {t.status}
+                            {ticketStatusLabel(t.status)}
                           </span>
                         </div>
 
@@ -692,18 +738,83 @@ export default function MobileSimulatorPage() {
 
                         <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
                           <span className="text-slate-500">KH: {t.customerName}</span>
-                          {t.status !== "RESOLVED" && (
-                            <button
-                              onClick={() => handleResolveTicket(t.id)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
-                            >
-                              Hoàn tất ✓
-                            </button>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {t.capabilities?.canCancel && (
+                              <button
+                                onClick={() => openFinishDialog(t.id, "cancel")}
+                                className="px-2.5 py-1 border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold rounded-lg"
+                              >
+                                Hủy
+                              </button>
+                            )}
+                            {t.capabilities?.canClose && (
+                              <button
+                                onClick={() => openFinishDialog(t.id, "close")}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                              >
+                                Đóng ✓
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  {finishDialog && (
+                    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-3">
+                      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-4 space-y-3">
+                        <div className="text-sm font-bold text-[#251C53]">
+                          {finishDialog.kind === "close" ? "Đóng ticket" : "Hủy ticket"}
+                        </div>
+                        {finishError && (
+                          <div className="text-xs font-semibold text-[#C2410C] bg-[#FFF1EA] border border-[#FFAA80] rounded-lg px-2.5 py-2">
+                            {finishError}
+                          </div>
+                        )}
+                        <label className="block text-xs font-semibold text-slate-700 space-y-1">
+                          <span>{finishDialog.kind === "close" ? "Lý do đóng *" : "Lý do hủy *"}</span>
+                          <select
+                            value={finishReason}
+                            onChange={(e) => setFinishReason(e.target.value)}
+                            className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2 text-xs text-slate-800"
+                          >
+                            <option value="">-- Chọn lý do --</option>
+                            {(finishDialog.kind === "close" ? TICKET_CLOSE_REASONS : TICKET_CANCEL_REASONS).map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block text-xs font-semibold text-slate-700 space-y-1">
+                          <span>Mô tả gửi cho khách hàng *</span>
+                          <textarea
+                            value={finishDescription}
+                            onChange={(e) => setFinishDescription(e.target.value)}
+                            rows={4}
+                            className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs text-slate-800"
+                            placeholder="Mô tả kết quả xử lý / lý do..."
+                          />
+                        </label>
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            onClick={() => setFinishDialog(null)}
+                            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 text-slate-600"
+                          >
+                            Quay lại
+                          </button>
+                          <button
+                            onClick={handleSubmitFinish}
+                            disabled={finishing}
+                            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-[#F05922] hover:bg-[#d94d1b] text-white disabled:opacity-60"
+                          >
+                            {finishing ? "Đang gửi..." : finishDialog.kind === "close" ? "Đóng & gửi email" : "Hủy & gửi email"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

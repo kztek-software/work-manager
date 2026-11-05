@@ -116,8 +116,46 @@ async function runTests() {
     const ticketsRes = await fetch(`${BASE_URL}/api/tickets`, { headers: authHeaders });
     assert(ticketsRes.status === 200, `Tickets status 200 (Got: ${ticketsRes.status})`);
     const ticketsData = await ticketsRes.json();
-    const tickets = ticketsData.tickets || ticketsData;
-    assert(Array.isArray(tickets), `Tickets retrieved (${tickets.length} tickets found)`);
+    const tickets = ticketsData.tickets || [];
+    assert(Array.isArray(ticketsData.tickets), `Tickets retrieved (${tickets.length} tickets found)`);
+    // Module Ticket mới: response kèm danh sách dự án lọc + cờ quyền; admin luôn có tickets.assign
+    assert(Array.isArray(ticketsData.projects), "Tickets response includes project filter options");
+    assert(ticketsData.canAssign === true, "Admin has tickets.assign (sees all tickets, incl. unassigned)");
+    assert(tickets.every((t) => t.capabilities && typeof t.capabilities.canWrite === "boolean"), "Each ticket carries capabilities");
+
+    // 8b. Bộ lọc ticket chưa gán (không phân biệt hoa thường)
+    console.log("\n--- 8b. Testing GET /api/tickets?projectId=unassigned ---");
+    const unassignedRes = await fetch(`${BASE_URL}/api/tickets?projectId=unassigned`, { headers: authHeaders });
+    assert(unassignedRes.status === 200, `Unassigned tickets status 200 (Got: ${unassignedRes.status})`);
+    const unassignedData = await unassignedRes.json();
+    assert(
+      (unassignedData.tickets || []).every((t) => !t.projectId),
+      "Unassigned filter returns only tickets without project"
+    );
+
+    // 8c. Chi tiết ticket nội bộ bắt buộc đăng nhập; tra cứu công khai không lộ dữ liệu nội bộ
+    if (tickets.length > 0) {
+      const sampleTicket = tickets[0];
+      console.log(`\n--- 8c. Testing GET /api/tickets/${sampleTicket.id} (auth + public lookup) ---`);
+      const anonRes = await fetch(`${BASE_URL}/api/tickets/${sampleTicket.id}`);
+      assert(anonRes.status === 401, `Internal ticket detail requires auth (Got: ${anonRes.status})`);
+
+      const detailRes = await fetch(`${BASE_URL}/api/tickets/${sampleTicket.id}`, { headers: authHeaders });
+      assert(detailRes.status === 200, `Ticket detail with Bearer token status 200 (Got: ${detailRes.status})`);
+
+      const publicRes = await fetch(`${BASE_URL}/api/tickets/public/${encodeURIComponent(sampleTicket.trackingCode)}`);
+      assert(publicRes.status === 200, `Public tracking lookup status 200 (Got: ${publicRes.status})`);
+      const publicData = await publicRes.json();
+      const pub = publicData.ticket || {};
+      assert(
+        pub.project === undefined && pub.projectId === undefined && pub.internalNotes === undefined,
+        "Public lookup hides internal project & notes"
+      );
+      assert(
+        (pub.comments || []).every((c) => !c.isInternalOnly && !c.authorEmail),
+        "Public lookup hides internal comments & author emails"
+      );
+    }
 
     // 9. Test GET /api/notifications
     console.log("\n--- 9. Testing GET /api/notifications ---");

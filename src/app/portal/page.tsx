@@ -46,11 +46,7 @@ const priorityOptions = [
   { id: "URGENT", label: "Khẩn cấp", desc: "Hệ thống dừng hoàn toàn", color: "text-accent border-accent/40 hover:bg-accent-subtle font-bold" },
 ] as const;
 
-export default function CustomerPortalPage({
-  initialProjectKey,
-}: {
-  initialProjectKey?: string;
-} = {}) {
+export default function CustomerPortalPage() {
   const router = useRouter();
 
   // Search state
@@ -87,7 +83,7 @@ export default function CustomerPortalPage({
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!searchCode.trim()) {
-      setSearchError("Vui lòng nhập mã tra cứu (VD: TK-20260818-XXXX)");
+      setSearchError("Vui lòng nhập mã tra cứu (VD: 7KQ4M2XA)");
       return;
     }
     setSearchError("");
@@ -125,7 +121,6 @@ export default function CustomerPortalPage({
         body: JSON.stringify({
           type,
           priority,
-          projectKey: initialProjectKey || null,
           customerName: customerName.trim(),
           customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim() || null,
@@ -228,7 +223,7 @@ export default function CustomerPortalPage({
                 <Input
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value)}
-                  placeholder="Nhập mã tra cứu (VD: TK-20260818-XXXX)..."
+                  placeholder="Nhập mã tra cứu 8 ký tự (VD: 7KQ4M2XA)..."
                   className="pl-10 h-11 bg-surface-3/90 border-line focus:border-accent font-mono text-xs sm:text-sm uppercase"
                 />
               </div>
@@ -243,12 +238,12 @@ export default function CustomerPortalPage({
         {/* Success View */}
         {submittedTicket ? (
           <div className="p-8 sm:p-10 rounded-2xl border border-emerald-500/30 bg-surface/95 shadow-2xl animate-fade-in-up text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 border border-emerald-500/30">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 [[data-theme=light]_&]:text-emerald-700 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20 border border-emerald-500/30">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 [[data-theme=light]_&]:text-emerald-700 border border-emerald-500/30">
                 Gửi báo lỗi thành công
               </span>
               <h2 className="text-2xl font-black text-foreground tracking-tight">
@@ -460,6 +455,7 @@ export default function CustomerPortalPage({
                   </div>
 
                   <WysiwygEditor
+                    uploadUrl="/api/tickets/public/upload"
                     value={description}
                     onChange={setDescription}
                     placeholder="Mô tả cụ thể: 1. Bạn đang thao tác ở màn hình nào? 2. Các bước thực hiện gây ra lỗi? 3. Kết quả mong đợi và kết quả thực tế xảy ra? (Định dạng trực quan: in đậm, màu chữ, 1. 2. 3....)"
@@ -469,6 +465,7 @@ export default function CustomerPortalPage({
 
                 {/* Upload File / Ảnh / Video lỗi bên cạnh mô tả */}
                 <FileUploadZone
+                  uploadUrl="/api/tickets/public/upload"
                   files={attachments}
                   onChange={setAttachments}
                   maxFiles={8}

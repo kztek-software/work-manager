@@ -523,11 +523,11 @@ export default function ProjectDashboardPage() {
             <div className="flex items-baseline justify-between mt-1">
               <span className="text-xl font-black text-purple-600 leading-none">{ticketStats.resolutionRate}%</span>
               <span className="text-[10px] text-muted font-medium">
-                {ticketStats.resolved + ticketStats.closed}/{ticketStats.total} xong
+                {ticketStats.closed}/{ticketStats.total - ticketStats.cancelled} xong
               </span>
             </div>
             <div className="mt-1.5 flex items-center justify-between text-[9px] text-muted">
-              <span>Mở: {ticketStats.open + ticketStats.triaged}</span>
+              <span>Mở: {ticketStats.open + ticketStats.acknowledged + ticketStats.triaged}</span>
               <span>Đang sửa: {ticketStats.inProgress}</span>
             </div>
           </div>

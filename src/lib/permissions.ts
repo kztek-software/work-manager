@@ -82,6 +82,7 @@ export const PERMISSION_CATEGORIES: PermissionCategory[] = [
       { key: "tickets.reply", name: "Phản hồi & Trao đổi", description: "Gửi phản hồi và bình luận trong ticket" },
       { key: "tickets.convert", name: "Chuyển Ticket thành Task", description: "Chuyển đổi yêu cầu khách hàng thành task trên Board" },
       { key: "tickets.delete", name: "Đóng & Xóa Ticket", description: "Đóng phiếu xử lý hoặc xóa vé rác" },
+      { key: "tickets.assign", name: "Gán / Điều phối dự án cho Ticket", description: "Xem toàn bộ ticket (kể cả chưa gán) và gán, đổi hoặc bỏ gán dự án phụ trách. Chỉ có hiệu lực theo vai trò hệ thống của tài khoản" },
     ],
   },
   {
@@ -109,6 +110,21 @@ export const ALL_PERMISSION_KEYS: string[] = PERMISSION_CATEGORIES.flatMap((c) =
   c.permissions.map((p) => p.key)
 );
 
+// Quyền cấp hệ thống: Chủ dự án (Owner) KHÔNG tự động có các quyền này.
+// tickets.assign cho phép xem/điều phối ticket của MỌI dự án nên không được cấp theo quyền Owner của 1 dự án.
+export function isSystemLevelPermission(key: string): boolean {
+  return (
+    key.startsWith("system.") ||
+    key === "users.manage" ||
+    key === "roles.manage" ||
+    key === "email.config" ||
+    key === "tickets.assign"
+  );
+}
+
+// Quyền được xét CHỈ theo vai trò hệ thống (User.role), không cộng dồn từ vai trò trong dự án
+export const GLOBAL_ROLE_ONLY_PERMISSIONS: string[] = ["tickets.assign"];
+
 // Bảng cấu hình mặc định (Default Presets)
 export const DEFAULT_ROLE_PRESETS: {
   key: string;
@@ -132,9 +148,9 @@ export const DEFAULT_ROLE_PRESETS: {
     description: "Toàn quyền trong phạm vi dự án, quản lý công việc, sprint, báo cáo và thành viên",
     color: "#8B5CF6",
     isSystem: true,
-    permissions: ALL_PERMISSION_KEYS.filter(
-      (k) => !k.startsWith("system.") && k !== "users.manage" && k !== "roles.manage" && k !== "email.config"
-    ),
+    // Vai trò hệ thống OWNER (tài khoản quản trị) được điều phối ticket.
+    // tickets.assign nằm trong GLOBAL_ROLE_ONLY_PERMISSIONS nên chủ của 1 dự án KHÔNG nhận quyền này qua vai trò dự án.
+    permissions: ALL_PERMISSION_KEYS.filter((k) => !isSystemLevelPermission(k) || k === "tickets.assign"),
   },
   {
     key: "TECH_LEAD",

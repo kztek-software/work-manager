@@ -42,6 +42,14 @@ export type CustomerTicketMinAggregateOutputType = {
   internalNotes: string | null
   resolutionNotes: string | null
   resolvedAt: Date | null
+  closeReason: string | null
+  closedById: string | null
+  acknowledgedAt: Date | null
+  acknowledgedById: string | null
+  priorityConfirmedAt: Date | null
+  priorityConfirmedById: string | null
+  startedAt: Date | null
+  assigneeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,6 +72,14 @@ export type CustomerTicketMaxAggregateOutputType = {
   internalNotes: string | null
   resolutionNotes: string | null
   resolvedAt: Date | null
+  closeReason: string | null
+  closedById: string | null
+  acknowledgedAt: Date | null
+  acknowledgedById: string | null
+  priorityConfirmedAt: Date | null
+  priorityConfirmedById: string | null
+  startedAt: Date | null
+  assigneeId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -86,6 +102,14 @@ export type CustomerTicketCountAggregateOutputType = {
   internalNotes: number
   resolutionNotes: number
   resolvedAt: number
+  closeReason: number
+  closedById: number
+  acknowledgedAt: number
+  acknowledgedById: number
+  priorityConfirmedAt: number
+  priorityConfirmedById: number
+  startedAt: number
+  assigneeId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -110,6 +134,14 @@ export type CustomerTicketMinAggregateInputType = {
   internalNotes?: true
   resolutionNotes?: true
   resolvedAt?: true
+  closeReason?: true
+  closedById?: true
+  acknowledgedAt?: true
+  acknowledgedById?: true
+  priorityConfirmedAt?: true
+  priorityConfirmedById?: true
+  startedAt?: true
+  assigneeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -132,6 +164,14 @@ export type CustomerTicketMaxAggregateInputType = {
   internalNotes?: true
   resolutionNotes?: true
   resolvedAt?: true
+  closeReason?: true
+  closedById?: true
+  acknowledgedAt?: true
+  acknowledgedById?: true
+  priorityConfirmedAt?: true
+  priorityConfirmedById?: true
+  startedAt?: true
+  assigneeId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -154,6 +194,14 @@ export type CustomerTicketCountAggregateInputType = {
   internalNotes?: true
   resolutionNotes?: true
   resolvedAt?: true
+  closeReason?: true
+  closedById?: true
+  acknowledgedAt?: true
+  acknowledgedById?: true
+  priorityConfirmedAt?: true
+  priorityConfirmedById?: true
+  startedAt?: true
+  assigneeId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -249,6 +297,14 @@ export type CustomerTicketGroupByOutputType = {
   internalNotes: string | null
   resolutionNotes: string | null
   resolvedAt: Date | null
+  closeReason: string | null
+  closedById: string | null
+  acknowledgedAt: Date | null
+  acknowledgedById: string | null
+  priorityConfirmedAt: Date | null
+  priorityConfirmedById: string | null
+  startedAt: Date | null
+  assigneeId: string | null
   createdAt: Date
   updatedAt: Date
   _count: CustomerTicketCountAggregateOutputType | null
@@ -292,10 +348,19 @@ export type CustomerTicketWhereInput = {
   internalNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   resolutionNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   resolvedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  closeReason?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  closedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  acknowledgedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  acknowledgedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  priorityConfirmedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  priorityConfirmedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  startedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  assigneeId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectNullableScalarRelationFilter, Prisma.ProjectWhereInput> | null
   convertedTask?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
+  assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   comments?: Prisma.TicketCommentListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
 }
@@ -318,10 +383,19 @@ export type CustomerTicketOrderByWithRelationInput = {
   internalNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   resolutionNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  closeReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  closedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  acknowledgedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  acknowledgedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  priorityConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  priorityConfirmedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   project?: Prisma.ProjectOrderByWithRelationInput
   convertedTask?: Prisma.TaskOrderByWithRelationInput
+  assignee?: Prisma.UserOrderByWithRelationInput
   comments?: Prisma.TicketCommentOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
 }
@@ -347,10 +421,19 @@ export type CustomerTicketWhereUniqueInput = Prisma.AtLeast<{
   internalNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   resolutionNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   resolvedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  closeReason?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  closedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  acknowledgedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  acknowledgedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  priorityConfirmedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  priorityConfirmedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  startedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  assigneeId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
   project?: Prisma.XOR<Prisma.ProjectNullableScalarRelationFilter, Prisma.ProjectWhereInput> | null
   convertedTask?: Prisma.XOR<Prisma.TaskNullableScalarRelationFilter, Prisma.TaskWhereInput> | null
+  assignee?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   comments?: Prisma.TicketCommentListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
 }, "id" | "trackingCode" | "convertedTaskId">
@@ -373,6 +456,14 @@ export type CustomerTicketOrderByWithAggregationInput = {
   internalNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   resolutionNotes?: Prisma.SortOrderInput | Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  closeReason?: Prisma.SortOrderInput | Prisma.SortOrder
+  closedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  acknowledgedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  acknowledgedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  priorityConfirmedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  priorityConfirmedById?: Prisma.SortOrderInput | Prisma.SortOrder
+  startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CustomerTicketCountOrderByAggregateInput
@@ -401,6 +492,14 @@ export type CustomerTicketScalarWhereWithAggregatesInput = {
   internalNotes?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
   resolutionNotes?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
   resolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CustomerTicket"> | Date | string | null
+  closeReason?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
+  closedById?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
+  acknowledgedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CustomerTicket"> | Date | string | null
+  acknowledgedById?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
+  priorityConfirmedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CustomerTicket"> | Date | string | null
+  priorityConfirmedById?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
+  startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CustomerTicket"> | Date | string | null
+  assigneeId?: Prisma.StringNullableWithAggregatesFilter<"CustomerTicket"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CustomerTicket"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CustomerTicket"> | Date | string
 }
@@ -421,10 +520,18 @@ export type CustomerTicketCreateInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   project?: Prisma.ProjectCreateNestedOneWithoutCustomerTicketsInput
   convertedTask?: Prisma.TaskCreateNestedOneWithoutCustomerTicketInput
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTicketsInput
   comments?: Prisma.TicketCommentCreateNestedManyWithoutTicketInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTicketInput
 }
@@ -447,6 +554,14 @@ export type CustomerTicketUncheckedCreateInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   comments?: Prisma.TicketCommentUncheckedCreateNestedManyWithoutTicketInput
@@ -469,10 +584,18 @@ export type CustomerTicketUpdateInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneWithoutCustomerTicketsNestedInput
   convertedTask?: Prisma.TaskUpdateOneWithoutCustomerTicketNestedInput
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTicketsNestedInput
   comments?: Prisma.TicketCommentUpdateManyWithoutTicketNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTicketNestedInput
 }
@@ -495,6 +618,14 @@ export type CustomerTicketUncheckedUpdateInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comments?: Prisma.TicketCommentUncheckedUpdateManyWithoutTicketNestedInput
@@ -519,6 +650,14 @@ export type CustomerTicketCreateManyInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -539,6 +678,13 @@ export type CustomerTicketUpdateManyMutationInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -561,6 +707,14 @@ export type CustomerTicketUncheckedUpdateManyInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -598,6 +752,14 @@ export type CustomerTicketCountOrderByAggregateInput = {
   internalNotes?: Prisma.SortOrder
   resolutionNotes?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
+  closeReason?: Prisma.SortOrder
+  closedById?: Prisma.SortOrder
+  acknowledgedAt?: Prisma.SortOrder
+  acknowledgedById?: Prisma.SortOrder
+  priorityConfirmedAt?: Prisma.SortOrder
+  priorityConfirmedById?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -620,6 +782,14 @@ export type CustomerTicketMaxOrderByAggregateInput = {
   internalNotes?: Prisma.SortOrder
   resolutionNotes?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
+  closeReason?: Prisma.SortOrder
+  closedById?: Prisma.SortOrder
+  acknowledgedAt?: Prisma.SortOrder
+  acknowledgedById?: Prisma.SortOrder
+  priorityConfirmedAt?: Prisma.SortOrder
+  priorityConfirmedById?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -642,6 +812,14 @@ export type CustomerTicketMinOrderByAggregateInput = {
   internalNotes?: Prisma.SortOrder
   resolutionNotes?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
+  closeReason?: Prisma.SortOrder
+  closedById?: Prisma.SortOrder
+  acknowledgedAt?: Prisma.SortOrder
+  acknowledgedById?: Prisma.SortOrder
+  priorityConfirmedAt?: Prisma.SortOrder
+  priorityConfirmedById?: Prisma.SortOrder
+  startedAt?: Prisma.SortOrder
+  assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -649,6 +827,48 @@ export type CustomerTicketMinOrderByAggregateInput = {
 export type CustomerTicketScalarRelationFilter = {
   is?: Prisma.CustomerTicketWhereInput
   isNot?: Prisma.CustomerTicketWhereInput
+}
+
+export type CustomerTicketCreateNestedManyWithoutAssigneeInput = {
+  create?: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput> | Prisma.CustomerTicketCreateWithoutAssigneeInput[] | Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput[]
+  connectOrCreate?: Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput | Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput[]
+  createMany?: Prisma.CustomerTicketCreateManyAssigneeInputEnvelope
+  connect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+}
+
+export type CustomerTicketUncheckedCreateNestedManyWithoutAssigneeInput = {
+  create?: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput> | Prisma.CustomerTicketCreateWithoutAssigneeInput[] | Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput[]
+  connectOrCreate?: Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput | Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput[]
+  createMany?: Prisma.CustomerTicketCreateManyAssigneeInputEnvelope
+  connect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+}
+
+export type CustomerTicketUpdateManyWithoutAssigneeNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput> | Prisma.CustomerTicketCreateWithoutAssigneeInput[] | Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput[]
+  connectOrCreate?: Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput | Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput[]
+  upsert?: Prisma.CustomerTicketUpsertWithWhereUniqueWithoutAssigneeInput | Prisma.CustomerTicketUpsertWithWhereUniqueWithoutAssigneeInput[]
+  createMany?: Prisma.CustomerTicketCreateManyAssigneeInputEnvelope
+  set?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  disconnect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  delete?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  connect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  update?: Prisma.CustomerTicketUpdateWithWhereUniqueWithoutAssigneeInput | Prisma.CustomerTicketUpdateWithWhereUniqueWithoutAssigneeInput[]
+  updateMany?: Prisma.CustomerTicketUpdateManyWithWhereWithoutAssigneeInput | Prisma.CustomerTicketUpdateManyWithWhereWithoutAssigneeInput[]
+  deleteMany?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
+}
+
+export type CustomerTicketUncheckedUpdateManyWithoutAssigneeNestedInput = {
+  create?: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput> | Prisma.CustomerTicketCreateWithoutAssigneeInput[] | Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput[]
+  connectOrCreate?: Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput | Prisma.CustomerTicketCreateOrConnectWithoutAssigneeInput[]
+  upsert?: Prisma.CustomerTicketUpsertWithWhereUniqueWithoutAssigneeInput | Prisma.CustomerTicketUpsertWithWhereUniqueWithoutAssigneeInput[]
+  createMany?: Prisma.CustomerTicketCreateManyAssigneeInputEnvelope
+  set?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  disconnect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  delete?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  connect?: Prisma.CustomerTicketWhereUniqueInput | Prisma.CustomerTicketWhereUniqueInput[]
+  update?: Prisma.CustomerTicketUpdateWithWhereUniqueWithoutAssigneeInput | Prisma.CustomerTicketUpdateWithWhereUniqueWithoutAssigneeInput[]
+  updateMany?: Prisma.CustomerTicketUpdateManyWithWhereWithoutAssigneeInput | Prisma.CustomerTicketUpdateManyWithWhereWithoutAssigneeInput[]
+  deleteMany?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
 }
 
 export type CustomerTicketCreateNestedManyWithoutProjectInput = {
@@ -755,6 +975,127 @@ export type CustomerTicketUpdateOneWithoutAttachmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CustomerTicketUpdateToOneWithWhereWithoutAttachmentsInput, Prisma.CustomerTicketUpdateWithoutAttachmentsInput>, Prisma.CustomerTicketUncheckedUpdateWithoutAttachmentsInput>
 }
 
+export type CustomerTicketCreateWithoutAssigneeInput = {
+  id?: string
+  trackingCode: string
+  title: string
+  description: string
+  type?: string
+  status?: string
+  priority?: string
+  customerName: string
+  customerEmail: string
+  customerPhone?: string | null
+  customerCompany?: string | null
+  environment?: string | null
+  internalNotes?: string | null
+  resolutionNotes?: string | null
+  resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  project?: Prisma.ProjectCreateNestedOneWithoutCustomerTicketsInput
+  convertedTask?: Prisma.TaskCreateNestedOneWithoutCustomerTicketInput
+  comments?: Prisma.TicketCommentCreateNestedManyWithoutTicketInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutTicketInput
+}
+
+export type CustomerTicketUncheckedCreateWithoutAssigneeInput = {
+  id?: string
+  trackingCode: string
+  projectId?: string | null
+  title: string
+  description: string
+  type?: string
+  status?: string
+  priority?: string
+  customerName: string
+  customerEmail: string
+  customerPhone?: string | null
+  customerCompany?: string | null
+  environment?: string | null
+  convertedTaskId?: string | null
+  internalNotes?: string | null
+  resolutionNotes?: string | null
+  resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  comments?: Prisma.TicketCommentUncheckedCreateNestedManyWithoutTicketInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTicketInput
+}
+
+export type CustomerTicketCreateOrConnectWithoutAssigneeInput = {
+  where: Prisma.CustomerTicketWhereUniqueInput
+  create: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput>
+}
+
+export type CustomerTicketCreateManyAssigneeInputEnvelope = {
+  data: Prisma.CustomerTicketCreateManyAssigneeInput | Prisma.CustomerTicketCreateManyAssigneeInput[]
+  skipDuplicates?: boolean
+}
+
+export type CustomerTicketUpsertWithWhereUniqueWithoutAssigneeInput = {
+  where: Prisma.CustomerTicketWhereUniqueInput
+  update: Prisma.XOR<Prisma.CustomerTicketUpdateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedUpdateWithoutAssigneeInput>
+  create: Prisma.XOR<Prisma.CustomerTicketCreateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedCreateWithoutAssigneeInput>
+}
+
+export type CustomerTicketUpdateWithWhereUniqueWithoutAssigneeInput = {
+  where: Prisma.CustomerTicketWhereUniqueInput
+  data: Prisma.XOR<Prisma.CustomerTicketUpdateWithoutAssigneeInput, Prisma.CustomerTicketUncheckedUpdateWithoutAssigneeInput>
+}
+
+export type CustomerTicketUpdateManyWithWhereWithoutAssigneeInput = {
+  where: Prisma.CustomerTicketScalarWhereInput
+  data: Prisma.XOR<Prisma.CustomerTicketUpdateManyMutationInput, Prisma.CustomerTicketUncheckedUpdateManyWithoutAssigneeInput>
+}
+
+export type CustomerTicketScalarWhereInput = {
+  AND?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
+  OR?: Prisma.CustomerTicketScalarWhereInput[]
+  NOT?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
+  id?: Prisma.StringFilter<"CustomerTicket"> | string
+  trackingCode?: Prisma.StringFilter<"CustomerTicket"> | string
+  projectId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  title?: Prisma.StringFilter<"CustomerTicket"> | string
+  description?: Prisma.StringFilter<"CustomerTicket"> | string
+  type?: Prisma.StringFilter<"CustomerTicket"> | string
+  status?: Prisma.StringFilter<"CustomerTicket"> | string
+  priority?: Prisma.StringFilter<"CustomerTicket"> | string
+  customerName?: Prisma.StringFilter<"CustomerTicket"> | string
+  customerEmail?: Prisma.StringFilter<"CustomerTicket"> | string
+  customerPhone?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  customerCompany?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  environment?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  convertedTaskId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  internalNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  resolutionNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  resolvedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  closeReason?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  closedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  acknowledgedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  acknowledgedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  priorityConfirmedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  priorityConfirmedById?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  startedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
+  assigneeId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
+}
+
 export type CustomerTicketCreateWithoutProjectInput = {
   id?: string
   trackingCode: string
@@ -771,9 +1112,17 @@ export type CustomerTicketCreateWithoutProjectInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   convertedTask?: Prisma.TaskCreateNestedOneWithoutCustomerTicketInput
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTicketsInput
   comments?: Prisma.TicketCommentCreateNestedManyWithoutTicketInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTicketInput
 }
@@ -795,6 +1144,14 @@ export type CustomerTicketUncheckedCreateWithoutProjectInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   comments?: Prisma.TicketCommentUncheckedCreateNestedManyWithoutTicketInput
@@ -827,31 +1184,6 @@ export type CustomerTicketUpdateManyWithWhereWithoutProjectInput = {
   data: Prisma.XOR<Prisma.CustomerTicketUpdateManyMutationInput, Prisma.CustomerTicketUncheckedUpdateManyWithoutProjectInput>
 }
 
-export type CustomerTicketScalarWhereInput = {
-  AND?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
-  OR?: Prisma.CustomerTicketScalarWhereInput[]
-  NOT?: Prisma.CustomerTicketScalarWhereInput | Prisma.CustomerTicketScalarWhereInput[]
-  id?: Prisma.StringFilter<"CustomerTicket"> | string
-  trackingCode?: Prisma.StringFilter<"CustomerTicket"> | string
-  projectId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  title?: Prisma.StringFilter<"CustomerTicket"> | string
-  description?: Prisma.StringFilter<"CustomerTicket"> | string
-  type?: Prisma.StringFilter<"CustomerTicket"> | string
-  status?: Prisma.StringFilter<"CustomerTicket"> | string
-  priority?: Prisma.StringFilter<"CustomerTicket"> | string
-  customerName?: Prisma.StringFilter<"CustomerTicket"> | string
-  customerEmail?: Prisma.StringFilter<"CustomerTicket"> | string
-  customerPhone?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  customerCompany?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  environment?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  convertedTaskId?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  internalNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  resolutionNotes?: Prisma.StringNullableFilter<"CustomerTicket"> | string | null
-  resolvedAt?: Prisma.DateTimeNullableFilter<"CustomerTicket"> | Date | string | null
-  createdAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"CustomerTicket"> | Date | string
-}
-
 export type CustomerTicketCreateWithoutConvertedTaskInput = {
   id?: string
   trackingCode: string
@@ -868,9 +1200,17 @@ export type CustomerTicketCreateWithoutConvertedTaskInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   project?: Prisma.ProjectCreateNestedOneWithoutCustomerTicketsInput
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTicketsInput
   comments?: Prisma.TicketCommentCreateNestedManyWithoutTicketInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTicketInput
 }
@@ -892,6 +1232,14 @@ export type CustomerTicketUncheckedCreateWithoutConvertedTaskInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   comments?: Prisma.TicketCommentUncheckedCreateNestedManyWithoutTicketInput
@@ -930,9 +1278,17 @@ export type CustomerTicketUpdateWithoutConvertedTaskInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneWithoutCustomerTicketsNestedInput
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTicketsNestedInput
   comments?: Prisma.TicketCommentUpdateManyWithoutTicketNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTicketNestedInput
 }
@@ -954,6 +1310,14 @@ export type CustomerTicketUncheckedUpdateWithoutConvertedTaskInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comments?: Prisma.TicketCommentUncheckedUpdateManyWithoutTicketNestedInput
@@ -976,10 +1340,18 @@ export type CustomerTicketCreateWithoutCommentsInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   project?: Prisma.ProjectCreateNestedOneWithoutCustomerTicketsInput
   convertedTask?: Prisma.TaskCreateNestedOneWithoutCustomerTicketInput
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTicketsInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTicketInput
 }
 
@@ -1001,6 +1373,14 @@ export type CustomerTicketUncheckedCreateWithoutCommentsInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTicketInput
@@ -1038,10 +1418,18 @@ export type CustomerTicketUpdateWithoutCommentsInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneWithoutCustomerTicketsNestedInput
   convertedTask?: Prisma.TaskUpdateOneWithoutCustomerTicketNestedInput
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTicketsNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTicketNestedInput
 }
 
@@ -1063,6 +1451,14 @@ export type CustomerTicketUncheckedUpdateWithoutCommentsInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTicketNestedInput
@@ -1084,10 +1480,18 @@ export type CustomerTicketCreateWithoutAttachmentsInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   project?: Prisma.ProjectCreateNestedOneWithoutCustomerTicketsInput
   convertedTask?: Prisma.TaskCreateNestedOneWithoutCustomerTicketInput
+  assignee?: Prisma.UserCreateNestedOneWithoutAssignedTicketsInput
   comments?: Prisma.TicketCommentCreateNestedManyWithoutTicketInput
 }
 
@@ -1109,6 +1513,14 @@ export type CustomerTicketUncheckedCreateWithoutAttachmentsInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   comments?: Prisma.TicketCommentUncheckedCreateNestedManyWithoutTicketInput
@@ -1146,10 +1558,18 @@ export type CustomerTicketUpdateWithoutAttachmentsInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   project?: Prisma.ProjectUpdateOneWithoutCustomerTicketsNestedInput
   convertedTask?: Prisma.TaskUpdateOneWithoutCustomerTicketNestedInput
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTicketsNestedInput
   comments?: Prisma.TicketCommentUpdateManyWithoutTicketNestedInput
 }
 
@@ -1171,9 +1591,137 @@ export type CustomerTicketUncheckedUpdateWithoutAttachmentsInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comments?: Prisma.TicketCommentUncheckedUpdateManyWithoutTicketNestedInput
+}
+
+export type CustomerTicketCreateManyAssigneeInput = {
+  id?: string
+  trackingCode: string
+  projectId?: string | null
+  title: string
+  description: string
+  type?: string
+  status?: string
+  priority?: string
+  customerName: string
+  customerEmail: string
+  customerPhone?: string | null
+  customerCompany?: string | null
+  environment?: string | null
+  convertedTaskId?: string | null
+  internalNotes?: string | null
+  resolutionNotes?: string | null
+  resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CustomerTicketUpdateWithoutAssigneeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  trackingCode?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.StringFieldUpdateOperationsInput | string
+  customerName?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerCompany?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  environment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneWithoutCustomerTicketsNestedInput
+  convertedTask?: Prisma.TaskUpdateOneWithoutCustomerTicketNestedInput
+  comments?: Prisma.TicketCommentUpdateManyWithoutTicketNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutTicketNestedInput
+}
+
+export type CustomerTicketUncheckedUpdateWithoutAssigneeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  trackingCode?: Prisma.StringFieldUpdateOperationsInput | string
+  projectId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.StringFieldUpdateOperationsInput | string
+  customerName?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerCompany?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  environment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  convertedTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  comments?: Prisma.TicketCommentUncheckedUpdateManyWithoutTicketNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTicketNestedInput
+}
+
+export type CustomerTicketUncheckedUpdateManyWithoutAssigneeInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  trackingCode?: Prisma.StringFieldUpdateOperationsInput | string
+  projectId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  priority?: Prisma.StringFieldUpdateOperationsInput | string
+  customerName?: Prisma.StringFieldUpdateOperationsInput | string
+  customerEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  customerPhone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  customerCompany?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  environment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  convertedTaskId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type CustomerTicketCreateManyProjectInput = {
@@ -1193,6 +1741,14 @@ export type CustomerTicketCreateManyProjectInput = {
   internalNotes?: string | null
   resolutionNotes?: string | null
   resolvedAt?: Date | string | null
+  closeReason?: string | null
+  closedById?: string | null
+  acknowledgedAt?: Date | string | null
+  acknowledgedById?: string | null
+  priorityConfirmedAt?: Date | string | null
+  priorityConfirmedById?: string | null
+  startedAt?: Date | string | null
+  assigneeId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -1213,9 +1769,17 @@ export type CustomerTicketUpdateWithoutProjectInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   convertedTask?: Prisma.TaskUpdateOneWithoutCustomerTicketNestedInput
+  assignee?: Prisma.UserUpdateOneWithoutAssignedTicketsNestedInput
   comments?: Prisma.TicketCommentUpdateManyWithoutTicketNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTicketNestedInput
 }
@@ -1237,6 +1801,14 @@ export type CustomerTicketUncheckedUpdateWithoutProjectInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   comments?: Prisma.TicketCommentUncheckedUpdateManyWithoutTicketNestedInput
@@ -1260,6 +1832,14 @@ export type CustomerTicketUncheckedUpdateManyWithoutProjectInput = {
   internalNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolutionNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  acknowledgedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  acknowledgedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  priorityConfirmedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  priorityConfirmedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1322,10 +1902,19 @@ export type CustomerTicketSelect<ExtArgs extends runtime.Types.Extensions.Intern
   internalNotes?: boolean
   resolutionNotes?: boolean
   resolvedAt?: boolean
+  closeReason?: boolean
+  closedById?: boolean
+  acknowledgedAt?: boolean
+  acknowledgedById?: boolean
+  priorityConfirmedAt?: boolean
+  priorityConfirmedById?: boolean
+  startedAt?: boolean
+  assigneeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
   comments?: boolean | Prisma.CustomerTicket$commentsArgs<ExtArgs>
   attachments?: boolean | Prisma.CustomerTicket$attachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerTicketCountOutputTypeDefaultArgs<ExtArgs>
@@ -1349,10 +1938,19 @@ export type CustomerTicketSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   internalNotes?: boolean
   resolutionNotes?: boolean
   resolvedAt?: boolean
+  closeReason?: boolean
+  closedById?: boolean
+  acknowledgedAt?: boolean
+  acknowledgedById?: boolean
+  priorityConfirmedAt?: boolean
+  priorityConfirmedById?: boolean
+  startedAt?: boolean
+  assigneeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
 }, ExtArgs["result"]["customerTicket"]>
 
 export type CustomerTicketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1373,10 +1971,19 @@ export type CustomerTicketSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   internalNotes?: boolean
   resolutionNotes?: boolean
   resolvedAt?: boolean
+  closeReason?: boolean
+  closedById?: boolean
+  acknowledgedAt?: boolean
+  acknowledgedById?: boolean
+  priorityConfirmedAt?: boolean
+  priorityConfirmedById?: boolean
+  startedAt?: boolean
+  assigneeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
 }, ExtArgs["result"]["customerTicket"]>
 
 export type CustomerTicketSelectScalar = {
@@ -1397,14 +2004,23 @@ export type CustomerTicketSelectScalar = {
   internalNotes?: boolean
   resolutionNotes?: boolean
   resolvedAt?: boolean
+  closeReason?: boolean
+  closedById?: boolean
+  acknowledgedAt?: boolean
+  acknowledgedById?: boolean
+  priorityConfirmedAt?: boolean
+  priorityConfirmedById?: boolean
+  startedAt?: boolean
+  assigneeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CustomerTicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "trackingCode" | "projectId" | "title" | "description" | "type" | "status" | "priority" | "customerName" | "customerEmail" | "customerPhone" | "customerCompany" | "environment" | "convertedTaskId" | "internalNotes" | "resolutionNotes" | "resolvedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["customerTicket"]>
+export type CustomerTicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "trackingCode" | "projectId" | "title" | "description" | "type" | "status" | "priority" | "customerName" | "customerEmail" | "customerPhone" | "customerCompany" | "environment" | "convertedTaskId" | "internalNotes" | "resolutionNotes" | "resolvedAt" | "closeReason" | "closedById" | "acknowledgedAt" | "acknowledgedById" | "priorityConfirmedAt" | "priorityConfirmedById" | "startedAt" | "assigneeId" | "createdAt" | "updatedAt", ExtArgs["result"]["customerTicket"]>
 export type CustomerTicketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
   comments?: boolean | Prisma.CustomerTicket$commentsArgs<ExtArgs>
   attachments?: boolean | Prisma.CustomerTicket$attachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.CustomerTicketCountOutputTypeDefaultArgs<ExtArgs>
@@ -1412,10 +2028,12 @@ export type CustomerTicketInclude<ExtArgs extends runtime.Types.Extensions.Inter
 export type CustomerTicketIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
 }
 export type CustomerTicketIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.CustomerTicket$projectArgs<ExtArgs>
   convertedTask?: boolean | Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>
+  assignee?: boolean | Prisma.CustomerTicket$assigneeArgs<ExtArgs>
 }
 
 export type $CustomerTicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1423,6 +2041,7 @@ export type $CustomerTicketPayload<ExtArgs extends runtime.Types.Extensions.Inte
   objects: {
     project: Prisma.$ProjectPayload<ExtArgs> | null
     convertedTask: Prisma.$TaskPayload<ExtArgs> | null
+    assignee: Prisma.$UserPayload<ExtArgs> | null
     comments: Prisma.$TicketCommentPayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
   }
@@ -1444,6 +2063,14 @@ export type $CustomerTicketPayload<ExtArgs extends runtime.Types.Extensions.Inte
     internalNotes: string | null
     resolutionNotes: string | null
     resolvedAt: Date | null
+    closeReason: string | null
+    closedById: string | null
+    acknowledgedAt: Date | null
+    acknowledgedById: string | null
+    priorityConfirmedAt: Date | null
+    priorityConfirmedById: string | null
+    startedAt: Date | null
+    assigneeId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["customerTicket"]>
@@ -1842,6 +2469,7 @@ export interface Prisma__CustomerTicketClient<T, Null = never, ExtArgs extends r
   readonly [Symbol.toStringTag]: "PrismaPromise"
   project<T extends Prisma.CustomerTicket$projectArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerTicket$projectArgs<ExtArgs>>): Prisma.Prisma__ProjectClient<runtime.Types.Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   convertedTask<T extends Prisma.CustomerTicket$convertedTaskArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerTicket$convertedTaskArgs<ExtArgs>>): Prisma.Prisma__TaskClient<runtime.Types.Result.GetResult<Prisma.$TaskPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  assignee<T extends Prisma.CustomerTicket$assigneeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerTicket$assigneeArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   comments<T extends Prisma.CustomerTicket$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerTicket$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TicketCommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.CustomerTicket$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CustomerTicket$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1890,6 +2518,14 @@ export interface CustomerTicketFieldRefs {
   readonly internalNotes: Prisma.FieldRef<"CustomerTicket", 'String'>
   readonly resolutionNotes: Prisma.FieldRef<"CustomerTicket", 'String'>
   readonly resolvedAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
+  readonly closeReason: Prisma.FieldRef<"CustomerTicket", 'String'>
+  readonly closedById: Prisma.FieldRef<"CustomerTicket", 'String'>
+  readonly acknowledgedAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
+  readonly acknowledgedById: Prisma.FieldRef<"CustomerTicket", 'String'>
+  readonly priorityConfirmedAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
+  readonly priorityConfirmedById: Prisma.FieldRef<"CustomerTicket", 'String'>
+  readonly startedAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
+  readonly assigneeId: Prisma.FieldRef<"CustomerTicket", 'String'>
   readonly createdAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CustomerTicket", 'DateTime'>
 }
@@ -2328,6 +2964,25 @@ export type CustomerTicket$convertedTaskArgs<ExtArgs extends runtime.Types.Exten
    */
   include?: Prisma.TaskInclude<ExtArgs> | null
   where?: Prisma.TaskWhereInput
+}
+
+/**
+ * CustomerTicket.assignee
+ */
+export type CustomerTicket$assigneeArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
 }
 
 /**

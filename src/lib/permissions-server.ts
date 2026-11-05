@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import {
   ALL_PERMISSION_KEYS,
   DEFAULT_ROLE_PRESETS,
+  GLOBAL_ROLE_ONLY_PERMISSIONS,
+  isSystemLevelPermission,
 } from "@/lib/permissions";
 
 // ---------------------------------------------------------------------------
@@ -200,20 +202,10 @@ export async function checkUserPermission(
 
   // Nếu là Chủ dự án (Owner) thì có toàn quyền trong dự án (trừ system.* và users.manage)
   if (isProjectOwner) {
-    const isSystemPerm =
-      requiredPermission.startsWith("system.") ||
-      requiredPermission === "users.manage" ||
-      requiredPermission === "roles.manage" ||
-      requiredPermission === "email.config";
+    const isSystemPerm = isSystemLevelPermission(requiredPermission);
 
     if (!isSystemPerm) {
-      const ownerPerms = ALL_PERMISSION_KEYS.filter(
-        (k) =>
-          !k.startsWith("system.") &&
-          k !== "users.manage" &&
-          k !== "roles.manage" &&
-          k !== "email.config"
-      );
+      const ownerPerms = ALL_PERMISSION_KEYS.filter((k) => !isSystemLevelPermission(k));
       return {
         allowed: true,
         role: userRole || "MEMBER",
@@ -231,7 +223,10 @@ export async function checkUserPermission(
     projectRole ? getRolePermissions(projectRole) : Promise.resolve([]),
   ]);
 
-  const combinedPerms = Array.from(new Set([...globalPerms, ...projectPerms]));
+  // Quyền chỉ xét theo vai trò hệ thống (vd: tickets.assign) không được cấp qua vai trò trong dự án
+  const combinedPerms = Array.from(
+    new Set([...globalPerms, ...projectPerms.filter((k) => !GLOBAL_ROLE_ONLY_PERMISSIONS.includes(k))])
+  );
   const allowed = combinedPerms.includes(requiredPermission);
 
   return {
@@ -326,15 +321,11 @@ export async function getUserPermissionContext(
     projectRole ? getRolePermissions(projectRole) : Promise.resolve([]),
   ]);
 
-  let combinedPerms = Array.from(new Set([...globalPerms, ...projectPerms]));
+  let combinedPerms = Array.from(
+    new Set([...globalPerms, ...projectPerms.filter((k) => !GLOBAL_ROLE_ONLY_PERMISSIONS.includes(k))])
+  );
   if (isOwner) {
-    const ownerPerms = ALL_PERMISSION_KEYS.filter(
-      (k) =>
-        !k.startsWith("system.") &&
-        k !== "users.manage" &&
-        k !== "roles.manage" &&
-        k !== "email.config"
-    );
+    const ownerPerms = ALL_PERMISSION_KEYS.filter((k) => !isSystemLevelPermission(k));
     combinedPerms = Array.from(new Set([...combinedPerms, ...ownerPerms]));
   }
 

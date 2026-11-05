@@ -1,14 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useEffect, useState, use } from "react";
-import CustomerPortalPage from "../page";
-
-export default function ProjectSpecificPortalPage({
-  params,
-}: {
-  params: Promise<{ projectKey: string }>;
-}) {
-  const resolvedParams = use(params);
-
-  return <CustomerPortalPage initialProjectKey={resolvedParams.projectKey} />;
+// Portal không còn gắn theo dự án: khách hàng không chọn dự án, ticket được điều phối nội bộ.
+// Giữ route cũ /portal/[projectKey] để các link đã chia sẻ vẫn dùng được.
+export default function ProjectSpecificPortalPage() {
+  redirect("/portal");
 }

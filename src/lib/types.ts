@@ -197,10 +197,12 @@ export type ProjectDashboardData = {
   ticketStats: {
     total: number;
     open: number;
+    acknowledged: number;
     triaged: number;
     inProgress: number;
-    resolved: number;
     closed: number;
+    cancelled: number;
+    // % Đã đóng / (Tổng - Đã hủy) — ticket Đã hủy không tính là đã giải quyết
     resolutionRate: number;
   };
 };
@@ -233,6 +235,22 @@ export type TicketCommentDto = {
   createdAt: string;
 };
 
+// Quyền thao tác của user hiện tại trên 1 ticket (server tính, UI ẩn/hiện nút)
+export type TicketCapabilitiesDto = {
+  canWrite: boolean;
+  canConvert: boolean;
+  canAssign: boolean;
+  // Hành động theo luồng trạng thái (đã xét cả trạng thái hiện tại)
+  canConfirmPriority: boolean;
+  canClaim: boolean;
+  canStart: boolean;
+  // Đóng: chỉ khi Đang xử lý. Hủy: mọi trạng thái chưa kết thúc.
+  canClose: boolean;
+  canCancel: boolean;
+  canReopen: boolean;
+  canAssignHandler: boolean;
+};
+
 export type CustomerTicketDto = {
   id: string;
   trackingCode: string;
@@ -245,7 +263,7 @@ export type CustomerTicketDto = {
   title: string;
   description: string;
   type: string; // BUG | SUPPORT | INQUIRY | FEATURE_REQ
-  status: string; // OPEN | TRIAGED | IN_PROGRESS | RESOLVED | CLOSED | REJECTED
+  status: string; // OPEN | ACKNOWLEDGED | TRIAGED | IN_PROGRESS | CLOSED | CANCELLED (src/lib/ticket-status.ts)
   priority: string; // LOW | MEDIUM | HIGH | URGENT
   customerName: string;
   customerEmail: string;
@@ -261,13 +279,28 @@ export type CustomerTicketDto = {
     type: string;
   } | null;
   internalNotes?: string | null;
+  // Mô tả kết quả khi Đóng / Hủy
   resolutionNotes?: string | null;
   resolvedAt?: string | null;
+  closeReason?: string | null;
+  closedAt?: string | null;
+  closedById?: string | null;
+  acknowledgedAt?: string | null;
+  acknowledgedById?: string | null;
+  priorityConfirmedAt?: string | null;
+  priorityConfirmedById?: string | null;
+  assigneeId?: string | null;
+  assignee?: { id: string; name: string; avatarColor: string; title?: string | null } | null;
+  startedAt?: string | null;
+  // Mốc đã đi qua: Đã tiếp nhận / Đã phân loại / Đã bắt đầu xử lý (stepper, kể cả ticket Đã hủy)
+  progress?: { acknowledged: boolean; triaged: boolean; started: boolean };
   createdAt: string;
   updatedAt: string;
   comments?: TicketCommentDto[];
   attachments?: AttachmentDto[];
   _count?: { comments: number };
+  // Quyền thao tác của user hiện tại trên ticket (chỉ có ở API nội bộ /api/tickets)
+  capabilities?: TicketCapabilitiesDto;
 };
 
 export type BoardData = {

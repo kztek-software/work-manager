@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
 import { PermissionsProvider } from "@/lib/permissions-context";
 import { getUserPermissionContext } from "@/lib/permissions-server";
+import { canUserViewTicketModule } from "@/lib/ticket-access";
 import { MyWorkView } from "./my-work-view";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function MyWorkPage({
 
   const contextProjectId = matchedProject ? matchedProject.id : projects[0].id;
 
-  const [contextProject, permCtx] = await Promise.all([
+  const [contextProject, permCtx, canViewTickets] = await Promise.all([
     prisma.project.findUnique({
       where: { id: contextProjectId },
       include: {
@@ -66,6 +67,7 @@ export default async function MyWorkPage({
       },
     }),
     getUserPermissionContext(user.id, contextProjectId, user.role),
+    canUserViewTicketModule(user),
   ]);
 
   if (!contextProject) redirect("/");
@@ -94,6 +96,7 @@ export default async function MyWorkPage({
           })),
         }}
         projects={projects}
+        canViewTickets={canViewTickets}
       >
         <MyWorkView userId={user.id} />
       </AppShell>

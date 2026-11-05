@@ -22,6 +22,7 @@ import {
   Activity,
 } from "lucide-react";
 import { Dropdown } from "primereact/dropdown";
+import { ticketStatusLabel } from "@/lib/ticket-status";
 
 interface DesktopSplitViewProps {
   project: any;
@@ -578,7 +579,7 @@ export function DesktopSplitView({
                       <div className="flex items-center justify-between text-[10px]">
                         <span className="font-mono font-bold text-accent">{tk.trackingCode || tk.id}</span>
                         <span className="px-1.5 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-400">
-                          {tk.status || "OPEN"}
+                          {ticketStatusLabel(tk.status || "OPEN")}
                         </span>
                       </div>
                       <div className="text-xs font-semibold text-foreground">{tk.title}</div>

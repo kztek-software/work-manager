@@ -295,7 +295,7 @@ export function RichMarkdown({
     const sanitized = sanitizeHtml(content);
     return (
       <div
-        className={`rich-html-content text-xs leading-relaxed text-foreground space-y-1.5 [&_ol]:list-decimal [&_ol]:list-outside [&_ol]:ml-5 [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:ml-5 [&_ul]:space-y-1 [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:bg-accent/5 [&_blockquote]:pl-3 [&_blockquote]:py-1 [&_blockquote]:italic [&_pre]:bg-surface-3 [&_pre]:p-2.5 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:border [&_pre]:border-line [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-accent ${className}`}
+        className={`rich-html-content text-xs leading-relaxed text-foreground space-y-1.5 [&_ol]:list-decimal [&_ol]:list-outside [&_ol]:ml-5 [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:ml-5 [&_ul]:space-y-1 [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:bg-accent/5 [&_blockquote]:pl-3 [&_blockquote]:py-1 [&_blockquote]:italic [&_pre]:bg-surface-3 [&_pre]:p-2.5 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:border [&_pre]:border-line [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-accent [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:border [&_img]:border-line [&_img]:my-1 ${className}`}
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     );

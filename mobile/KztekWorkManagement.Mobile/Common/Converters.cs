@@ -18,9 +18,11 @@ namespace KztekWorkManagement.Mobile.Common
                 "IN_PROGRESS" => new SolidColorBrush(Color.Parse("#F05922")), // KZTEK Orange
                 "IN_REVIEW" => new SolidColorBrush(Color.Parse("#8B5CF6")), // Purple
                 "DONE" => new SolidColorBrush(Color.Parse("#10B981")), // Green
-                "OPEN" => new SolidColorBrush(Color.Parse("#EF4444")), // Red
+                "OPEN" => new SolidColorBrush(Color.Parse("#FFAA80")), // KZTEK Orange light (ticket mới)
+                "ACKNOWLEDGED" => new SolidColorBrush(Color.Parse("#4A3F8C")), // KZTEK Navy light
                 "TRIAGED" => new SolidColorBrush(Color.Parse("#F59E0B")), // Yellow
-                "RESOLVED" => new SolidColorBrush(Color.Parse("#10B981")), // Green
+                "CLOSED" => new SolidColorBrush(Color.Parse("#10B981")), // Green (ticket đã đóng)
+                "CANCELLED" => new SolidColorBrush(Color.Parse("#64748B")), // Slate (ticket đã hủy)
                 _ => new SolidColorBrush(Color.Parse("#64748B")) // Slate
             };
         }

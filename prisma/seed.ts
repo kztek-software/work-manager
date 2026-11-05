@@ -58,6 +58,36 @@ async function seedAdmin(): Promise<boolean> {
   return true;
 }
 
+// Chuyển dữ liệu ticket sang luồng trạng thái mới (src/lib/ticket-status.ts) — idempotent, chạy MỌI lần seed
+// (kể cả khi DB đã có dữ liệu / không bật SEED_DEMO_DATA):
+//   RESOLVED -> CLOSED, REJECTED -> CANCELLED (resolvedAt dùng như thời điểm đóng/hủy);
+//   ticket đã qua bước tiếp nhận / phân loại theo luồng cũ được đánh dấu acknowledgedAt / priorityConfirmedAt
+//   để stepper và luật tự động không coi là "chưa tiếp nhận".
+async function migrateTicketStatuses() {
+  const closed = await prisma.$executeRaw`
+    UPDATE "CustomerTicket" SET "status" = 'CLOSED', "resolvedAt" = COALESCE("resolvedAt", "updatedAt")
+    WHERE "status" = 'RESOLVED'`;
+  const cancelled = await prisma.$executeRaw`
+    UPDATE "CustomerTicket" SET "status" = 'CANCELLED', "resolvedAt" = COALESCE("resolvedAt", "updatedAt")
+    WHERE "status" = 'REJECTED'`;
+  const acknowledged = await prisma.$executeRaw`
+    UPDATE "CustomerTicket" SET "acknowledgedAt" = "createdAt"
+    WHERE "status" <> 'OPEN' AND "acknowledgedAt" IS NULL`;
+  const confirmed = await prisma.$executeRaw`
+    UPDATE "CustomerTicket" SET "priorityConfirmedAt" = "updatedAt"
+    WHERE "status" IN ('TRIAGED', 'IN_PROGRESS', 'CLOSED', 'CANCELLED') AND "priorityConfirmedAt" IS NULL`;
+  // Đang xử lý / Đã đóng chắc chắn đã qua bước "Đang xử lý". Đã hủy (REJECTED cũ) không suy ra được -> để null.
+  const started = await prisma.$executeRaw`
+    UPDATE "CustomerTicket" SET "startedAt" = "updatedAt"
+    WHERE "status" IN ('IN_PROGRESS', 'CLOSED') AND "startedAt" IS NULL`;
+  if (closed + cancelled + acknowledged + confirmed + started > 0) {
+    console.log(
+      `✅ Chuyển trạng thái ticket: ${closed} RESOLVED→CLOSED, ${cancelled} REJECTED→CANCELLED, ` +
+        `${acknowledged} đánh dấu đã tiếp nhận, ${confirmed} đánh dấu đã xác nhận ưu tiên, ${started} đánh dấu đã bắt đầu xử lý`
+    );
+  }
+}
+
 async function main() {
   const created = await seedAdmin();
   console.log(
@@ -65,6 +95,9 @@ async function main() {
       ? `✅ Đã tạo tài khoản admin: ${ADMIN_EMAIL} / Kztek@2026 (đổi mật khẩu sau khi đăng nhập)`
       : `ℹ️  Tài khoản admin ${ADMIN_EMAIL} đã tồn tại — giữ nguyên`
   );
+
+  // Luôn chạy (trước mọi nhánh return bên dưới)
+  await migrateTicketStatuses();
 
   // Dữ liệu mẫu chỉ tạo trên DB trống (ngoài admin) để không bao giờ ghi đè/xoá dữ liệu thật.
   const [projectCount, otherUserCount] = await Promise.all([

@@ -2,7 +2,7 @@ import net from "node:net";
 import tls from "node:tls";
 import { getEffectiveSmtpConfig, getAppBaseUrl } from "@/lib/system-config";
 
-export type EmailLogType = "TASK_ASSIGNED" | "STATUS_CHANGED" | "COMMENTED" | "TASK_MENTION" | "TEST" | "SYSTEM";
+export type EmailLogType = "TASK_ASSIGNED" | "STATUS_CHANGED" | "COMMENTED" | "TASK_MENTION" | "TICKET_UPDATE" | "TEST" | "SYSTEM";
 export type EmailLogStatus = "SENT" | "SIMULATED" | "FAILED";
 
 export type EmailLogEntry = {
@@ -971,5 +971,142 @@ export async function sendAccountCredentialsEmail(payload: AccountCredentialsEma
     logText: `Tài khoản: ${payload.recipientEmail} - Mật khẩu: ${masked.password}. Đăng nhập tại ${loginUrl}.`,
     type: "SYSTEM",
     metadata: { kind: "ACCOUNT_CREDENTIALS", sender: payload.senderName },
+  });
+}
+
+
+// ---------------------------------------------------------------------------
+// Email gửi KHÁCH HÀNG về ticket (kết quả xử lý / phản hồi từ kỹ thuật)
+// ---------------------------------------------------------------------------
+
+export type TicketCustomerEmailKind = "RESULT" | "REPLY";
+
+export type TicketCustomerEmailPayload = {
+  kind: TicketCustomerEmailKind;
+  trackingCode: string;
+  title: string;
+  status: string; // CLOSED | CANCELLED | ... (src/lib/ticket-status.ts)
+  customerName: string;
+  customerEmail: string;
+  // HTML từ trình soạn thảo (resolutionNotes hoặc nội dung phản hồi)
+  bodyHtml?: string | null;
+  staffName?: string | null;
+  // Lý do Đóng / Hủy (email kết quả)
+  closeReason?: string | null;
+};
+
+export const TICKET_STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  OPEN: { label: "Mới tiếp nhận", color: "#4A3F8C", bg: "#EEECF7" },
+  ACKNOWLEDGED: { label: "Đã tiếp nhận", color: "#4A3F8C", bg: "#EEECF7" },
+  TRIAGED: { label: "Đã phân loại", color: "#4A3F8C", bg: "#EEECF7" },
+  IN_PROGRESS: { label: "Đang xử lý", color: "#4A3F8C", bg: "#EEECF7" },
+  CLOSED: { label: "Đã đóng", color: "#251C53", bg: "#EEECF7" },
+  // Đã hủy: cam thương hiệu (không dùng đỏ)
+  CANCELLED: { label: "Đã hủy", color: "#C2410C", bg: "#FFF1EA" },
+};
+
+/** Làm sạch HTML trình soạn thảo để nhúng vào email: bỏ script/iframe/on*, đổi ảnh /uploads thành URL tuyệt đối */
+function sanitizeRichHtmlForEmail(html: string): string {
+  const base = getAppBaseUrl().replace(/\/$/, "");
+  return html
+    .replace(/<(script|style|iframe|object|embed)\b[\s\S]*?<\/\1>/gi, "")
+    .replace(/<(script|iframe|object|embed)\b[^>]*\/?>/gi, "")
+    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"')
+    .replace(/(src|href)\s*=\s*(["'])\/(?!\/)/gi, `$1=$2${base}/`)
+    .replace(/<img\b/gi, '<img style="max-width:100%;height:auto;border-radius:8px;border:1px solid #e2e8f0;"');
+}
+
+function richHtmlToText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
+    .replace(/<img[^>]*>/gi, "[Hình ảnh]")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function getTicketPortalUrl(trackingCode: string): string {
+  return `${getAppBaseUrl().replace(/\/$/, "")}/portal/tickets/${encodeURIComponent(trackingCode)}`;
+}
+
+export function generateTicketCustomerEmailHtml(payload: TicketCustomerEmailPayload): string {
+  const status = TICKET_STATUS_LABELS[payload.status] || { label: payload.status, color: BRAND.primary, bg: "#EEECF7" };
+  const portalUrl = getTicketPortalUrl(payload.trackingCode);
+  const isResult = payload.kind === "RESULT";
+  const heading = isResult ? "Kết quả xử lý yêu cầu hỗ trợ" : "Phản hồi mới từ đội ngũ kỹ thuật";
+  const isCancelled = payload.status === "CANCELLED";
+  const intro = isResult
+    ? isCancelled
+      ? `Yêu cầu hỗ trợ của Quý khách đã được <strong>hủy</strong>. Lý do và mô tả chi tiết ở bên dưới.`
+      : `Yêu cầu hỗ trợ của Quý khách đã được xử lý và chuyển sang trạng thái <strong>${status.label}</strong>.`
+    : `${payload.staffName ? `<strong>${escapeHtml(payload.staffName)}</strong> (` : ""}Đội ngũ kỹ thuật KZTEK${payload.staffName ? ")" : ""} vừa phản hồi yêu cầu hỗ trợ của Quý khách.`;
+  const body = payload.bodyHtml && payload.bodyHtml.trim() ? sanitizeRichHtmlForEmail(payload.bodyHtml) : "";
+
+  const content = `
+    <div style="font-size: 18px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 12px;">
+      ${heading}
+    </div>
+    <div style="font-size: 14px; line-height: 1.6; color: ${BRAND.textMain};">
+      Kính gửi <strong>${escapeHtml(payload.customerName)}</strong>,<br/>
+      ${intro}
+    </div>
+
+    <div class="card">
+      <div style="font-size: 12px; color: ${BRAND.textMuted}; margin-bottom: 4px;">Mã yêu cầu</div>
+      <div style="font-size: 15px; font-weight: 700; color: ${BRAND.accent}; font-family: monospace; margin-bottom: 10px;">${escapeHtml(payload.trackingCode)}</div>
+      <div style="font-size: 12px; color: ${BRAND.textMuted}; margin-bottom: 4px;">Tiêu đề</div>
+      <div style="font-size: 14px; font-weight: 600; color: ${BRAND.primary}; margin-bottom: 10px;">${escapeHtml(payload.title)}</div>
+      <span class="tag" style="background: ${status.bg}; color: ${status.color}; font-size: 12px;">${status.label}</span>
+      ${isResult && payload.closeReason ? `
+      <div style="font-size: 12px; color: ${BRAND.textMuted}; margin: 12px 0 4px;">Lý do ${isCancelled ? "hủy" : "đóng"}</div>
+      <div style="font-size: 14px; font-weight: 600; color: ${BRAND.primary};">${escapeHtml(payload.closeReason)}</div>` : ""}
+    </div>
+
+    ${body ? `
+    <div class="card" style="border-left: 4px solid ${BRAND.accent}; background: #fff8f5;">
+      <div style="font-size: 13px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 8px;">
+        ${isResult ? (isCancelled ? "Mô tả" : "Nội dung xử lý") : "Nội dung phản hồi"}
+      </div>
+      <div style="font-size: 14px; color: ${BRAND.textMain}; line-height: 1.6;">${body}</div>
+    </div>` : ""}
+
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${portalUrl}" class="btn" target="_blank">Xem chi tiết &amp; phản hồi</a>
+    </div>
+    <div style="font-size: 12px; color: ${BRAND.textMuted}; line-height: 1.5;">
+      Quý khách có thể tra cứu và trao đổi thêm với kỹ thuật viên tại liên kết trên bằng mã yêu cầu <strong>${escapeHtml(payload.trackingCode)}</strong>.
+      Đây là email tự động, vui lòng không trả lời trực tiếp email này.
+    </div>
+  `;
+
+  return wrapBaseLayout(
+    `[KZTEK] ${heading} — ${payload.trackingCode}`,
+    isResult ? `Yêu cầu ${payload.trackingCode}: ${status.label}` : `Phản hồi mới cho yêu cầu ${payload.trackingCode}`,
+    content
+  );
+}
+
+export async function sendTicketCustomerEmail(payload: TicketCustomerEmailPayload): Promise<EmailLogEntry> {
+  const status = TICKET_STATUS_LABELS[payload.status]?.label || payload.status;
+  const subject =
+    payload.kind === "RESULT"
+      ? `[KZTEK] Yêu cầu ${payload.trackingCode} — ${status}`
+      : `[KZTEK] Phản hồi mới cho yêu cầu ${payload.trackingCode}`;
+  const portalUrl = getTicketPortalUrl(payload.trackingCode);
+  const bodyText = payload.bodyHtml ? richHtmlToText(payload.bodyHtml) : "";
+
+  return sendMail({
+    to: payload.customerEmail,
+    toName: payload.customerName,
+    subject,
+    html: generateTicketCustomerEmailHtml(payload),
+    text: `Kính gửi ${payload.customerName},\n\n${
+      payload.kind === "RESULT" ? `Yêu cầu ${payload.trackingCode} (${payload.title}) đã chuyển sang trạng thái: ${status}.${payload.closeReason ? `\nLý do: ${payload.closeReason}` : ""}` : `Đội ngũ kỹ thuật KZTEK vừa phản hồi yêu cầu ${payload.trackingCode} (${payload.title}).`
+    }${bodyText ? `\n\n${bodyText}` : ""}\n\nXem chi tiết: ${portalUrl}`,
+    type: "TICKET_UPDATE",
+    metadata: { trackingCode: payload.trackingCode, kind: payload.kind, status: payload.status, closeReason: payload.closeReason ?? null },
   });
 }

@@ -13,6 +13,7 @@ import {
 import { PriorityIcon } from "./priority-icon";
 import { TypeIcon } from "./type-icon";
 import { AssigneeQuickSelect } from "./assignee-quick-select";
+import { isTicketTask } from "@/lib/ticket-status";
 
 function TaskCardComponent({
   task,
@@ -35,7 +36,7 @@ function TaskCardComponent({
   const doneSubtasks = subtasks.filter((s) => s.done).length;
   const isOverdue = task.dueDate && task.status !== "DONE" && new Date(task.dueDate) < new Date();
   const subtaskProgress = subtasks.length > 0 ? (doneSubtasks / subtasks.length) * 100 : 0;
-  const isTicket = task.title.startsWith("[TK-");
+  const isTicket = isTicketTask(task);
 
   // The avatar/assignee slot doubles as a quick-assign trigger when members + onAssign are wired in.
   const assigneeSlot = task.assignee ? (

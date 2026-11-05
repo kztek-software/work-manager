@@ -22,6 +22,7 @@ import {
   Check,
 } from "lucide-react";
 import { COLOR_PRESETS, type ColorPreset } from "./rich-text-toolbar";
+import { findOversizedFileError } from "@/lib/upload-limits";
 import { sanitizeHtml } from "@/lib/sanitize";
 
 /**
@@ -159,6 +160,8 @@ export interface WysiwygEditorProps {
   onSave?: () => void;
   onCancel?: () => void;
   autoFocus?: boolean;
+  /** Endpoint upload ảnh dán/kéo thả — portal khách hàng dùng /api/tickets/public/upload */
+  uploadUrl?: string;
 }
 
 export const WysiwygEditor = React.memo(function WysiwygEditor({
@@ -173,6 +176,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   onSave,
   onCancel,
   autoFocus = false,
+  uploadUrl = "/api/upload",
 }: WysiwygEditorProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [showColorMenu, setShowColorMenu] = useState(false);
@@ -430,20 +434,6 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   };
 
   // Immediate input handler (Zero DOM thrashing, debounced parent update)
-  // Handle paste with DOMPurify sanitization
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const textHtml = e.clipboardData.getData("text/html");
-    const textPlain = e.clipboardData.getData("text/plain");
-    if (textHtml) {
-      const clean = sanitizeHtml(textHtml);
-      document.execCommand("insertHTML", false, clean);
-    } else if (textPlain) {
-      document.execCommand("insertText", false, textPlain);
-    }
-    handleInputImmediate();
-  };
-
   const handleInputImmediate = () => {
     if (!editorRef.current) return;
     const html = editorRef.current.innerHTML;
@@ -524,6 +514,104 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       execCmd("formatBlock", "<p>");
     } else {
       execCmd("formatBlock", "<pre>");
+    }
+  };
+
+  // Upload ảnh lên server thay vì nhúng base64 vào nội dung (tránh vượt giới hạn độ dài & phình DB)
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const oversizedError = findOversizedFileError(files);
+    if (oversizedError) throw new Error(oversizedError);
+    const formData = new FormData();
+    files.forEach((f, i) => {
+      const ext = (f.type.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "");
+      const name = f.name && f.name !== "image.png" ? f.name : `pasted-${Date.now()}-${i}.${ext}`;
+      formData.append("files", f, name);
+    });
+    const res = await fetch(uploadUrl, { method: "POST", body: formData });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.files) {
+      throw new Error(data?.error || "Không tải được ảnh lên");
+    }
+    return (data.files as Array<{ fileUrl: string }>).map((f) => f.fileUrl);
+  };
+
+  const dataUrlToFile = async (dataUrl: string, index: number): Promise<File> => {
+    const blob = await (await fetch(dataUrl)).blob();
+    const ext = (blob.type.split("/")[1] || "png").replace(/[^a-z0-9]/gi, "");
+    return new File([blob], `pasted-${Date.now()}-${index}.${ext}`, { type: blob.type || "image/png" });
+  };
+
+  const insertHtmlAt = (range: Range | null, html: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (range && sel && editor.contains(range.commonAncestorContainer)) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    document.execCommand("insertHTML", false, html);
+    handleInputImmediate();
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    const cd = e.clipboardData;
+    const imageFiles = Array.from(cd.files || []).filter((f) => f.type.startsWith("image/"));
+    const pastedHtml = cd.getData("text/html");
+    const hasDataImages = /<img[^>]+src\s*=\s*["']data:image\//i.test(pastedHtml);
+
+    e.preventDefault();
+
+    // Không có ảnh: chèn HTML đã lọc DOMPurify (chống XSS) hoặc văn bản thuần
+    if (imageFiles.length === 0 && !hasDataImages) {
+      const textPlain = cd.getData("text/plain");
+      if (pastedHtml) {
+        document.execCommand("insertHTML", false, sanitizeHtml(pastedHtml));
+      } else if (textPlain) {
+        document.execCommand("insertText", false, textPlain);
+      }
+      handleInputImmediate();
+      return;
+    }
+
+    const sel = window.getSelection();
+    const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null;
+
+    try {
+      if (imageFiles.length > 0) {
+        const urls = await uploadImages(imageFiles);
+        insertHtmlAt(range, urls.map((u) => `<img src="${u}" alt="Ảnh đính kèm">`).join(""));
+        return;
+      }
+      // HTML chứa ảnh base64 (copy từ Word/web): upload từng ảnh rồi thay src
+      const doc = new DOMParser().parseFromString(pastedHtml, "text/html");
+      doc.querySelectorAll("script, style, meta, link").forEach((n) => n.remove());
+      const imgs = Array.from(doc.querySelectorAll("img")).filter((img) =>
+        (img.getAttribute("src") || "").startsWith("data:image/")
+      );
+      const files = await Promise.all(imgs.map((img, i) => dataUrlToFile(img.getAttribute("src")!, i)));
+      const urls = await uploadImages(files);
+      imgs.forEach((img, i) => img.setAttribute("src", urls[i]));
+      insertHtmlAt(range, sanitizeHtml(doc.body.innerHTML));
+    } catch (err) {
+      console.error("Paste image upload failed:", err);
+      alert(err instanceof Error ? err.message : "Không tải được ảnh lên");
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    const imageFiles = Array.from(e.dataTransfer.files || []).filter((f) => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+    e.preventDefault();
+    const caret = document.caretRangeFromPoint?.(e.clientX, e.clientY) ?? null;
+    try {
+      const urls = await uploadImages(imageFiles);
+      insertHtmlAt(caret, urls.map((u) => `<img src="${u}" alt="Ảnh đính kèm">`).join(""));
+    } catch (err) {
+      console.error("Drop image upload failed:", err);
+      alert(err instanceof Error ? err.message : "Không tải được ảnh lên");
     }
   };
 
@@ -952,8 +1040,9 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
             flushChange();
           }}
           onKeyDown={handleKeyDownInternal}
+          onDrop={handleDrop}
           style={{ minHeight }}
-          className="w-full text-xs text-foreground focus:outline-none leading-relaxed font-sans overflow-y-auto space-y-1.5 [&_ol]:list-decimal [&_ol]:list-outside [&_ol]:ml-5 [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:ml-5 [&_ul]:space-y-1 [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:bg-accent/5 [&_blockquote]:pl-3 [&_blockquote]:py-1 [&_blockquote]:italic [&_pre]:bg-surface-3 [&_pre]:p-2.5 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:border [&_pre]:border-line [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-accent"
+          className="w-full [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:border [&_img]:border-line [&_img]:my-1 text-xs text-foreground focus:outline-none leading-relaxed font-sans overflow-y-auto space-y-1.5 [&_ol]:list-decimal [&_ol]:list-outside [&_ol]:ml-5 [&_ol]:space-y-1 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:ml-5 [&_ul]:space-y-1 [&_blockquote]:border-l-2 [&_blockquote]:border-accent [&_blockquote]:bg-accent/5 [&_blockquote]:pl-3 [&_blockquote]:py-1 [&_blockquote]:italic [&_pre]:bg-surface-3 [&_pre]:p-2.5 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:border [&_pre]:border-line [&_h1]:text-base [&_h1]:font-bold [&_h2]:text-sm [&_h2]:font-bold [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-accent"
         />
       </div>
     </div>

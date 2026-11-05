@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { AttachmentDto } from "@/lib/types";
+import { findOversizedFileError } from "@/lib/upload-limits";
 
 export type UploadedFileItem = {
   id?: string;
@@ -31,6 +32,8 @@ interface FileUploadZoneProps {
   label?: string;
   helperText?: string;
   disabled?: boolean;
+  /** Endpoint upload — portal khách hàng dùng /api/tickets/public/upload */
+  uploadUrl?: string;
 }
 
 export function FileUploadZone({
@@ -39,8 +42,9 @@ export function FileUploadZone({
   maxFiles = 10,
   compact = false,
   label = "Đính kèm ảnh, video quay màn hình hoặc tài liệu lỗi",
-  helperText = "Hỗ trợ PNG, JPG, GIF, WebP, MP4, WebM, MOV, PDF, DOCX, XLSX, LOG (Tối đa 20MB/ảnh & tài liệu, 100MB/video)",
+  helperText = "Hỗ trợ PNG, JPG, GIF, WebP, MP4, WebM, MOV, PDF, DOCX, XLSX, LOG (Tối đa dưới 50MB/tệp)",
   disabled = false,
+  uploadUrl = "/api/upload",
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -55,6 +59,13 @@ export function FileUploadZone({
       return;
     }
 
+    const oversizedError = findOversizedFileError(Array.from(selectedFiles));
+    if (oversizedError) {
+      setUploadError(oversizedError);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setUploadError("");
     setUploading(true);
 
@@ -64,7 +75,7 @@ export function FileUploadZone({
         formData.append("files", selectedFiles[i]);
       }
 
-      const res = await fetch("/api/upload", {
+      const res = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       });
