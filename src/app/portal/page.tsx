@@ -83,7 +83,7 @@ export default function CustomerPortalPage() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!searchCode.trim()) {
-      setSearchError("Vui lòng nhập mã tra cứu (VD: TK-20260818-XXXX)");
+      setSearchError("Vui lòng nhập mã tra cứu (VD: 7KQ4M2XA)");
       return;
     }
     setSearchError("");
@@ -223,7 +223,7 @@ export default function CustomerPortalPage() {
                 <Input
                   value={searchCode}
                   onChange={(e) => setSearchCode(e.target.value)}
-                  placeholder="Nhập mã tra cứu (VD: TK-20260818-XXXX)..."
+                  placeholder="Nhập mã tra cứu 8 ký tự (VD: 7KQ4M2XA)..."
                   className="pl-10 h-11 bg-surface-3/90 border-line focus:border-accent font-mono text-xs sm:text-sm uppercase"
                 />
               </div>

@@ -499,7 +499,7 @@ export function TicketListView({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo mã TK-XXXX, tiêu đề, tên hoặc email khách..."
+            placeholder="Tìm theo mã tra cứu, tiêu đề, tên hoặc email khách..."
             className="pl-9 h-8 bg-surface-2 border-line text-xs"
           />
         </form>

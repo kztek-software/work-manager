@@ -2,6 +2,7 @@ import { publish, TICKETS_ROOM, type BoardEvent } from "@/lib/bus";
 import { prisma } from "@/lib/prisma";
 import { TICKET_FINAL_STATUSES, TicketWorkflowError } from "@/lib/ticket-status";
 import type { CustomerTicketDto, TicketCommentDto, AttachmentDto } from "@/lib/types";
+import { randomInt } from "node:crypto";
 
 // Quan hệ cần nạp kèm ticket (dùng chung list / chi tiết / tạo mới)
 const TICKET_INCLUDE = {
@@ -12,14 +13,18 @@ const TICKET_INCLUDE = {
   assignee: { select: { id: true, name: true, avatarColor: true, title: true } },
 };
 
+// Mã tra cứu: 8 ký tự ngẫu nhiên (bỏ ký tự dễ nhầm 0/O, 1/I) — 32^8 ≈ 1,1 nghìn tỷ tổ hợp, không lộ ngày tạo.
+// Dùng crypto.randomInt (CSPRNG) thay cho Math.random để không đoán được mã.
+// Mã cũ dạng TK-YYYYMMDD-XXXX vẫn tra cứu bình thường.
+const TRACKING_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+export const TRACKING_CODE_LENGTH = 8;
+
 export function generateTrackingCode(): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let random = "";
-  for (let i = 0; i < 4; i++) {
-    random += chars.charAt(Math.floor(Math.random() * chars.length));
+  let code = "";
+  for (let i = 0; i < TRACKING_CODE_LENGTH; i++) {
+    code += TRACKING_CODE_ALPHABET.charAt(randomInt(TRACKING_CODE_ALPHABET.length));
   }
-  return `TK-${dateStr}-${random}`;
+  return code;
 }
 
 /**

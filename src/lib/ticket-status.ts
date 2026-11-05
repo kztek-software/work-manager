@@ -279,3 +279,13 @@ export function checkTicketAction(
       return fail(400, "Hành động không hợp lệ");
   }
 }
+
+
+/**
+ * Task có được tạo từ Ticket khách hàng không: ưu tiên liên kết thật (customerTicket),
+ * dự phòng theo tiêu đề "[<mã tra cứu>] ..." — hỗ trợ cả mã cũ TK-YYYYMMDD-XXXX lẫn mã mới 8 ký tự.
+ */
+export function isTicketTask(task: { title: string; customerTicket?: unknown }): boolean {
+  if (task.customerTicket) return true;
+  return /^\[(TK-[A-Z0-9-]+|[A-HJ-NP-Z2-9]{8})\]\s/.test(task.title);
+}

@@ -61,6 +61,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { isTicketTask } from "@/lib/ticket-status";
 
 export function TaskDialog({
   projectId,
@@ -521,7 +522,7 @@ export function TaskDialog({
               )}
             />
 
-            {title.startsWith("[TK-") && (
+            {isTicketTask({ title, customerTicket: task?.customerTicket }) && (
               <span className="text-[10px] font-mono font-bold text-accent bg-accent/15 border border-accent/30 rounded-full px-2 py-0.5">
                 Ticket KH
               </span>
@@ -535,7 +536,7 @@ export function TaskDialog({
           <div className="flex flex-col min-w-0 h-full overflow-hidden bg-surface">
             <div className="flex-1 min-h-0 p-3 sm:p-3.5 flex flex-col gap-2.5 overflow-y-auto no-scrollbar">
               {/* Customer Ticket Origin Banner */}
-              {(title.startsWith("[TK-") || descriptionValue.includes("🎫 Nguồn: Báo lỗi từ khách hàng")) && (
+              {(isTicketTask({ title, customerTicket: task?.customerTicket }) || descriptionValue.includes("🎫 Nguồn: Báo lỗi từ khách hàng")) && (
                 <div className="shrink-0 p-2 rounded-lg border border-accent/40 bg-accent/10 flex items-center justify-between gap-2 text-xs text-accent">
                   <div className="flex items-center gap-2">
                     <LifeBuoy className="w-3.5 h-3.5 text-accent shrink-0" />
