@@ -474,16 +474,17 @@ export function AppShell({
     { href: `/projects/${project.id}/reports`, label: "Báo Cáo & KPI", icon: BarChart3 },
   ];
 
-  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work),
-  // Ticket Khách Hàng (/tickets — module riêng, dự án chỉ là bộ lọc) và số liệu tổng hợp
+  // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work) và số liệu tổng hợp
   const workspaceNav = [
     { href: boardHref(project.id), label: "Board Công Việc", icon: KanbanSquare },
     { href: "/my-work", label: "Việc Của Tôi", icon: CheckSquare },
-    ...((canViewTickets ?? can("tickets.view"))
-      ? [{ href: "/tickets", label: "Ticket Khách Hàng", icon: LifeBuoy }]
-      : []),
     { href: `/projects/${project.id}/my-stats`, label: "Thống Kê Công Việc", icon: TrendingUp },
   ];
+
+  // Nhóm riêng "Hỗ trợ khách hàng": Ticket Khách Hàng (/tickets — module riêng, dự án chỉ là thuộc tính/bộ lọc)
+  const supportNav = (canViewTickets ?? can("tickets.view"))
+    ? [{ href: "/tickets", label: "Ticket Khách Hàng", icon: LifeBuoy }]
+    : [];
 
   const systemNav = [
     {
@@ -662,6 +663,7 @@ export function AppShell({
         (pathname === `/projects/${project.id}` || pathname === `/projects/${project.id}/dashboard`))
     );
   });
+  const hasActiveInSupport = supportNav.length > 0 && pathname.startsWith("/tickets");
   const hasActiveInSystem = systemNav.some((item) => item.visible && pathname === item.href);
 
   // Compute current page label once — used for both breadcrumb text and title tooltip
@@ -680,11 +682,11 @@ export function AppShell({
     "";
 
   // Danh sách phẳng toàn bộ mục nav (đã lọc visible) — dùng để tra cứu icon/label cho mục đã ghim
-  const allVisibleNavItems = [...workspaceNav, ...mainNav, ...systemNav.filter((item) => item.visible)];
+  const allVisibleNavItems = [...workspaceNav, ...supportNav, ...mainNav, ...systemNav.filter((item) => item.visible)];
   // Board Công Việc (/board) và Việc Của Tôi (/my-work) không thuộc riêng 1 dự án -> breadcrumb hiển thị danh mục Công Việc
   const isBoardPage = pathname === "/board" || pathname.startsWith("/board");
   const isMyWorkPage = pathname === "/my-work" || pathname.startsWith("/my-work");
-  // Trang thuộc nhóm "Công việc" -> breadcrumb không hiển thị như trang con của dự án
+  // Trang thuộc nhóm "Công việc" / "Hỗ trợ khách hàng" -> breadcrumb không hiển thị như trang con của dự án
   const isTicketsPage = pathname === "/tickets" || pathname.startsWith("/tickets/");
   const isWorkspacePage = isBoardPage || isMyWorkPage || isTicketsPage || pathname.endsWith("/my-stats");
   const pinnedNavItems = pinnedHrefs
@@ -1107,6 +1109,35 @@ export function AppShell({
           )}
         </div>
 
+        {/* Customer Support Section — module Ticket tách riêng, không phụ thuộc dự án đang chọn */}
+        {supportNav.length > 0 && (
+          <div className="space-y-1">
+            <button
+              type="button"
+              onClick={() => toggleSection("support")}
+              className="w-full flex items-center justify-between px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors group cursor-pointer select-none rounded-md hover:bg-surface-2/40"
+            >
+              <div className="flex items-center gap-1.5">
+                <span>Hỗ trợ khách hàng</span>
+                {collapsedSections["support"] && hasActiveInSupport && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" title="Đang mở trang trong nhóm này" />
+                )}
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 text-muted transition-transform duration-200 group-hover:text-foreground",
+                  collapsedSections["support"] && "-rotate-90 text-muted/60"
+                )}
+              />
+            </button>
+            {!collapsedSections["support"] && (
+              <div className="space-y-0.5 animate-in fade-in-50 duration-150">
+                {supportNav.map((item) => renderNavItem(item, isMobile))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Main Workspace Section */}
         <div className="space-y-1">
           <button
@@ -1301,7 +1332,7 @@ export function AppShell({
             ) : isTicketsPage ? (
               <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
                 <LifeBuoy className="h-3.5 w-3.5 text-accent" />
-                Công việc
+                Hỗ trợ khách hàng
               </span>
             ) : isWorkspacePage ? (
               <span className="text-muted flex items-center gap-1.5 shrink-0 font-bold" suppressHydrationWarning>
