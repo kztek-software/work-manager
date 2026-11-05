@@ -27,6 +27,16 @@ const nextConfig: NextConfig = {
     "*.lan",
   ],
 
+  // Tệp người dùng upload được phục vụ qua route handler (đọc trực tiếp từ đĩa) — bản build production
+  // chỉ phục vụ tệp có trong public/ lúc khởi động nên tệp upload sau đó sẽ 404 nếu dùng static.
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: "/uploads/:name", destination: "/api/uploads/:name" }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
+
   // Cấu hình security headers nghiêm ngặt cho tệp tĩnh tải lên chống thực thi mã / XSS / sniffing
   async headers() {
     return [
