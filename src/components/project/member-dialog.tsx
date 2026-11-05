@@ -528,7 +528,7 @@ export function MemberDialog({
                             value: r.key,
                           }))}
                           onChange={(e) => handleUpdateRole(m.userId, e.value as ProjectRole)}
-                          className="w-32 h-7.5 text-xs bg-surface-2 border border-line rounded-lg"
+                          className="w-32 h-8.5 text-xs bg-surface-2 border border-line rounded-xl"
                         />
                       ) : (
                         <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-muted flex items-center gap-1 border border-line">

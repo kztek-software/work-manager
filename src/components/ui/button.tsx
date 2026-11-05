@@ -16,9 +16,9 @@ const buttonVariants = cva(
       },
       size: {
         default: "h-9 px-4 py-2",
-        sm: "h-7 px-2.5 text-xs",
+        sm: "h-8.5 px-3 text-xs",
         lg: "h-10 px-6",
-        icon: "h-8 w-8",
+        icon: "h-8.5 w-8.5",
       },
     },
     defaultVariants: { variant: "default", size: "default" },
@@ -49,5 +49,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants, PrimeButton };
-export type { PrimeButtonProps };
+export { Button, buttonVariants };

@@ -201,7 +201,10 @@ export function AppShell({
 
   useEffect(() => {
     setCurrentProjectStatus(project.status || "PLANNING");
-  }, [project.status]);
+    if (project?.id && typeof document !== "undefined") {
+      document.cookie = `flowboard_active_project=${project.id}; path=/; max-age=2592000; SameSite=Lax`;
+    }
+  }, [project.status, project?.id]);
 
   // Recalculate status picker position on open, scroll, or resize
   useLayoutEffect(() => {
@@ -224,6 +227,12 @@ export function AppShell({
       window.removeEventListener("scroll", updatePosition, true);
     };
   }, [statusPickerOpen]);
+
+  // Collapsible Project Switcher Groups State
+  const [collapsedProjectGroups, setCollapsedProjectGroups] = useState<Record<string, boolean>>({});
+  const toggleProjectGroup = (groupKey: string) => {
+    setCollapsedProjectGroups((prev) => ({ ...prev, [groupKey]: !prev[groupKey] }));
+  };
 
   // Collapsible Sidebar Sections State
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>(() => {
@@ -477,7 +486,7 @@ export function AppShell({
   // Mục không gắn với dự án đang chọn: Board xem 1 hoặc nhiều dự án (/board), Việc Của Tôi (/my-work) và số liệu tổng hợp
   const workspaceNav = [
     { href: boardHref(project.id), label: "Board Công Việc", icon: KanbanSquare },
-    { href: "/my-work", label: "Việc Của Tôi", icon: CheckSquare },
+    { href: `/my-work?projectId=${project.id}`, label: "Việc Của Tôi", icon: CheckSquare },
     { href: `/projects/${project.id}/my-stats`, label: "Thống Kê Công Việc", icon: TrendingUp },
   ];
 
@@ -855,7 +864,7 @@ export function AppShell({
 
               {/* Project Title, Key & Quick Status Badge */}
               <div className="min-w-0 flex-1">
-                <div className="truncate text-xs font-bold text-foreground group-hover:text-accent transition-colors">
+                <div className="text-xs font-bold text-foreground group-hover:text-accent transition-colors leading-snug line-clamp-2" title={project.name}>
                   {project.name}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
@@ -908,7 +917,7 @@ export function AppShell({
 
         {/* Flyout Workspace Menu Dropdown */}
         {projectMenuOpen && (
-          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[410px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
+          <div className="absolute left-2 right-2 sm:left-2 sm:right-auto sm:w-[460px] top-[calc(100%+6px)] z-50 rounded-2xl border border-line bg-surface p-2.5 shadow-2xl backdrop-blur-2xl animate-fade-in-up ring-1 ring-line/50">
             {/* Header */}
             <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted flex items-center justify-between border-b border-line/50 pb-2">
               <span>{isAdmin ? `Toàn bộ dự án (${projects.length})` : `Dự án của bạn (${projects.length})`}</span>
@@ -930,95 +939,107 @@ export function AppShell({
               </div>
             )}
 
-            {/* Projects List with Groups & 2-column layout */}
-            <div className="space-y-2 max-h-64 overflow-y-auto py-1 pr-0.5">
-              {groupedProjects.map((group) => (
-                <div key={group.key} className="space-y-1">
-                  <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-muted">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
-                      <span>{group.label}</span>
-                    </div>
-                    <span className="text-[9px] font-mono font-medium text-muted/70">{group.items.length}</span>
-                  </div>
+            {/* Projects List with Groups & Ultra-Compact Single-Line Layout */}
+            <div className="space-y-1.5 max-h-[380px] overflow-y-auto py-1 pr-0.5">
+              {groupedProjects.map((group) => {
+                const isCollapsed = collapsedProjectGroups[group.key] ?? false;
+                return (
+                  <div key={group.key} className="space-y-0.5">
+                    <button
+                      type="button"
+                      onClick={() => toggleProjectGroup(group.key)}
+                      className="flex w-full items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-muted hover:text-foreground transition-colors cursor-pointer rounded-lg hover:bg-surface-2/60"
+                      title={isCollapsed ? `Mở rộng ${group.label}` : `Thu gọn ${group.label}`}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <ChevronDown className={cn("h-3 w-3 text-muted/80 transition-transform duration-200", isCollapsed && "-rotate-90")} />
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: group.color }} />
+                        <span>{group.label}</span>
+                      </div>
+                      <span className="text-[9px] font-mono font-medium text-muted/70 bg-surface-2 px-1.5 py-0.2 rounded border border-line">
+                        {group.items.length}
+                      </span>
+                    </button>
 
-                  {group.items.map((p) => {
-                    const isActive = p.id === project.id;
-                    const pStatusMeta = projectStatusMeta(p.status);
-                    return (
-                      <Link
-                        key={p.id}
-                        href={`/projects/${p.id}/dashboard`}
-                        onClick={() => {
-                          setProjectMenuOpen(false);
-                          if (isMobile) setMobileDrawerOpen(false);
-                        }}
-                        className={cn(
-                          "flex items-center justify-between gap-3 rounded-xl px-2.5 py-2 transition-all group/item",
-                          isActive
-                            ? "bg-accent/15 border border-accent/40 shadow-sm border-l-[3.5px] border-l-accent pl-2"
-                            : "hover:bg-surface-2/90 border border-transparent"
-                        )}
-                      >
-                        {/* Cột 1: Avatar + Tên + Key (kèm dấu tích chọn nếu là dự án đang active) */}
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono font-bold text-[11px] text-white shadow-sm bg-gradient-to-br",
-                              getProjectGradient(p.key)
-                            )}
-                          >
-                            {p.key.slice(0, 3)}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span
-                                className={cn(
-                                  "truncate text-xs font-bold transition-colors",
-                                  isActive
-                                    ? "text-accent"
-                                    : "text-foreground group-hover/item:text-accent"
-                                )}
-                                title={p.name}
-                              >
-                                {p.name}
-                              </span>
-                              {isActive && (
-                                <span
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-accent/20 text-accent text-[9px] font-bold shrink-0 border border-accent/40"
-                                  title="Dự án đang chọn"
-                                >
-                                  <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                  Đang chọn
-                                </span>
+                    {!isCollapsed && (
+                      <div className="space-y-0.5 pl-0.5">
+                        {group.items.map((p) => {
+                          const isActive = p.id === project.id;
+                          return (
+                            <Link
+                              key={p.id}
+                              href={`/projects/${p.id}/dashboard`}
+                              onClick={() => {
+                                setProjectMenuOpen(false);
+                                if (isMobile) setMobileDrawerOpen(false);
+                                if (typeof document !== "undefined") {
+                                  document.cookie = `flowboard_active_project=${p.id}; path=/; max-age=2592000; SameSite=Lax`;
+                                }
+                              }}
+                              className={cn(
+                                "flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition-all group/item text-xs",
+                                isActive
+                                  ? "bg-accent/15 border border-accent/40 shadow-2xs font-semibold text-accent border-l-[3px] border-l-accent pl-1.5"
+                                  : "hover:bg-surface-2/90 border border-transparent text-foreground"
                               )}
-                            </div>
-                            <div className="text-[10px] text-muted font-mono mt-0.5 truncate">
-                              {p.key}
-                            </div>
-                          </div>
-                        </div>
+                              title={`${p.name} (${p.key})`}
+                            >
+                              {/* Cột 1: Mini Avatar + Tên dự án (không cắt cụt chữ, cho phép hiển thị trọn vẹn) */}
+                              <div className="flex items-start gap-2 min-w-0 flex-1 pr-1">
+                                <div
+                                  className={cn(
+                                    "flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono font-bold text-[9px] text-white shadow-2xs bg-gradient-to-br mt-0.5",
+                                    getProjectGradient(p.key)
+                                  )}
+                                >
+                                  {p.key.slice(0, 2)}
+                                </div>
 
-                        {/* Cột 2: Trạng thái căn phải, kích thước cố định 100% đồng nhất cho tất cả dự án */}
-                        <div className="shrink-0 w-[96px] flex justify-end">
-                          <span
-                            className="w-[96px] h-[22px] px-1.5 flex items-center justify-center rounded text-[10px] font-bold text-center truncate shadow-2xs"
-                            style={{
-                              backgroundColor: pStatusMeta.bg,
-                              color: pStatusMeta.color,
-                              border: `1px solid ${pStatusMeta.border}`,
-                            }}
-                            title={pStatusMeta.label}
-                          >
-                            {pStatusMeta.label}
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              ))}
+                                <span
+                                  className={cn(
+                                    "text-xs transition-colors leading-snug line-clamp-2",
+                                    isActive
+                                      ? "font-bold text-accent"
+                                      : "text-foreground group-hover/item:text-accent"
+                                  )}
+                                  title={p.name}
+                                >
+                                  {p.name}
+                                </span>
+                              </div>
+
+                              {/* Cột 2 (Cột ngoài cùng thẳng hàng tuyệt đối): Mã dự án + Slot icon check */}
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span
+                                  className={cn(
+                                    "font-mono text-[10.5px] font-medium transition-colors text-right",
+                                    isActive
+                                      ? "text-accent font-bold"
+                                      : "text-muted/80 group-hover/item:text-foreground"
+                                  )}
+                                >
+                                  {p.key}
+                                </span>
+
+                                <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+                                  {isActive && (
+                                    <div
+                                      className="flex items-center justify-center h-4 w-4 rounded-full bg-accent text-white shadow-2xs"
+                                      title="Dự án đang chọn"
+                                    >
+                                      <Check className="h-2.5 w-2.5 stroke-[3]" />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
 
               {filteredProjects.length === 0 && (
                 <div className="p-3 text-center text-xs text-muted">

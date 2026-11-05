@@ -402,6 +402,7 @@ export default function TicketTrackingPage({
 
                     <div className="space-y-1">
                       <WysiwygEditor
+                        uploadUrl="/api/tickets/public/upload"
                         value={replyMessage}
                         onChange={setReplyMessage}
                         placeholder="Nhập nội dung bổ sung thông tin hoặc câu hỏi... (1. 2. 3., in đậm, màu sắc...)"

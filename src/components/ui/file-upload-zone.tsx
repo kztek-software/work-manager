@@ -32,6 +32,8 @@ interface FileUploadZoneProps {
   label?: string;
   helperText?: string;
   disabled?: boolean;
+  /** Endpoint upload — portal khách hàng dùng /api/tickets/public/upload */
+  uploadUrl?: string;
 }
 
 export function FileUploadZone({
@@ -42,6 +44,7 @@ export function FileUploadZone({
   label = "Đính kèm ảnh, video quay màn hình hoặc tài liệu lỗi",
   helperText = "Hỗ trợ PNG, JPG, GIF, WebP, MP4, WebM, MOV, PDF, DOCX, XLSX, LOG (Tối đa dưới 50MB/tệp)",
   disabled = false,
+  uploadUrl = "/api/upload",
 }: FileUploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -72,7 +75,7 @@ export function FileUploadZone({
         formData.append("files", selectedFiles[i]);
       }
 
-      const res = await fetch("/api/upload", {
+      const res = await fetch(uploadUrl, {
         method: "POST",
         body: formData,
       });

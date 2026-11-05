@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 import {
   Sparkles,
   Loader2,
@@ -11,8 +12,9 @@ import {
   Eye,
   Pencil,
   Tag,
-  Paperclip,
+  Settings2,
   Check,
+  Paperclip,
   Layers,
   Rocket,
   User,
@@ -31,6 +33,7 @@ import { FileUploadZone, type UploadedFileItem } from "@/components/ui/file-uplo
 import { AssigneeQuickSelect } from "./assignee-quick-select";
 import { TypeIcon } from "./type-icon";
 import { PriorityIcon } from "./priority-icon";
+import { LabelManagerDialog } from "./label-manager-dialog";
 
 export function NewTaskDialog({
   projectId,
@@ -64,6 +67,7 @@ export function NewTaskDialog({
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [labelManagerOpen, setLabelManagerOpen] = useState(false);
   const [subtasks, setSubtasks] = useState<string[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
   const [attachments, setAttachments] = useState<UploadedFileItem[]>([]);
@@ -215,6 +219,7 @@ export function NewTaskDialog({
   );
 
   return (
+    <>
     <Dialog
       visible={open}
       onHide={() => onOpenChange(false)}
@@ -515,14 +520,14 @@ export function NewTaskDialog({
             </div>
           </div>
 
-          {/* DÒNG NHÃN PHÂN LOẠI (Được đẩy lên trên dòng Mô tả) */}
-          {labels.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 pt-0.5 pb-0.5">
-              <span className="text-xs font-semibold text-muted flex items-center gap-1.5 shrink-0">
-                <Tag className="h-3.5 w-3.5 text-muted" />
+          {/* DÒNG NHÃN PHÂN LOẠI (Đồng bộ kích thước chuẩn, nhãn chọn cực nổi bật) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 pb-1 border-y border-line/50">
+            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
+                <Tag className="h-3.5 w-3.5 text-accent" />
                 Nhãn phân loại:
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1.5 items-center">
                 {labels.map((l) => {
                   const selected = labelIds.includes(l.id);
                   return (
@@ -534,20 +539,42 @@ export function NewTaskDialog({
                           selected ? prev.filter((id) => id !== l.id) : [...prev, l.id]
                         )
                       }
-                      className="rounded-full px-2.5 py-0.5 text-[11px] font-bold transition-all cursor-pointer"
+                      className={cn(
+                        "h-6.5 px-2.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 select-none",
+                        selected
+                          ? "shadow-sm ring-2 ring-accent/30 font-bold text-white border-transparent"
+                          : "bg-surface-2 border border-line text-muted hover:text-foreground hover:border-line-strong hover:bg-surface-3"
+                      )}
                       style={{
-                        backgroundColor: selected ? l.color : `${l.color}15`,
-                        color: selected ? "#fff" : l.color,
-                        border: `1px solid ${l.color}40`,
+                        backgroundColor: selected ? l.color : undefined,
+                        borderColor: selected ? l.color : undefined,
                       }}
                     >
-                      {l.name}
+                      {selected ? (
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
+                      )}
+                      <span>{l.name}</span>
                     </button>
                   );
                 })}
+                {labels.length === 0 && (
+                  <span className="text-xs text-muted italic">Chưa có nhãn phân loại nào</span>
+                )}
               </div>
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={() => setLabelManagerOpen(true)}
+              className="text-[11px] font-semibold text-muted hover:text-accent transition-colors flex items-center gap-1 px-2 py-1 rounded-md hover:bg-surface-2 cursor-pointer border border-transparent hover:border-line shrink-0"
+              title="Quản lý danh sách nhãn dự án"
+            >
+              <Settings2 className="h-3 w-3" />
+              <span>Quản lý nhãn</span>
+            </button>
+          </div>
 
           {/* VÙNG GIỮA: 2 Cột Cân Đối (Mô tả chi tiết & Danh sách việc con) - Mỗi phần có 1 border bao ngoài */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3 pt-0.5">
@@ -717,6 +744,15 @@ export function NewTaskDialog({
         </div>
       </div>
     </Dialog>
+
+      <LabelManagerDialog
+        projectId={projectId}
+        labels={labels}
+        open={labelManagerOpen}
+        onOpenChange={setLabelManagerOpen}
+        onLabelsChanged={onCreated}
+      />
+    </>
   );
 }
 

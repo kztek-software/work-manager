@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionUser } from "@/lib/auth";
-import { getSystemConfigAsync, updateSystemConfigAsync } from "@/lib/system-config";
+import { getMaskedSystemConfigAsync, updateSystemConfigAsync } from "@/lib/system-config";
 
 export async function GET() {
   try {
@@ -18,7 +18,7 @@ export async function GET() {
       );
     }
 
-    const config = await getSystemConfigAsync();
+    const config = await getMaskedSystemConfigAsync();
     return NextResponse.json({ config, currentUserRole: user.role });
   } catch (error) {
     console.error("Lỗi khi tải cấu hình hệ thống:", error);
@@ -75,7 +75,23 @@ const updateConfigSchema = z.object({
       clientId: z.string().optional(),
       clientSecret: z.string().optional(),
       botToken: z.string().optional(),
-      webhookUrl: z.string().optional(),
+      webhookUrl: z
+        .string()
+        .optional()
+        .refine(
+          (url) => {
+            if (!url || !url.trim()) return true;
+            if (url === "******" || url.startsWith("••••")) return true;
+            return (
+              url.startsWith("https://discord.com/api/webhooks/") ||
+              url.startsWith("https://discordapp.com/api/webhooks/")
+            );
+          },
+          {
+            message:
+              "discordWebhookUrl chỉ cho phép URL webhook hợp lệ bắt đầu bằng https://discord.com/api/webhooks/ hoặc https://discordapp.com/api/webhooks/",
+          }
+        ),
       notifyOnAssign: z.boolean().optional(),
       notifyOnStatusChange: z.boolean().optional(),
       notifyOnComment: z.boolean().optional(),
@@ -87,19 +103,14 @@ const updateConfigSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  console.log("\n=======================================================");
-  console.log("⚙️ [POST /api/system/config] Nhận yêu cầu lưu cấu hình...");
   try {
     const user = await getSessionUser();
-    console.log("  👤 User:", user?.name, "| Role:", user?.role);
     if (!user) {
-      console.log("  ❌ Chưa đăng nhập");
       return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
     }
 
     // Bảo mật: Chỉ ADMIN mới có quyền lưu cấu hình
     if (user.role !== "ADMIN") {
-      console.log("  ❌ Không phải ADMIN:", user.role);
       return NextResponse.json(
         { error: "Truy cập bị từ chối. Chỉ Quản trị viên (ADMIN) mới có quyền thay đổi cấu hình hệ thống." },
         { status: 403 }
@@ -107,27 +118,28 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    console.log("  📦 Body received:", JSON.stringify(body, null, 2));
 
     const parsed = updateConfigSchema.safeParse(body);
     if (!parsed.success) {
-      console.log("  ❌ Dữ liệu không hợp lệ:", parsed.error.issues);
       return NextResponse.json(
         { error: "Dữ liệu cấu hình không hợp lệ", details: parsed.error.issues },
         { status: 400 }
       );
     }
 
-    const updatedConfig = await updateSystemConfigAsync(parsed.data, user.name);
-    console.log("  ✅ Đã lưu PostgreSQL thành công! App URL mới:", updatedConfig.branding?.appUrl);
+    await updateSystemConfigAsync(parsed.data, user.name);
+    const maskedConfig = await getMaskedSystemConfigAsync();
 
     return NextResponse.json({
       success: true,
       message: "Cập nhật cấu hình hệ thống thành công",
-      config: updatedConfig,
+      config: maskedConfig,
     });
-  } catch (error) {
-    console.error("  ❌ Lỗi khi lưu cấu hình hệ thống:", error);
-    return NextResponse.json({ error: "Lỗi máy chủ khi lưu cấu hình" }, { status: 500 });
+  } catch (error: any) {
+    console.error("  ❌ Lỗi khi lưu cấu hình hệ thống:", error?.message || error);
+    return NextResponse.json(
+      { error: error?.message || "Lỗi máy chủ khi lưu cấu hình" },
+      { status: 400 }
+    );
   }
 }

@@ -14,6 +14,7 @@ import {
   notifyTicketCoordinators,
   ticketRouteError,
 } from "@/lib/ticket-access";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 // GET /api/tickets?projectId=ALL|UNASSIGNED|<id>&status=&priority=&type=&search=
 // Danh sách ticket trong phạm vi xem của user (xem src/lib/ticket-access.ts)
@@ -100,6 +101,16 @@ const createInternalTicketSchema = z.object({
 // POST /api/tickets -> Nhân viên ghi nhận ticket thay khách hàng
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 requests / phút / IP (giữ từ main)
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`ticket_create:${clientIp}`, { maxRequests: 5, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Bạn đã tạo quá nhiều tickets trong thời gian ngắn. Vui lòng thử lại sau 1 phút.",
+        rl
+      );
+    }
+
     const user = await requireUser(req);
     const access = await getTicketAccess(user);
     if (!canCreateTickets(access)) {

@@ -10,7 +10,8 @@ services:
       # Collation ICU tiếng Việt để ORDER BY tên đúng thứ tự (locale "C" mặc định sắp theo byte)
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=icu --icu-locale=vi-VN"
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Cứng hóa cổng CSDL: Chỉ bind vào loopback 127.0.0.1 để chống phơi cổng ra Internet/mạng ngoài (G0-6)
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -57,10 +58,20 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Cần đặt DATABASE_URL trong .env}
       AUTH_SECRET: ${AUTH_SECRET:?Cần đặt AUTH_SECRET trong .env}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    healthcheck:
+      # Kiểm tra sức khỏe container định kỳ qua endpoint /api/health (G0-6)
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     volumes:
       # Giữ lại file upload (ảnh/video/tài liệu) qua các lần deploy lại container
       - uploads-data:/app/public/uploads
+      # Giữ lại file cấu hình và backup hệ thống (data/system-config.json) qua các lần redeploy
+      - app-data:/app/data
 
 volumes:
   postgres-data:
   uploads-data:
+  app-data:

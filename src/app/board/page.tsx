@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
@@ -43,9 +44,14 @@ export default async function BoardPage({
 
   const { projects: projectsQuery } = await searchParams;
   const requested = parseBoardProjectsParam(typeof projectsQuery === "string" ? projectsQuery : null);
+  const cookieStore = await cookies();
+  const cookieProjectId = cookieStore.get("flowboard_active_project")?.value;
+  const matchedCookie = cookieProjectId ? projects.find((p) => p.id === cookieProjectId) : null;
+
   const contextProjectId =
     (requested !== "ALL" &&
       projects.find((p) => requested.includes(p.id) || requested.includes(p.key))?.id) ||
+    (matchedCookie ? matchedCookie.id : null) ||
     memberProjectIds[0] ||
     projects[0].id;
 

@@ -455,6 +455,7 @@ export default function CustomerPortalPage() {
                   </div>
 
                   <WysiwygEditor
+                    uploadUrl="/api/tickets/public/upload"
                     value={description}
                     onChange={setDescription}
                     placeholder="Mô tả cụ thể: 1. Bạn đang thao tác ở màn hình nào? 2. Các bước thực hiện gây ra lỗi? 3. Kết quả mong đợi và kết quả thực tế xảy ra? (Định dạng trực quan: in đậm, màu chữ, 1. 2. 3....)"
@@ -464,6 +465,7 @@ export default function CustomerPortalPage() {
 
                 {/* Upload File / Ảnh / Video lỗi bên cạnh mô tả */}
                 <FileUploadZone
+                  uploadUrl="/api/tickets/public/upload"
                   files={attachments}
                   onChange={setAttachments}
                   maxFiles={8}

@@ -559,7 +559,7 @@ export default function ProjectDashboardPage() {
               </span>
               <Link
                 href={`/projects/${projectId}/sprints`}
-                className="h-7.5 px-3 rounded-lg bg-accent text-white hover:bg-accent-hover font-bold text-xs inline-flex items-center gap-1 shadow-md shadow-accent/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
+                className="h-8.5 sm:h-9 px-3.5 rounded-xl bg-accent text-white hover:bg-accent-hover font-bold text-xs inline-flex items-center gap-1 shadow-md shadow-accent/25 transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0"
               >
                 <span>Chi tiết</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -646,9 +646,9 @@ export default function ProjectDashboardPage() {
               </div>
               <Link
                 href={boardHref(projectId)}
-                className="px-2 py-0.5 rounded-md bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="h-8.5 px-3 rounded-xl bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
-                Mở Board <ArrowUpRight className="h-3 w-3" />
+                <span>Mở Board</span> <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
@@ -749,9 +749,9 @@ export default function ProjectDashboardPage() {
 
               <Link
                 href={`/projects/${projectId}/reports`}
-                className="px-2 py-0.5 rounded-md bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer"
+                className="h-8 px-2.5 sm:px-3 rounded-lg bg-accent/15 hover:bg-accent/25 text-accent border border-accent/30 text-xs font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
-                Báo cáo KPI <ArrowUpRight className="h-3 w-3" />
+                <span>Báo cáo KPI</span> <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 

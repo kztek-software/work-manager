@@ -45,6 +45,7 @@ yarn-error.log*
 next-env.d.ts
 
 # build artifacts / local logs / scan output (không commit)
+cookies.txt
 KZTEK-Work.exe
 dev_server_output.txt
 tsc_check_output.txt
@@ -58,3 +59,7 @@ scripts/english-scan-results.json
 [Oo]bj/
 *.user
 .vs/
+
+# database backups (du lieu sao luu CSDL, khong commit dump)
+/backups/*
+!/backups/.gitkeep

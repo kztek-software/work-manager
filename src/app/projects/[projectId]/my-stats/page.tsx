@@ -83,7 +83,9 @@ type MemberStat = {
 
 type MyStats = {
   range: { from: string; to: string; granularity: "day" | "week" };
-  scope: "me" | "team";
+  scope: "me" | "team" | "all";
+  isAdmin?: boolean;
+  allUsers?: { id: string; name: string; avatarColor: string; title: string | null }[];
   team: { id: string; name: string; code: string; color: string } | null;
   teams: TeamOption[];
   memberDist: MemberStat[];
@@ -185,7 +187,10 @@ export default function MyStatsPage() {
       tz: String(-new Date().getTimezoneOffset()),
     });
     if (projectFilter !== "ALL") qs.set("projectId", projectFilter);
-    if (viewScope !== "ME") {
+    if (viewScope === "ALL") {
+      qs.set("scope", "all");
+      if (memberFilter !== "ALL") qs.set("memberId", memberFilter);
+    } else if (viewScope !== "ME") {
       qs.set("scope", "team");
       qs.set("teamId", viewScope);
       if (memberFilter !== "ALL") qs.set("memberId", memberFilter);
@@ -214,7 +219,7 @@ export default function MyStatsPage() {
   // Cập nhật danh sách nhóm ngay khi có dữ liệu mới (điều chỉnh state trong render, không cần effect)
   if (data?.teams && data.teams !== teams) setTeams(data.teams);
 
-  const isTeamView = data?.scope === "team";
+  const isMultiView = data?.scope === "team" || data?.scope === "all";
 
   // Màu series "được giao": Navy nhạt trên nền sáng, Navy rất nhạt trên nền tối (đủ tương phản)
   const assignedColor = theme === "light" ? "#4A3F8C" : "#B8B3D6";
@@ -243,7 +248,11 @@ export default function MyStatsPage() {
           <h1 className="text-sm font-bold">Thống kê công việc</h1>
           <span className="hidden md:inline text-xs text-muted">
             —{" "}
-            {selectedTeam
+            {viewScope === "ALL"
+              ? memberFilter === "ALL"
+                ? "toàn bộ nhân sự trên hệ thống"
+                : `${data?.allUsers?.find((u) => u.id === memberFilter)?.name ?? "thành viên"} • toàn hệ thống`
+              : selectedTeam
               ? memberFilter === "ALL"
                 ? `nhóm ${selectedTeam.name} (${selectedTeam.members.length} thành viên)`
                 : `${selectedTeam.members.find((m) => m.id === memberFilter)?.name ?? "thành viên"} • nhóm ${selectedTeam.name}`
@@ -260,6 +269,24 @@ export default function MyStatsPage() {
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-3 sm:p-4">
+        {/* Banner hướng dẫn cho Quản trị viên khi xem cá nhân không có task */}
+        {viewScope === "ME" && s?.scopedTotal === 0 && data?.isAdmin && (
+          <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-3 text-xs text-blue-200 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-base shrink-0">💡</span>
+              <span>
+                Tài khoản <strong>Quản trị viên KZTEK</strong> hiện chưa có công việc cá nhân nào được giao trực tiếp. Bạn có thể chọn <strong>&quot;Toàn bộ nhân sự&quot;</strong> hoặc lọc theo từng phòng ban/thành viên để xem dữ liệu dự án!
+              </span>
+            </div>
+            <button
+              onClick={() => handleScopeChange("ALL")}
+              className="px-3 py-1 bg-accent text-white font-bold rounded-lg text-xs hover:bg-accent/90 transition-all shadow-sm cursor-pointer whitespace-nowrap"
+            >
+              🏢 Xem toàn bộ nhân sự →
+            </button>
+          </div>
+        )}
+
         {/* Bộ lọc: thời gian + dự án */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 rounded-xl border border-line bg-surface p-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -300,23 +327,43 @@ export default function MyStatsPage() {
             )}
           </div>
 
-          {teams.length > 0 && (
+          {(data?.isAdmin || teams.length > 0) && (
             <div className="flex items-center gap-2 flex-wrap lg:ml-auto">
               <Users className="h-4 w-4 text-muted" />
               <select
                 value={viewScope}
                 onChange={(e) => handleScopeChange(e.target.value)}
-                className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-foreground cursor-pointer max-w-[220px]"
+                className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-foreground cursor-pointer max-w-[240px]"
               >
-                <option value="ME">Cá nhân (của tôi)</option>
-                <optgroup label="Nhóm quản lý">
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      Nhóm {t.name} ({t.members.length})
+                {data?.isAdmin && <option value="ALL">🏢 Toàn bộ nhân sự (Hệ thống)</option>}
+                <option value="ME">👤 Cá nhân (của tôi)</option>
+                {teams.length > 0 && (
+                  <optgroup label="Nhóm & Phòng ban">
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        Nhóm {t.name} ({t.members.length})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              {viewScope === "ALL" && (data?.allUsers?.length ?? 0) > 0 && (
+                <select
+                  value={memberFilter}
+                  onChange={(e) => {
+                    setMemberFilter(e.target.value);
+                    setProjectFilter("ALL");
+                  }}
+                  className="rounded-lg border border-line bg-surface-2 px-2 py-1 text-xs text-foreground cursor-pointer max-w-[200px]"
+                >
+                  <option value="ALL">Tất cả nhân sự</option>
+                  {(data?.allUsers ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
                     </option>
                   ))}
-                </optgroup>
-              </select>
+                </select>
+              )}
               {selectedTeam && (
                 <select
                   value={memberFilter}
@@ -467,8 +514,8 @@ export default function MyStatsPage() {
               )}
             </div>
 
-            {/* So sánh thành viên trong nhóm */}
-            {isTeamView && data.memberDist.length > 0 && (
+            {/* So sánh thành viên trong nhóm / toàn bộ nhân sự */}
+            {isMultiView && data.memberDist.length > 0 && (
               <MemberTable
                 rows={data.memberDist}
                 selectedId={memberFilter}
@@ -577,7 +624,7 @@ export default function MyStatsPage() {
                 emptyText="Không có task nào quá hạn."
                 danger
                 currentProjectId={currentProjectId}
-                showAssignee={isTeamView}
+                showAssignee={isMultiView}
               />
               <TaskList
                 title="Sắp đến hạn (7 ngày tới)"
@@ -586,12 +633,12 @@ export default function MyStatsPage() {
                 total={s.upcoming}
                 emptyText="Không có task nào đến hạn trong 7 ngày tới."
                 currentProjectId={currentProjectId}
-                showAssignee={isTeamView}
+                showAssignee={isMultiView}
               />
             </div>
 
             <p className="text-[11px] text-muted">
-              Ghi chú: “Được giao trong kỳ” tính theo ngày tạo task (đang được giao cho {isTeamView ? "thành viên" : "bạn"}); “Hoàn thành” theo thời
+              Ghi chú: “Được giao trong kỳ” tính theo ngày tạo task (đang được giao cho {isMultiView ? "thành viên" : "bạn"}); “Hoàn thành” theo thời
               điểm chuyển sang Hoàn thành. Phân bố trạng thái/ưu tiên/dự án gồm các task còn mở hoặc hoàn thành trong kỳ.
               Quá hạn & sắp đến hạn là số liệu tại thời điểm hiện tại.
             </p>

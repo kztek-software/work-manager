@@ -366,6 +366,7 @@ export function BoardView({
         const res = await fetch(`/api/projects/${task.projectId}/tasks/${taskId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           body: JSON.stringify({ assigneeId: userId }),
         });
         if (!res.ok) loadBoard();
@@ -593,7 +594,7 @@ export function BoardView({
   // Options bộ lọc dùng chung cho toolbar desktop & bottom sheet mobile
   const sprintOptions = useMemo(
     () => [
-      { label: "🚀 Tất cả Sprint", value: "ALL" },
+      { label: "Tất cả Sprint", value: "ALL" },
       { label: "Chưa gán Sprint (Backlog)", value: "NONE" },
       ...(data?.sprints ?? []).map((s) => {
         const statusText = s.status === "ACTIVE" ? "Đang chạy" : s.status === "COMPLETED" ? "Đã xong" : "Kế hoạch";
@@ -610,7 +611,7 @@ export function BoardView({
     const seen = new Map<string, string>();
     for (const m of data?.members ?? []) if (!seen.has(m.user.id)) seen.set(m.user.id, m.user.name);
     return [
-      { label: "👤 Tất cả nhân sự", value: "ALL" },
+      { label: "Tất cả nhân sự", value: "ALL" },
       { label: "Chưa giao", value: "UNASSIGNED" },
       ...Array.from(seen, ([id, name]) => ({ label: name, value: id })).sort((a, b) =>
         a.label.localeCompare(b.label)
@@ -725,6 +726,7 @@ export function BoardView({
       const res = await fetch(`/api/projects/${task.projectId}/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ status: newStatus, position: newPosition }),
       });
       if (!res.ok) loadBoard();
@@ -841,9 +843,12 @@ export function BoardView({
           {projectPicker}
 
           {activeSprint && (
-            <span className="hidden sm:flex rounded-full bg-accent/15 border border-accent/30 px-2 py-0.5 text-[10px] sm:text-[11px] font-bold text-accent items-center gap-1 shrink-0">
-              <Sparkles className="h-3 w-3" />
-              <span className="truncate max-w-[100px] sm:max-w-none">{activeSprint.name}</span>
+            <span
+              className="hidden sm:flex rounded-full bg-accent/15 border border-accent/30 px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-accent items-center gap-1.5 shrink-0 max-w-[200px] md:max-w-[320px] lg:max-w-[420px]"
+              title={`Sprint đang chạy: ${activeSprint.name}`}
+            >
+              <Sparkles className="h-3 w-3 shrink-0 text-accent" />
+              <span className="truncate">{activeSprint.name}</span>
             </span>
           )}
 
@@ -876,7 +881,7 @@ export function BoardView({
                 size="sm"
                 variant="outline"
                 onClick={() => setMemberOpen(true)}
-                className="h-7 sm:h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold border-line bg-surface hover:bg-surface-2 shadow-sm flex items-center gap-1 sm:gap-1.5"
+                className="h-8.5 sm:h-9 px-2.5 sm:px-3 text-xs font-semibold border-line bg-surface hover:bg-surface-2 shadow-sm rounded-xl flex items-center gap-1.5"
                 title="Quản lý thành viên"
               >
                 <Users className="h-3.5 w-3.5 text-accent" />
@@ -889,7 +894,7 @@ export function BoardView({
                 size="sm"
                 variant="outline"
                 onClick={() => setNotionOpen(true)}
-                className="h-7 sm:h-7.5 px-2 sm:px-2.5 text-[11px] sm:text-xs font-semibold border-neutral-700 bg-neutral-900 hover:bg-neutral-800 shadow-sm flex items-center gap-1 sm:gap-1.5 text-white"
+                className="h-8.5 sm:h-9 px-2.5 sm:px-3 text-xs font-semibold border-neutral-700 bg-neutral-900 hover:bg-neutral-800 shadow-sm rounded-xl flex items-center gap-1.5 text-white"
                 title="Notion Hub"
               >
                 <span className="flex h-3.5 w-3.5 sm:h-4 sm:w-4 items-center justify-center rounded bg-neutral-800 text-[9px] sm:text-[10px] font-bold text-white border border-neutral-700">
@@ -905,7 +910,7 @@ export function BoardView({
             <Button
               size="sm"
               onClick={() => openNewTask("TODO")}
-              className="h-7 sm:h-7.5 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold bg-accent hover:bg-accent/90 text-white shadow-md shadow-accent/25"
+              className="h-8.5 sm:h-9 px-3 sm:px-3.5 text-xs font-bold bg-accent hover:bg-accent/90 text-white shadow-md shadow-accent/25 rounded-xl"
             >
               <Plus className="h-3.5 w-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Task mới</span>
@@ -930,7 +935,7 @@ export function BoardView({
               placeholder="Tìm task... (bấm /)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-7 sm:h-7.5 w-36 sm:w-52 pl-8 text-[11px] sm:text-xs bg-surface border-line focus:border-accent"
+              className="h-8.5 sm:h-9 w-36 sm:w-56 pl-8 text-xs bg-surface border-line focus:border-accent rounded-xl"
             />
           </div>
 
@@ -940,7 +945,7 @@ export function BoardView({
             options={sprintOptions}
             onChange={(e) => setSprintFilter(e.value)}
             filter={isMulti}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
 
           {/* Assignee Filter */}
@@ -949,54 +954,54 @@ export function BoardView({
             options={assigneeOptions}
             onChange={(e) => setAssigneeFilter(e.value)}
             filter={isMulti}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
 
           {/* Status Filter */}
           <Dropdown
             value={statusFilter}
             options={[
-              { label: "📋 Trạng thái", value: "ALL" },
+              { label: "Trạng thái", value: "ALL" },
               ...STATUSES.map((s) => ({ label: s.label, value: s.id })),
             ]}
             onChange={(e) => setStatusFilter(e.value)}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
 
           {/* Priority Filter */}
           <Dropdown
             value={priorityFilter}
             options={[
-              { label: "🔥 Ưu tiên", value: "ALL" },
+              { label: "Ưu tiên", value: "ALL" },
               ...PRIORITIES.map((p) => ({ label: p.label, value: p.id })),
             ]}
             onChange={(e) => setPriorityFilter(e.value)}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
 
           {/* Time Filter */}
           <Dropdown
             value={timeFilter}
             options={[
-              { label: "⏰ Thời gian", value: "ALL" },
+              { label: "Thời hạn", value: "ALL" },
               { label: "Hôm nay", value: "TODAY" },
               { label: "Tuần này", value: "THIS_WEEK" },
-              { label: "⚠️ Quá hạn", value: "OVERDUE" },
+              { label: "Quá hạn", value: "OVERDUE" },
               { label: "Không hạn", value: "NO_DUE_DATE" },
             ]}
             onChange={(e) => setTimeFilter(e.value)}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
 
           {/* Type Filter */}
           <Dropdown
             value={typeFilter}
             options={[
-              { label: "🏷️ Loại task", value: "ALL" },
+              { label: "Loại task", value: "ALL" },
               ...TASK_TYPES.map((t) => ({ label: t.label, value: t.id })),
             ]}
             onChange={(e) => setTypeFilter(e.value)}
-            className="p-inputtext-sm h-7 sm:h-7.5 text-[11px] sm:text-xs bg-surface border border-line rounded-lg"
+            className="p-inputtext-sm h-8.5 sm:h-9 text-xs bg-surface border border-line rounded-xl"
           />
         </div>
 
@@ -1033,7 +1038,7 @@ export function BoardView({
               size="sm"
               variant="ghost"
               onClick={resetFilters}
-              className="h-7 sm:h-7.5 px-1.5 sm:px-2 text-[11px] sm:text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/15 flex items-center gap-1 font-semibold"
+              className="h-8.5 sm:h-9 px-2 sm:px-2.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/15 flex items-center gap-1.5 font-semibold rounded-xl"
             >
               <RotateCcw className="h-3 w-3" />
               <span className="hidden sm:inline">Xóa lọc ({activeFilterCount})</span>
@@ -1108,7 +1113,7 @@ export function BoardView({
               <Dropdown
                 value={statusFilter}
                 options={[
-                  { label: "📋 Trạng thái", value: "ALL" },
+                  { label: "Trạng thái", value: "ALL" },
                   ...STATUSES.map((s) => ({ label: s.label, value: s.id })),
                 ]}
                 onChange={(e) => setStatusFilter(e.value)}
@@ -1118,7 +1123,7 @@ export function BoardView({
               <Dropdown
                 value={priorityFilter}
                 options={[
-                  { label: "🔥 Ưu tiên", value: "ALL" },
+                  { label: "Ưu tiên", value: "ALL" },
                   ...PRIORITIES.map((p) => ({ label: p.label, value: p.id })),
                 ]}
                 onChange={(e) => setPriorityFilter(e.value)}
@@ -1128,10 +1133,10 @@ export function BoardView({
               <Dropdown
                 value={timeFilter}
                 options={[
-                  { label: "⏰ Thời gian", value: "ALL" },
+                  { label: "Thời hạn", value: "ALL" },
                   { label: "Hôm nay", value: "TODAY" },
                   { label: "Tuần này", value: "THIS_WEEK" },
-                  { label: "⚠️ Quá hạn", value: "OVERDUE" },
+                  { label: "Quá hạn", value: "OVERDUE" },
                   { label: "Không hạn", value: "NO_DUE_DATE" },
                 ]}
                 onChange={(e) => setTimeFilter(e.value)}
@@ -1141,7 +1146,7 @@ export function BoardView({
               <Dropdown
                 value={typeFilter}
                 options={[
-                  { label: "🏷️ Loại task", value: "ALL" },
+                  { label: "Loại task", value: "ALL" },
                   ...TASK_TYPES.map((t) => ({ label: t.label, value: t.id })),
                 ]}
                 onChange={(e) => setTypeFilter(e.value)}
@@ -1238,7 +1243,7 @@ export function BoardView({
         <div
           ref={boardContainerRef}
           onScroll={handleBoardScroll}
-          className="flex flex-1 min-h-0 w-full gap-2.5 sm:gap-3 md:gap-3.5 overflow-x-auto p-2 sm:p-3 md:p-3.5 px-2.5 sm:px-3.5 md:px-4 snap-x snap-mandatory touch-pan-x no-scrollbar overflow-y-hidden select-none pb-2.5"
+          className="flex flex-1 min-h-0 w-full gap-3 sm:gap-3.5 md:gap-4 overflow-x-auto p-2.5 sm:p-3 md:p-3.5 px-3 sm:px-4 snap-x snap-mandatory touch-pan-x no-scrollbar overflow-y-hidden select-none pb-3"
         >
           {STATUSES.map((status) => (
             <BoardColumn

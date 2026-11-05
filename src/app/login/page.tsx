@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+
 import { Shield, ArrowRight, AlertCircle, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -231,10 +231,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-muted">
-          Chưa có tài khoản?{" "}
-          <Link href="/register" className="font-semibold text-accent hover:underline">
-            Đăng ký tài khoản mới
-          </Link>
+          Hệ thống nội bộ KZTEK &bull; Tài khoản do Quản trị viên cấp phát.
         </p>
       </div>
     </div>

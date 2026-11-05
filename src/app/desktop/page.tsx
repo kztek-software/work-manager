@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -124,7 +124,11 @@ export default function DesktopWorkstationPage() {
         setSelectedTask((prev: any) => ({ ...prev, status: newStatus }));
       }
 
-      await fetch(`/api/tasks/${taskId}`, {
+      const targetTask = tasks.find((t) => t.id === taskId);
+      const projectId = targetTask?.projectId || currentProject?.id;
+      const patchUrl = projectId ? `/api/projects/${projectId}/tasks/${taskId}` : `/api/tasks/${taskId}`;
+
+      await fetch(patchUrl, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
@@ -152,7 +156,8 @@ export default function DesktopWorkstationPage() {
       });
 
       if (res.ok) {
-        const created = await res.json();
+        const resData = await res.json();
+        const created = resData.task || resData;
         setTasks((prev) => [created, ...prev]);
         setSelectedTask(created);
         setNewTaskTitle("");

@@ -51,6 +51,8 @@ Giải quyết toàn diện các phản hồi người dùng sau khi chạy th�
 | 3.3 | Bổ sung tính năng Thu gọn Menu Sidebar & Đổi nhanh Trạng thái Dự án | Senior Developer | ✅ | steps/STEP-3.3-sidebar-collapsible-and-quick-status.md | 2026-11-02 14:05 |
 | 3.4 | Thu gọn/mở rộng nhóm dự án MyWork & Lazy loading SWR + Progressive Skeleton | Senior Developer | ✅ | steps/STEP-3.4-mywork-collapsible-and-swr-skeleton.md | 2026-11-02 14:22 |
 | 3.5 | Cấu hình dismissableMask toàn bộ Dialog & Fix lỗi Z-index popup trạng thái | Senior Developer | ✅ | steps/STEP-3.5-dialog-dismissable-and-zindex-fix.md | 2026-11-02 14:23 |
+| 3.6 | Fix render HTML mô tả chi tiết, Active format highlight trong WYSIWYG & Nâng chiều cao Tap/Click target | Senior Developer | ✅ | steps/STEP-3.6-wysiwyg-active-states-and-tap-targets.md | 2026-11-02 16:45 |
+| 3.7 | Active Format Highlight toàn diện (Strikethrough, Highlight, Color, List, Quote, Code) & Fix triệt để màu bị '...' | Senior Developer | ✅ | steps/STEP-3.7-comprehensive-wysiwyg-active-states-and-color-picker.md | 2026-11-02 16:57 |
 
 ### Phase 4: Review, Verification & Tạo Pull Request
 | # | Bước | Agent | Status | Step file | Hoàn thành lúc |

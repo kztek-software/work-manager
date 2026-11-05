@@ -1,3 +1,4 @@
+import { encryptSecret, decryptSecret, maskSecret, isMasked, isEncrypted } from "@/lib/crypto-secrets";
 import fs from "node:fs";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
@@ -497,7 +498,7 @@ export async function updateSystemConfigAsync(
 
   // Nếu mật khẩu truyền lên là dạng che "••••••••••••" hoặc rỗng -> giữ nguyên mật khẩu cũ
   let finalPass = updates.smtp?.pass;
-  if (!finalPass || finalPass === "••••••••••••") {
+  if (!finalPass || isMasked(finalPass)) {
     finalPass = existingSmtp.pass;
   }
 
@@ -524,11 +525,11 @@ export async function updateSystemConfigAsync(
   const existingZalo = currentSystemConfig.zalo;
   // Nếu App Secret / OA Secret Key truyền lên là dạng che "••••••••••••" hoặc rỗng -> giữ nguyên giá trị cũ
   let finalAppSecret = updates.zalo?.appSecret;
-  if (!finalAppSecret || finalAppSecret === "••••••••••••") {
+  if (!finalAppSecret || isMasked(finalAppSecret)) {
     finalAppSecret = existingZalo.appSecret;
   }
   let finalOaSecretKey = updates.zalo?.oaSecretKey;
-  if (!finalOaSecretKey || finalOaSecretKey === "••••••••••••") {
+  if (!finalOaSecretKey || isMasked(finalOaSecretKey)) {
     finalOaSecretKey = existingZalo.oaSecretKey;
   }
 
@@ -547,16 +548,31 @@ export async function updateSystemConfigAsync(
 
   const existingDiscord = currentSystemConfig.discord;
   let finalClientSecret = updates.discord?.clientSecret;
-  if (!finalClientSecret || finalClientSecret === "••••••••••••") {
+  if (!finalClientSecret || isMasked(finalClientSecret)) {
     finalClientSecret = existingDiscord.clientSecret;
   }
   let finalBotToken = updates.discord?.botToken;
-  if (!finalBotToken || finalBotToken === "••••••••••••") {
+  if (!finalBotToken || isMasked(finalBotToken)) {
     finalBotToken = existingDiscord.botToken;
   }
   let finalWebhookUrl = updates.discord?.webhookUrl;
-  if (!finalWebhookUrl || finalWebhookUrl === "••••••••••••") {
+  if (!finalWebhookUrl || isMasked(finalWebhookUrl)) {
     finalWebhookUrl = existingDiscord.webhookUrl;
+  }
+
+  // SSRF Protection: discordWebhookUrl chỉ cho phép URL bắt đầu bằng https://discord.com/api/webhooks/ hoặc https://discordapp.com/api/webhooks/
+  if (finalWebhookUrl && !isMasked(finalWebhookUrl)) {
+    const trimmed = finalWebhookUrl.trim();
+    if (trimmed) {
+      const isAllowed =
+        trimmed.startsWith("https://discord.com/api/webhooks/") ||
+        trimmed.startsWith("https://discordapp.com/api/webhooks/");
+      if (!isAllowed) {
+        throw new Error(
+          "discordWebhookUrl không hợp lệ (SSRF Protection: Chỉ chấp nhận webhook từ domain discord.com)"
+        );
+      }
+    }
   }
 
   const newDiscord: DiscordConfig = {
@@ -581,7 +597,7 @@ export async function updateSystemConfigAsync(
         smtpHost: newSmtp.host,
         smtpPort: newSmtp.port,
         smtpUser: newSmtp.user,
-        smtpPass: newSmtp.pass,
+        smtpPass: encryptSecret(newSmtp.pass),
         smtpSecure: newSmtp.secure,
         smtpFrom: newSmtp.from,
         smtpFromName: newSmtp.fromName,
@@ -597,18 +613,18 @@ export async function updateSystemConfigAsync(
         enableRealtimeSse: newNotifications.enableRealtimeSse,
         enableZaloIntegration: newZalo.enabled,
         zaloAppId: newZalo.appId,
-        zaloAppSecret: newZalo.appSecret,
+        zaloAppSecret: encryptSecret(newZalo.appSecret),
         zaloOaId: newZalo.oaId,
-        zaloOaSecretKey: newZalo.oaSecretKey,
+        zaloOaSecretKey: encryptSecret(newZalo.oaSecretKey),
         zaloZnsTemplateId: newZalo.znsTemplateId,
         notifyZaloOnAssign: newZalo.notifyOnAssign,
         notifyZaloOnStatusChange: newZalo.notifyOnStatusChange,
         notifyZaloOnComment: newZalo.notifyOnComment,
         enableDiscordIntegration: newDiscord.enabled,
         discordClientId: newDiscord.clientId,
-        discordClientSecret: newDiscord.clientSecret,
-        discordBotToken: newDiscord.botToken,
-        discordWebhookUrl: newDiscord.webhookUrl,
+        discordClientSecret: encryptSecret(newDiscord.clientSecret),
+        discordBotToken: encryptSecret(newDiscord.botToken),
+        discordWebhookUrl: encryptSecret(newDiscord.webhookUrl),
         notifyDiscordOnAssign: newDiscord.notifyOnAssign,
         notifyDiscordOnStatusChange: newDiscord.notifyOnStatusChange,
         notifyDiscordOnComment: newDiscord.notifyOnComment,
@@ -622,7 +638,7 @@ export async function updateSystemConfigAsync(
         smtpHost: newSmtp.host,
         smtpPort: newSmtp.port,
         smtpUser: newSmtp.user,
-        smtpPass: newSmtp.pass,
+        smtpPass: encryptSecret(newSmtp.pass),
         smtpSecure: newSmtp.secure,
         smtpFrom: newSmtp.from,
         smtpFromName: newSmtp.fromName,
@@ -638,18 +654,18 @@ export async function updateSystemConfigAsync(
         enableRealtimeSse: newNotifications.enableRealtimeSse,
         enableZaloIntegration: newZalo.enabled,
         zaloAppId: newZalo.appId,
-        zaloAppSecret: newZalo.appSecret,
+        zaloAppSecret: encryptSecret(newZalo.appSecret),
         zaloOaId: newZalo.oaId,
-        zaloOaSecretKey: newZalo.oaSecretKey,
+        zaloOaSecretKey: encryptSecret(newZalo.oaSecretKey),
         zaloZnsTemplateId: newZalo.znsTemplateId,
         notifyZaloOnAssign: newZalo.notifyOnAssign,
         notifyZaloOnStatusChange: newZalo.notifyOnStatusChange,
         notifyZaloOnComment: newZalo.notifyOnComment,
         enableDiscordIntegration: newDiscord.enabled,
         discordClientId: newDiscord.clientId,
-        discordClientSecret: newDiscord.clientSecret,
-        discordBotToken: newDiscord.botToken,
-        discordWebhookUrl: newDiscord.webhookUrl,
+        discordClientSecret: encryptSecret(newDiscord.clientSecret),
+        discordBotToken: encryptSecret(newDiscord.botToken),
+        discordWebhookUrl: encryptSecret(newDiscord.webhookUrl),
         notifyDiscordOnAssign: newDiscord.notifyOnAssign,
         notifyDiscordOnStatusChange: newDiscord.notifyOnStatusChange,
         notifyDiscordOnComment: newDiscord.notifyOnComment,

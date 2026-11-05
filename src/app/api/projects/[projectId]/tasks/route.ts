@@ -101,91 +101,126 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const user = await requireUser();
-  const { projectId } = await params;
+  try {
+    const user = await requireUser();
+    const { projectId } = await params;
 
-  const permCheck = await checkUserPermission(user.id, "tasks.create", projectId, user.role);
-  if (!permCheck.allowed) {
-    return NextResponse.json({ error: permCheck.reason || "Bạn không có quyền tạo công việc mới" }, { status: 403 });
-  }
+    const permCheck = await checkUserPermission(user.id, "tasks.create", projectId, user.role);
+    if (!permCheck.allowed) {
+      return NextResponse.json({ error: permCheck.reason || "Bạn không có quyền tạo công việc mới" }, { status: 403 });
+    }
 
-  const body = await req.json().catch(() => null);
-  const parsed = createTaskSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Dữ liệu task không hợp lệ" }, { status: 400 });
-  }
-  const d = parsed.data;
+    const body = await req.json().catch(() => null);
+    const parsed = createTaskSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Dữ liệu task không hợp lệ" }, { status: 400 });
+    }
+    const d = parsed.data;
 
-  // Chạy song song 2 query độc lập để lấy số thứ tự và vị trí task mới
-  const [lastTask, maxPos] = await Promise.all([
-    prisma.task.findFirst({
-      where: { projectId },
-      orderBy: { number: "desc" },
-      select: { number: true },
-    }),
-    prisma.task.aggregate({
-      where: { projectId, status: d.status },
-      _max: { position: true },
-    }),
-  ]);
+    // Đảm bảo tính nguyên tử (Atomic) khi sinh Task.number và vị trí (position)
+    // Bọc trong transaction có retry tối đa 10 lần nếu gặp xung đột mã P2002 khi có nhiều tác vụ đồng thời (G0-6)
+    const maxAttempts = 10;
+    let attempt = 0;
+    let task: any = null;
 
-  const task = await prisma.task.create({
-    data: {
-      projectId,
-      number: (lastTask?.number ?? 0) + 1,
-      title: d.title,
-      description: d.description,
-      type: d.type,
-      status: d.status,
-      priority: d.priority,
-      storyPoints: d.storyPoints ?? null,
-      assigneeId: d.assigneeId,
-      creatorId: user.id,
-      contactName: d.contactName ?? null,
-      contactPhone: d.contactPhone ?? null,
-      sprintId: d.sprintId,
-      dueDate: d.dueDate ? new Date(d.dueDate) : null,
-      position: (maxPos._max.position ?? 0) + 1000,
-      completedAt: d.status === "DONE" ? new Date() : null,
-      labels: d.labelIds?.length
-        ? { create: d.labelIds.map((labelId) => ({ labelId })) }
-        : undefined,
-      subtasks: d.subtasks?.length
-        ? {
-            create: d.subtasks.map((item) =>
-              typeof item === "string" ? { title: item } : { title: item.title }
-            ),
-          }
-        : undefined,
-      attachments: d.attachments?.length
-        ? {
-            create: d.attachments.map((att) => ({
-              fileName: att.fileName,
-              fileUrl: att.fileUrl,
-              fileType: att.fileType || "other",
-              fileSize: att.fileSize ?? null,
-              mimeType: att.mimeType ?? null,
+    while (attempt < maxAttempts) {
+      try {
+        task = await prisma.$transaction(async (tx) => {
+          const [lastTask, maxPos] = await Promise.all([
+            tx.task.findFirst({
+              where: { projectId },
+              orderBy: { number: "desc" },
+              select: { number: true },
+            }),
+            tx.task.aggregate({
+              where: { projectId, status: d.status },
+              _max: { position: true },
+            }),
+          ]);
+
+          const nextNumber = (lastTask?.number ?? 0) + 1;
+          const nextPosition = (maxPos._max.position ?? 0) + 1000;
+
+          return tx.task.create({
+            data: {
               projectId,
-              uploaderId: user.id,
-            })),
-          }
-        : undefined,
-      activity: { create: { actorId: user.id, action: "CREATED", detail: "đã tạo task này" } },
-    },
-    include: taskInclude,
-  });
+              number: nextNumber,
+              title: d.title,
+              description: d.description,
+              type: d.type,
+              status: d.status,
+              priority: d.priority,
+              storyPoints: d.storyPoints ?? null,
+              assigneeId: d.assigneeId,
+              creatorId: user.id,
+              contactName: d.contactName ?? null,
+              contactPhone: d.contactPhone ?? null,
+              sprintId: d.sprintId,
+              dueDate: d.dueDate ? new Date(d.dueDate) : null,
+              position: nextPosition,
+              completedAt: d.status === "DONE" ? new Date() : null,
+              labels: d.labelIds?.length
+                ? { create: d.labelIds.map((labelId) => ({ labelId })) }
+                : undefined,
+              subtasks: d.subtasks?.length
+                ? {
+                    create: d.subtasks.map((item) =>
+                      typeof item === "string" ? { title: item } : { title: item.title }
+                    ),
+                  }
+                : undefined,
+              attachments: d.attachments?.length
+                ? {
+                    create: d.attachments.map((att) => ({
+                      fileName: att.fileName,
+                      fileUrl: att.fileUrl,
+                      fileType: att.fileType || "other",
+                      fileSize: att.fileSize ?? null,
+                      mimeType: att.mimeType ?? null,
+                      projectId,
+                      uploaderId: user.id,
+                    })),
+                  }
+                : undefined,
+              activity: { create: { actorId: user.id, action: "CREATED", detail: "đã tạo task này" } },
+            },
+            include: taskInclude,
+          });
+        });
+        break; // Thành công -> thoát retry
+      } catch (err: any) {
+        if (err?.code === "P2002" && attempt < maxAttempts - 1) {
+          attempt++;
+          // Chờ ngẫu nhiên với exponential/jitter backoff trước khi retry (30-100ms)
+          await new Promise((resolve) => setTimeout(resolve, Math.random() * 50 + 25 * attempt));
+          continue;
+        }
+        throw err;
+      }
+    }
 
-  publish(projectId, { type: "TASK_CREATED", taskId: task.id, actorId: user.id });
+    if (!task) {
+      return NextResponse.json({ error: "Không thể tạo task sau nhiều lần thử" }, { status: 500 });
+    }
 
-  // Gửi thông báo & Email giao việc nếu có người nhận
-  if (task.assigneeId) {
-    notifyTaskAssigned({
-      taskId: task.id,
-      assigneeId: task.assigneeId,
-      actorId: user.id,
-      projectId,
-    });
+    publish(projectId, { type: "TASK_CREATED", taskId: task.id, actorId: user.id });
+
+    // Gửi thông báo & Email giao việc nếu có người nhận
+    if (task.assigneeId) {
+      notifyTaskAssigned({
+        taskId: task.id,
+        assigneeId: task.assigneeId,
+        actorId: user.id,
+        projectId,
+      });
+    }
+
+    return NextResponse.json({ task }, { status: 201 });
+  } catch (err: any) {
+    console.error("POST /api/projects/[projectId]/tasks error:", err);
+    return NextResponse.json(
+      { error: err.message || "Đã xảy ra lỗi khi tạo công việc mới" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({ task }, { status: 201 });
 }

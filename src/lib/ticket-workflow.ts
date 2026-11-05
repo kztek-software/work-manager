@@ -66,14 +66,28 @@ async function guardedUpdate(
   }
 }
 
+// Trường user cần để tính quyền ticket (khớp kiểu SessionUser)
+const HANDLER_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  avatarColor: true,
+  title: true,
+  role: true,
+  mustChangePassword: true,
+  isActive: true,
+  tokenVersion: true,
+} as const;
+
 /** User có đủ điều kiện làm người xử lý ticket của dự án không: thành viên/chủ dự án + có quyền xử lý ticket */
 export async function isEligibleTicketHandler(userId: string, projectId: string | null | undefined): Promise<boolean> {
   if (!projectId) return false;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, name: true, email: true, avatarColor: true, title: true, role: true },
+    select: HANDLER_USER_SELECT,
   });
-  if (!user) return false;
+  // Tài khoản đã bị vô hiệu hóa không được làm người xử lý
+  if (!user || !user.isActive) return false;
   const access = await getTicketAccess(user);
   return buildTicketActor(access, projectId).isEligibleHandler;
 }
@@ -82,17 +96,18 @@ export async function isEligibleTicketHandler(userId: string, projectId: string 
 export async function getEligibleTicketHandlers(projectId: string) {
   const members = await prisma.projectMember.findMany({
     where: { projectId },
-    select: { user: { select: { id: true, name: true, email: true, avatarColor: true, title: true, role: true } } },
+    select: { user: { select: HANDLER_USER_SELECT } },
   });
   const owner = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { owner: { select: { id: true, name: true, email: true, avatarColor: true, title: true, role: true } } },
+    select: { owner: { select: HANDLER_USER_SELECT } },
   });
   const candidates = new Map(members.map((m) => [m.user.id, m.user]));
   if (owner?.owner) candidates.set(owner.owner.id, owner.owner);
 
   const result: { id: string; name: string; avatarColor: string; title: string | null }[] = [];
   for (const u of candidates.values()) {
+    if (!u.isActive) continue;
     const access = await getTicketAccess(u);
     if (buildTicketActor(access, projectId).isEligibleHandler) {
       result.push({ id: u.id, name: u.name, avatarColor: u.avatarColor, title: u.title });

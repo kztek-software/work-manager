@@ -3,10 +3,12 @@ import { z } from "zod";
 import { hasInlineDataUri } from "@/lib/ticket-status";
 import { createTicket } from "@/lib/tickets";
 import { notifyTicketCoordinators } from "@/lib/ticket-access";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
+import { UPLOADED_FILE_URL_PATTERN } from "@/lib/upload-handler";
 
 const MAX_PUBLIC_ATTACHMENTS = 10;
 // Khớp URL do /api/upload trả về (không có "/" hay "\" sau tiền tố -> không thể trỏ ra ngoài thư mục uploads)
-const PUBLIC_UPLOAD_URL_PATTERN = /^\/uploads\/\d+-[a-f0-9]{16}-[^/\\]*$/;
+const PUBLIC_UPLOAD_URL_PATTERN = UPLOADED_FILE_URL_PATTERN;
 
 // Khách hàng KHÔNG chọn dự án: mọi ticket từ portal được tạo với projectId = null,
 // người có quyền tickets.assign sẽ điều phối tới dự án phù hợp.
@@ -50,6 +52,16 @@ export async function GET() {
 // POST /api/tickets/public -> Gửi ticket báo lỗi từ khách hàng (Không cần chọn dự án)
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 requests / phút / IP chống spam tickets
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`ticket_public:${clientIp}`, { maxRequests: 5, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Bạn đã gửi quá nhiều yêu cầu báo lỗi. Vui lòng thử lại sau 1 phút.",
+        rl
+      );
+    }
+
     const body = await req.json().catch(() => null);
     const parsed = publicTicketSchema.safeParse(body);
     if (!parsed.success) {
