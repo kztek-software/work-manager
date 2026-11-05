@@ -201,11 +201,11 @@ export function ProjectAttachmentGallery({
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Quick Filter Buttons */}
           {attachments.length > 0 && (
-            <div className="flex items-center rounded-lg bg-surface-2 p-0.5 border border-line text-[10px]">
+            <div className="flex items-center rounded-xl bg-surface-2 p-1 border border-line text-xs">
               <button
                 type="button"
                 onClick={() => setFilterType("ALL")}
-                className={`px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                className={`h-7.5 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                   filterType === "ALL" ? "bg-surface text-foreground shadow-sm" : "text-muted hover:text-foreground"
                 }`}
               >
@@ -215,7 +215,7 @@ export function ProjectAttachmentGallery({
                 <button
                   type="button"
                   onClick={() => setFilterType("IMAGE")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                  className={`h-7.5 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                     filterType === "IMAGE" ? "bg-surface text-emerald-600 shadow-sm" : "text-muted hover:text-foreground"
                   }`}
                 >
@@ -226,7 +226,7 @@ export function ProjectAttachmentGallery({
                 <button
                   type="button"
                   onClick={() => setFilterType("VIDEO")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                  className={`h-7.5 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                     filterType === "VIDEO" ? "bg-surface text-purple-600 shadow-sm" : "text-muted hover:text-foreground"
                   }`}
                 >
@@ -237,7 +237,7 @@ export function ProjectAttachmentGallery({
                 <button
                   type="button"
                   onClick={() => setFilterType("DOC")}
-                  className={`px-2 py-0.5 rounded-md font-semibold transition-colors cursor-pointer ${
+                  className={`h-7.5 px-3 rounded-lg font-semibold transition-colors cursor-pointer ${
                     filterType === "DOC" ? "bg-surface text-blue-600 shadow-sm" : "text-muted hover:text-foreground"
                   }`}
                 >
@@ -259,15 +259,14 @@ export function ProjectAttachmentGallery({
               />
               <Button
                 type="button"
-                size="sm"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-7.5 text-xs font-bold px-3 bg-accent hover:bg-accent/90 text-white shadow-sm shadow-accent/20 cursor-pointer"
+                className="h-8.5 sm:h-9 text-xs sm:text-sm font-bold px-4 rounded-xl bg-accent hover:bg-accent/90 text-white shadow-sm shadow-accent/20 cursor-pointer"
               >
                 {uploading ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                 ) : (
-                  <Plus className="h-3.5 w-3.5 mr-1 stroke-[2.5]" />
+                  <Plus className="h-4 w-4 mr-1.5 stroke-[2.5]" />
                 )}
                 Tải tệp lên
               </Button>

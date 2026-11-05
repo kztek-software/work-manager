@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTicketsByProject, createTicket } from "@/lib/tickets";
 import { requireUser } from "@/lib/auth";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,6 +35,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 requests / phút / IP
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`ticket_create:${clientIp}`, { maxRequests: 5, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Bạn đã tạo quá nhiều tickets trong thời gian ngắn. Vui lòng thử lại sau 1 phút.",
+        rl
+      );
+    }
+
     const body = await req.json().catch(() => null);
     if (!body || !body.title || !body.customerName || !body.customerEmail) {
       return NextResponse.json(

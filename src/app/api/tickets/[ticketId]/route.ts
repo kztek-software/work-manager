@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getTicketById, getTicketByTrackingCode, updateTicket, addTicketComment } from "@/lib/tickets";
-import { requireUser } from "@/lib/auth";
+import { getSessionUser, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
     const { ticketId } = await params;
-    let ticket = await getTicketById(ticketId, true);
+    const user = await getSessionUser(req);
+    const isStaffOrAdmin = !!user && (user.role === "ADMIN" || user.role === "MEMBER");
+
+    // Chỉ nhân viên nội bộ (Staff / Admin) mới được nạp kèm ghi chú nội bộ (internalNotes, internalComments)
+    let ticket = await getTicketById(ticketId, isStaffOrAdmin);
     if (!ticket) {
       ticket = await getTicketByTrackingCode(ticketId);
     }
     if (!ticket) {
       return NextResponse.json({ error: "Không tìm thấy ticket" }, { status: 404 });
+    }
+
+    // Bảo vệ nhiều lớp: nếu không phải staff/admin, xóa bỏ hoàn toàn trường nhạy cảm
+    if (!isStaffOrAdmin) {
+      delete (ticket as any).internalNotes;
+      if (ticket.comments) {
+        ticket.comments = ticket.comments.filter((c: any) => !c.isInternalOnly);
+      }
     }
 
     let project = null;
@@ -57,7 +69,7 @@ export async function PATCH(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireUser(req);
     const { ticketId } = await params;
 
     const body = await req.json().catch(() => null);

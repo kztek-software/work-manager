@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import Link from "next/link";
@@ -27,6 +28,8 @@ import {
   X,
   User,
   Phone,
+  Tag,
+  Settings2,
 } from "lucide-react";
 import { STATUSES, PRIORITIES, TASK_TYPES } from "@/lib/constants";
 import { TaskAttachmentGallery } from "./task-attachment-gallery";
@@ -47,6 +50,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, initials } from "@/components/ui/avatar";
 import { AssigneeQuickSelect } from "./assignee-quick-select";
 import { PriorityIcon } from "./priority-icon";
+import { LabelManagerDialog } from "./label-manager-dialog";
 import { TypeIcon } from "./type-icon";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -106,6 +110,7 @@ export function TaskDialog({
   const [labelIds, setLabelIds] = useState<string[]>(
     task?.labels ? task.labels.map((tl) => tl.label.id) : []
   );
+  const [labelManagerOpen, setLabelManagerOpen] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -336,6 +341,7 @@ export function TaskDialog({
   }
 
   return (
+    <>
     <Dialog
       visible={true}
       onHide={onClose}
@@ -602,7 +608,7 @@ export function TaskDialog({
                 ) : (
                   <div
                     onClick={() => setIsEditingDescription(true)}
-                    className="p-2 rounded-md bg-surface-2 border border-line hover:border-line-strong transition-all max-h-[100px] overflow-y-auto no-scrollbar cursor-pointer group relative text-xs"
+                    className="p-2.5 sm:p-3 rounded-xl bg-surface-2/70 border border-line hover:border-line-strong transition-all min-h-[64px] max-h-[220px] overflow-y-auto cursor-pointer group relative text-xs"
                   >
                     {descriptionValue?.trim() ? (
                       <RichMarkdown content={descriptionValue} members={members} />
@@ -669,9 +675,9 @@ export function TaskDialog({
                     placeholder="Thêm mục việc con mới..."
                     value={newSubtask}
                     onChange={(e) => setNewSubtask(e.target.value)}
-                    className="h-7.5 text-xs bg-surface rounded-lg"
+                    className="h-8.5 text-xs bg-surface rounded-xl"
                   />
-                  <Button type="submit" size="sm" variant="secondary" className="h-7.5 text-xs font-semibold px-2.5 rounded-lg">
+                  <Button type="submit" size="sm" variant="secondary" className="h-8.5 text-xs font-semibold px-3 rounded-xl">
                     <Plus className="h-3.5 w-3.5 mr-0.5" /> Thêm
                   </Button>
                 </form>
@@ -797,7 +803,7 @@ export function TaskDialog({
                   <Input
                     type="date"
                     value={dueDate ?? ""}
-                    className={`h-7.5 text-xs bg-surface-2 px-2.5 w-full ${isOverdue ? "text-accent font-bold border-accent/40" : ""}`}
+                    className={`h-8.5 text-xs bg-surface-2 px-3 w-full rounded-xl ${isOverdue ? "text-accent font-bold border-accent/40" : ""}`}
                     onChange={(e) => setDueDate(e.target.value || null)}
                   />
                 </div>
@@ -806,7 +812,7 @@ export function TaskDialog({
                   <Input
                     type="number"
                     value={storyPoints}
-                    className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 font-mono px-3 w-full rounded-xl"
                     placeholder="Chưa ước lượng (—)"
                     onChange={(e) => setStoryPoints(e.target.value)}
                   />
@@ -824,7 +830,7 @@ export function TaskDialog({
                     type="text"
                     value={contactName}
                     placeholder="VD: Anh Nam, Khách hàng..."
-                    className="h-7.5 text-xs bg-surface-2 px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 px-3 w-full rounded-xl"
                     onChange={(e) => setContactName(e.target.value)}
                   />
                 </div>
@@ -834,7 +840,7 @@ export function TaskDialog({
                     type="text"
                     value={contactPhone}
                     placeholder="VD: 0912 345 678"
-                    className="h-7.5 text-xs bg-surface-2 font-mono px-2.5 w-full"
+                    className="h-8.5 text-xs bg-surface-2 font-mono px-3 w-full rounded-xl"
                     onChange={(e) => setContactPhone(e.target.value)}
                   />
                 </div>
@@ -857,7 +863,7 @@ export function TaskDialog({
                   ]}
                   onChange={(e) => setSprintId(e.value === "none" ? null : e.value)}
                   panelClassName="border border-line bg-surface rounded-xl shadow-2xl p-1 text-xs min-w-[240px]"
-                  className="h-7.5 w-full text-xs bg-surface-2 border border-line rounded-lg"
+                  className="h-8.5 w-full text-xs bg-surface-2 border border-line rounded-xl"
                   valueTemplate={(opt) => {
                     const s = sprints.find((x) => x.id === (opt?.value || sprintId));
                     if (!s || (opt?.value === "none" || sprintId === "none" || !sprintId)) {
@@ -904,10 +910,24 @@ export function TaskDialog({
                 />
               </div>
 
-              {/* Nhãn phân loại */}
-              <div className="rounded-lg border border-line bg-surface p-2.5 space-y-1">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted">Nhãn phân loại</div>
-                <div className="flex flex-wrap gap-1">
+              {/* Nhãn phân loại (Đồng bộ kích thước chuẩn, nhãn chọn cực nổi bật) */}
+              <div className="rounded-lg border border-line bg-surface p-2.5 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted flex items-center gap-1.5">
+                    <Tag className="h-3 w-3 text-accent" />
+                    <span>Nhãn phân loại</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLabelManagerOpen(true)}
+                    className="text-[10.5px] font-semibold text-muted hover:text-accent transition-colors flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-2 cursor-pointer"
+                    title="Quản lý danh sách nhãn dự án"
+                  >
+                    <Settings2 className="h-3 w-3" />
+                    <span>Quản lý</span>
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
                   {labels.map((l) => {
                     const isSelected = labelIds.includes(l.id);
                     return (
@@ -915,16 +935,28 @@ export function TaskDialog({
                         key={l.id}
                         type="button"
                         onClick={() => setLabelIds((prev) => isSelected ? prev.filter((id) => id !== l.id) : [...prev, l.id])}
-                        className="rounded-full px-2 py-0.5 text-[10px] font-bold cursor-pointer transition-all flex items-center gap-1"
-                        style={{ backgroundColor: isSelected ? l.color : `${l.color}15`, color: isSelected ? "#fff" : l.color, border: `1px solid ${l.color}40` }}
+                        className={cn(
+                          "h-6.5 px-2.5 rounded-full text-[11px] font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5 select-none",
+                          isSelected
+                            ? "shadow-sm ring-2 ring-accent/30 font-bold text-white border-transparent"
+                            : "bg-surface-2 border border-line text-muted hover:text-foreground hover:border-line-strong hover:bg-surface-3"
+                        )}
+                        style={{
+                          backgroundColor: isSelected ? l.color : undefined,
+                          borderColor: isSelected ? l.color : undefined,
+                        }}
                       >
-                        {isSelected && <Check className="h-2.5 w-2.5" />}
-                        {l.name}
+                        {isSelected ? (
+                          <Check className="h-3 w-3 stroke-[3]" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
+                        )}
+                        <span>{l.name}</span>
                       </button>
                     );
                   })}
                   {labels.length === 0 && (
-                    <span className="text-[11px] text-muted">Dự án chưa có nhãn nào</span>
+                    <span className="text-[11px] text-muted italic">Dự án chưa có nhãn nào. Bấm "Quản lý" để thêm.</span>
                   )}
                 </div>
               </div>
@@ -945,5 +977,16 @@ export function TaskDialog({
         </div>
       </div>
     </Dialog>
+
+      {task && (
+        <LabelManagerDialog
+          projectId={task.projectId}
+          labels={labels}
+          open={labelManagerOpen}
+          onOpenChange={setLabelManagerOpen}
+          onLabelsChanged={onChanged}
+        />
+      )}
+    </>
   );
 }

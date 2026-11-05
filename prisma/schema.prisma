@@ -14,6 +14,8 @@ model User {
   passwordHash String
   // true khi mật khẩu do Admin khởi tạo/cấp lại — buộc người dùng đổi mật khẩu ở lần đăng nhập kế tiếp
   mustChangePassword Boolean @default(false)
+  isActive           Boolean  @default(true)
+  tokenVersion       Int      @default(1)
   avatarColor  String   @default("#6366f1")
   title        String?
   role         String   @default("MEMBER") // ADMIN | MEMBER | VIEWER

@@ -717,7 +717,7 @@ export function TicketDrawer({
                   <Button
                     type="submit"
                     disabled={sendingComment || !newComment.trim()}
-                    className="h-7 px-3 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-lg cursor-pointer gap-1"
+                    className="h-8.5 px-3.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl cursor-pointer gap-1.5 shadow-sm"
                   >
                     {sendingComment ? <RefreshCw className="w-3 h-3 animate-spin mr-0.5" /> : <Send className="w-3 h-3 mr-0.5" />}
                     <span>Gửi</span>

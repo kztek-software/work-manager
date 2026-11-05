@@ -59,7 +59,9 @@ export async function GET(req: NextRequest) {
   const localDayKey = (d: Date) => new Date(d.getTime() + tzMs).toISOString().slice(0, 10);
 
   const projectId = sp.get("projectId") || null;
-  const scope: "me" | "team" = sp.get("scope") === "team" ? "team" : "me";
+  const rawScope = sp.get("scope");
+  const scope: "me" | "team" | "all" =
+    rawScope === "all" ? "all" : rawScope === "team" ? "team" : "me";
 
   // Các nhóm người dùng được xem thống kê: nhóm mình làm trưởng nhóm; ADMIN xem mọi nhóm
   const manageableTeams = await prisma.team.findMany({
@@ -74,29 +76,61 @@ export async function GET(req: NextRequest) {
     orderBy: { name: "asc" },
   });
 
-  let assigneeIds = [user.id];
+  // Toàn bộ nhân sự đang hoạt động trong hệ thống (dành cho Admin hoặc bộ chọn)
+  const allUsers = await prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true, avatarColor: true, title: true },
+    orderBy: { name: "asc" },
+  });
+
+  // Cả cá nhân lẫn nhóm: chỉ lấy task ở các dự án người xem đang tham gia; ADMIN không giới hạn.
+  const projectScope = user.role === "ADMIN" ? {} : { project: { members: { some: { userId: user.id } } } };
+
+  // Danh sách dự án người xem có quyền truy cập
+  const accessibleProjects = await prisma.project.findMany({
+    where: user.role === "ADMIN" ? {} : { members: { some: { userId: user.id } } },
+    select: { id: true, name: true, key: true },
+    orderBy: { name: "asc" },
+  });
+
+  let assigneeFilter: { in: string[] } | string | undefined = undefined;
   let team: (typeof manageableTeams)[number] | null = null;
-  if (scope === "team") {
+  const memberId = sp.get("memberId");
+
+  if (scope === "all") {
+    if (memberId && memberId !== "ALL") {
+      assigneeFilter = memberId;
+    } else {
+      assigneeFilter = undefined; // Toàn bộ công việc
+    }
+  } else if (scope === "team") {
     team = manageableTeams.find((t) => t.id === sp.get("teamId")) ?? null;
     if (!team) {
       return NextResponse.json({ error: "Bạn không có quyền xem thống kê của nhóm này" }, { status: 403 });
     }
-    assigneeIds = team.members.map((m) => m.id);
-    const memberId = sp.get("memberId");
-    if (memberId) {
-      if (!assigneeIds.includes(memberId)) {
+    const teamMemberIds = team.members.map((m) => m.id);
+    if (memberId && memberId !== "ALL") {
+      if (!teamMemberIds.includes(memberId)) {
         return NextResponse.json({ error: "Thành viên không thuộc nhóm này" }, { status: 400 });
       }
-      assigneeIds = [memberId];
+      assigneeFilter = memberId;
+    } else {
+      assigneeFilter = { in: teamMemberIds };
     }
+  } else {
+    // "me" — Cá nhân của tôi
+    assigneeFilter = user.id;
   }
 
-  // Cả cá nhân lẫn nhóm: chỉ lấy task ở các dự án người xem đang tham gia
-  // (trưởng nhóm không thấy dự án mình không tham gia); ADMIN không giới hạn.
-  const projectScope = user.role === "ADMIN" ? {} : { project: { members: { some: { userId: user.id } } } };
-
   const allTasks = await prisma.task.findMany({
-    where: { assigneeId: { in: assigneeIds }, ...projectScope },
+    where: {
+      ...(assigneeFilter !== undefined
+        ? typeof assigneeFilter === "string"
+          ? { assigneeId: assigneeFilter }
+          : { assigneeId: assigneeFilter }
+        : {}),
+      ...projectScope,
+    },
     select: {
       id: true,
       number: true,
@@ -115,11 +149,7 @@ export async function GET(req: NextRequest) {
     orderBy: { updatedAt: "desc" },
   });
 
-  // Danh sách dự án để làm bộ lọc (lấy từ chính các task được giao)
-  const projectMap = new Map<string, { id: string; name: string; key: string }>();
-  for (const t of allTasks) projectMap.set(t.project.id, t.project);
-  const projects = [...projectMap.values()].sort((a, b) => a.name.localeCompare(b.name, "vi"));
-
+  const projects = accessibleProjects;
   const tasks = projectId ? allTasks.filter((t) => t.project.id === projectId) : allTasks;
 
   const fromMs = from.getTime();
@@ -214,31 +244,35 @@ export async function GET(req: NextRequest) {
     .filter((p) => p.total > 0)
     .sort((a, b) => b.total - a.total);
 
-  // ---- So sánh theo thành viên (chỉ khi xem theo nhóm) ----
-  const memberDist = team
-    ? team.members
-        .filter((m) => assigneeIds.includes(m.id))
-        .map((m) => {
-          const own = tasks.filter((t) => t.assigneeId === m.id);
-          const done = own.filter((t) => inRange(completionTime(t)));
-          const doneWithDue = done.filter((t) => t.dueDate);
-          const onTime = doneWithDue.filter((t) => completionTime(t)!.getTime() <= dueEnd(t.dueDate!));
-          return {
-            userId: m.id,
-            name: m.name,
-            avatarColor: m.avatarColor,
-            title: m.title,
-            assigned: own.filter((t) => inRange(t.createdAt)).length,
-            completed: done.length,
-            completedPoints: done.reduce((s, t) => s + (t.storyPoints ?? 0), 0),
-            inProgress: own.filter((t) => t.status === "IN_PROGRESS" || t.status === "IN_REVIEW").length,
-            open: own.filter((t) => OPEN_STATUSES.includes(t.status)).length,
-            overdue: overdue.filter((t) => t.assigneeId === m.id).length,
-            onTimeRate: doneWithDue.length > 0 ? Math.round((onTime.length / doneWithDue.length) * 100) : null,
-          };
-        })
-        .sort((a, b) => b.completed - a.completed || b.open - a.open)
-    : [];
+  // ---- So sánh theo thành viên (xem theo nhóm hoặc xem toàn bộ) ----
+  const targetMembers =
+    scope === "team" && team
+      ? team.members.filter((m) => (memberId && memberId !== "ALL" ? m.id === memberId : true))
+      : scope === "all"
+      ? allUsers.filter((m) => (memberId && memberId !== "ALL" ? m.id === memberId : true))
+      : [];
+
+  const memberDist = targetMembers
+    .map((m) => {
+      const own = tasks.filter((t) => t.assigneeId === m.id);
+      const done = own.filter((t) => inRange(completionTime(t)));
+      const doneWithDue = done.filter((t) => t.dueDate);
+      const onTime = doneWithDue.filter((t) => completionTime(t)!.getTime() <= dueEnd(t.dueDate!));
+      return {
+        userId: m.id,
+        name: m.name,
+        avatarColor: m.avatarColor,
+        title: m.title,
+        assigned: own.filter((t) => inRange(t.createdAt)).length,
+        completed: done.length,
+        completedPoints: done.reduce((s, t) => s + (t.storyPoints ?? 0), 0),
+        inProgress: own.filter((t) => t.status === "IN_PROGRESS" || t.status === "IN_REVIEW").length,
+        open: own.filter((t) => OPEN_STATUSES.includes(t.status)).length,
+        overdue: overdue.filter((t) => t.assigneeId === m.id).length,
+        onTimeRate: doneWithDue.length > 0 ? Math.round((onTime.length / doneWithDue.length) * 100) : null,
+      };
+    })
+    .sort((a, b) => b.completed - a.completed || b.open - a.open);
 
   const toItem = (t: (typeof tasks)[number]) => ({
     id: t.id,
@@ -255,8 +289,10 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     range: { from: from.toISOString(), to: to.toISOString(), granularity },
     scope,
+    isAdmin: user.role === "ADMIN",
     team: team ? { id: team.id, name: team.name, code: team.code, color: team.color } : null,
     teams: manageableTeams,
+    allUsers,
     memberDist,
     projects,
     summary: {

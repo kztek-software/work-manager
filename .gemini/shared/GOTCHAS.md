@@ -39,8 +39,32 @@
 | G009 | Next.js 16 Turbopack — Lỗi `Jest worker encountered 2 child process exceptions` do lồng thẻ `<button>` trong `<Link>` hoặc lock file dev | `[CONFIG]` | 2026-08-20 |
 | G010 | Prisma singleton trong Next.js dev runtime không tự nhận model mới sau `prisma generate` nếu giữ nguyên `globalThis.prisma` | `[CONFIG]` | 2026-08-20 |
 | G011 | Flyout/Dropdown trong Sidebar bị các link điều hướng đè lên do stacking context và `overflow-y-auto` dù đã set `z-50` | `[UI-BINDING]` | 2026-11-02 |
+| G012 | Toolbar trong `contenteditable` mất selection và không highlight nút active khi click/gõ phím | `[UI-BINDING]` | 2026-11-02 |
+| G013 | `npm` / `node` không nằm trong default PATH của PowerShell subshell trên Windows | `[CONFIG]` | 2026-11-02 |
+| G014 | Tailwind CSS bỏ qua các class spacing lẻ `h-8.5`, `w-8.5` nếu chưa khai báo trong `spacing` | `[CONFIG]` | 2026-11-03 |
+| G015 | Wrapper flexbox `min-w-0` bị co nhỏ hơn thẻ con `<button>` gây đè lên phần tử kế tiếp | `[UI-BINDING]` | 2026-11-03 |
 
 **Category hiện có:** `[SCRIPT]` (lỗi Python script/tool) · `[ENCODING]` (lỗi mã hóa ký tự) · `[UI-BINDING]` (lỗi Avalonia/WinForms binding) · `[CONFIG]` (cài đặt sai, tên package sai, cấu hình routing) · `[GIT]` (git workflow) · `[AGENT-LOOP]` (agent bị stuck/loop)
+
+---
+
+## G012 — Toolbar trong contenteditable mất selection và không highlight nút active khi click/gõ phím
+**Category:** `[UI-BINDING]`
+
+**Ngày phát hiện:** 2026-11-02
+**Môi trường:** Next.js 16 (App Router), React 19, WYSIWYG ContentEditable
+**Vấn đề:** 
+1. Khi bấm phím tắt Ctrl+B, Ctrl+I, Ctrl+U hoặc đặt con trỏ tại dòng danh sách số (1. 2. 3.), gạch đầu dòng (•), trích dẫn, code block hay tiêu đề, các nút toolbar không hề thay đổi trạng thái (không sáng lên, không có viền nhấn).
+2. Khi người dùng click vào một nút toolbar, đôi khi con trỏ trong editor bị mất focus hoặc vùng chọn text bị hủy trước khi lệnh `execCommand` kịp thi hành.
+**Nguyên nhân:** 
+1. `contenteditable` không tự động truyền state formatting ngược lên React nếu không có cơ chế `document.queryCommandState()` kết hợp `document.addEventListener("selectionchange", ...)` và duyệt ancestor nodes trong DOM.
+2. Thao tác click mặc định của trình duyệt trên thẻ `<button>` chuyển focus từ `contenteditable` sang nút trước khi `onClick` kích hoạt.
+**Cách xử lý:** 
+1. Luôn thêm `onMouseDown={(e) => e.preventDefault()}` cho toàn bộ nút bấm trên toolbar để ngăn mất focus/selection khỏi vùng soạn thảo.
+2. Theo dõi sự kiện `selectionchange` toàn cục khi editor đang focus kết hợp `document.queryCommandState(...)` và kiểm tra thẻ cha (`curr.tagName.toLowerCase()`) để cập nhật state `activeFormats`.
+3. Áp dụng styling nhấn rõ rệt khi active: `bg-accent/20 text-accent font-bold ring-1 ring-accent/40 shadow-xs`.
+**Lần đầu gặp:** Khi cải tiến WYSIWYG Editor cho Task Dialog (2026-11-02).
+**Không cần làm lại:** Mọi component toolbar rich text/contenteditable trong hệ thống đều phải áp dụng pattern `e.preventDefault()` trên `onMouseDown` và `selectionchange` listener.
 
 ---
 
@@ -349,6 +373,24 @@ tạo skill `.gemini/commands/graphify.md` ngay sau đó có ghi lại gotcha n�
 
 ---
 
+## G013 — `npm` / `node` không nằm trong default PATH của PowerShell subshell trên Windows
+**Category:** `[CONFIG]`
+
+**Ngày phát hiện:** 2026-11-02
+**Môi trường:** Windows 10/11, PowerShell, Node.js v24
+**Vấn đề:** Khi chạy lệnh `npm`, `npx` hoặc `node` trong PowerShell subshell, gặp lỗi `npm : The term 'npm' is not recognized as the name of a cmdlet, function, script file, or operable program`.
+**Nguyên nhân:** Node.js được cài đặt dạng portable/custom tại `C:\Users\Admin\node\PFiles64\nodejs` và chưa được nạp vào biến môi trường PATH của session subshell mới.
+**Cách xử lý:** 
+Trong lệnh PowerShell, bổ sung prefix nạp PATH:
+```powershell
+$env:PATH = "C:\Users\Admin\node\PFiles64\nodejs;$env:PATH"; npm run build
+```
+hoặc gọi trực tiếp `& "C:\Users\Admin\node\PFiles64\nodejs\node.exe"` và `& "C:\Users\Admin\node\PFiles64\nodejs\npm.cmd"`.
+**Lần đầu gặp:** Task `refactor-kanban-color-palette` khi chạy kiểm tra typecheck và build.
+**Không cần làm lại:** Không cần tìm kiếm `node.exe` trong `Program Files` hay cài đặt lại Node.
+
+---
+
 <!-- Thêm entry mới theo format:
 
 ## G00N — [Tên vấn đề ngắn gọn]
@@ -365,3 +407,50 @@ tạo skill `.gemini/commands/graphify.md` ngay sau đó có ghi lại gotcha n�
 BẮT BUỘC: Sau khi thêm entry mới → cập nhật bảng "Mục lục nhanh + Bảng lọc theo Category" ở đầu file.
 
 -->
+
+## G014 — Tailwind CSS bỏ qua các class spacing lẻ `h-8.5`, `w-8.5` nếu chưa khai báo trong `spacing`
+**Category:** `[CONFIG]`
+
+**Ngày phát hiện:** 2026-11-03
+**Môi trường:** Next.js 16 / Tailwind CSS
+**Vấn đề:** Các class như `h-8.5`, `w-8.5`, `h-7.5` được viết trong component nhưng không sinh ra CSS, khiến button bị co lại kích thước mặc định hoặc `size="sm"` (chỉ cao 28px `h-7`), người dùng khó bấm / chạm.
+**Nguyên nhân:** Thang đo spacing mặc định của Tailwind chỉ có các số nguyên hoặc bội 0.5 cố định (`h-7` = 28px, `h-8` = 32px, `h-9` = 36px), không có `8.5` (34px) hay `7.5` (30px). Nếu không khai báo trong `theme.extend.spacing`, Tailwind sẽ bỏ qua hoàn toàn.
+**Cách xử lý:** 
+Khai báo trong `tailwind.config.ts`:
+```ts
+theme: {
+  extend: {
+    spacing: {
+      "7.5": "1.875rem", // 30px
+      "8.5": "2.125rem", // 34px
+      "9.5": "2.375rem", // 38px
+    },
+  }
+}
+```
+Đồng thời chuẩn hóa variant `sm` trong `Button` (`src/components/ui/button.tsx`) lên `h-8.5 px-3 text-xs` (34px) thay vì `h-7` (28px).
+**Lần đầu gặp:** Khi sửa các nút bấm không đủ chiều cao theo phản hồi người dùng.
+**Không cần làm lại:** Không viết `h-8.5` mà quên kiểm tra `tailwind.config.ts`.
+
+---
+
+## G015 — Wrapper flexbox thiếu `shrink-0` làm thẻ con tràn ra ngoài và đè lên phần tử kế tiếp
+**Category:** `[UI-BINDING]`
+
+**Ngày phát hiện:** 2026-11-03
+**Môi trường:** Next.js 16 / Tailwind CSS / Chrome / Edge
+**Vấn đề:** Nút chọn dự án (Project Picker) ở header đè lên chữ đầu tiên của thẻ Sprint kế tiếp (ví dụ chữ `Sprint 8:...` bị che mất `Sp` và icon `Sparkles`, chỉ còn thấy `int 8:...`).
+**Nguyên nhân:** Wrapper `<div>` của component con đặt `className="relative min-w-0"`. Khi đặt trong flex container với `gap-2`, flexbox co `<div>` xuống nhỏ hơn nội dung của `<button>` bên trong (button có `max-w-[280px]`). Nút button tràn ra khỏi `<div>` sang bên phải và che khuất phần đầu của phần tử kế tiếp.
+**Cách xử lý:** 
+Đặt `shrink-0` trên thẻ `<div>` bọc ngoài của component:
+```tsx
+// Trước:
+<div className="relative min-w-0" ref={rootRef}>
+  <button className="... max-w-[280px]" ...>
+// Sau:
+<div className="relative shrink-0" ref={rootRef}>
+  <button className="... max-w-[280px]" ...>
+```
+Đảm bảo wrapper không bị co nhỏ hơn nút bấm, ngăn chặn hiện tượng đè lên phần tử lân cận.
+**Lần đầu gặp:** Khi người dùng chụp màn hình header bị che mất `Sp` trong `Sprint 8:...`.
+**Không cần làm lại:** Không dùng `z-index` hay `margin-left` bù trừ mà phải fix đúng flex sizing trên wrapper.

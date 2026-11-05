@@ -187,7 +187,7 @@ async function sendViaSmtpSocket(config: SmtpConfig, options: SendMailOptions): 
           {
             socket: client as net.Socket,
             host: config.host,
-            rejectUnauthorized: config.rejectUnauthorized ?? false,
+            rejectUnauthorized: config.rejectUnauthorized !== undefined ? config.rejectUnauthorized : (process.env.SMTP_REJECT_UNAUTHORIZED !== "false"),
           },
           () => {
             client = secureSocket;
@@ -272,7 +272,7 @@ async function sendViaSmtpSocket(config: SmtpConfig, options: SendMailOptions): 
         {
           host: config.host,
           port: config.port || 465,
-          rejectUnauthorized: config.rejectUnauthorized ?? false,
+          rejectUnauthorized: config.rejectUnauthorized !== undefined ? config.rejectUnauthorized : (process.env.SMTP_REJECT_UNAUTHORIZED !== "false"),
         },
         () => {
           client.on("data", onData);
@@ -392,13 +392,23 @@ function getTypeBadge(type: string) {
   }
 }
 
+export function escapeHtml(value: string | null | undefined): string {
+  if (!value) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function wrapBaseLayout(title: string, preheader: string, contentHtml: string): string {
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${BRAND.background}; color: ${BRAND.textMain}; -webkit-font-smoothing: antialiased; }
     .container { max-width: 600px; margin: 24px auto; background: ${BRAND.surface}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(37, 28, 83, 0.08); border: 1px solid ${BRAND.border}; }
@@ -419,7 +429,7 @@ function wrapBaseLayout(title: string, preheader: string, contentHtml: string): 
   </style>
 </head>
 <body>
-  <div class="preheader">${preheader}</div>
+  <div class="preheader">${escapeHtml(preheader)}</div>
   <div class="container">
     <!-- Header -->
     <div class="header">
@@ -458,15 +468,22 @@ function wrapBaseLayout(title: string, preheader: string, contentHtml: string): 
 export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string {
   const pBadge = getPriorityBadge(payload.priority);
   const tBadge = getTypeBadge(payload.taskType || "TASK");
-  const taskCode = `${payload.projectKey}-${payload.taskNumber}`;
+  const taskCode = `${escapeHtml(payload.projectKey)}-${payload.taskNumber}`;
   const directLink = payload.taskUrl || `${getAppBaseUrl()}/projects/${payload.projectId}/board?taskId=${payload.taskId || ""}`;
+  const safeAssignee = escapeHtml(payload.assigneeName);
+  const safeAssignor = escapeHtml(payload.assignorName);
+  const safeProjectName = escapeHtml(payload.projectName);
+  const safeTaskTitle = escapeHtml(payload.taskTitle);
+  const descSnippet = payload.taskDescription
+    ? escapeHtml(payload.taskDescription.slice(0, 300)) + (payload.taskDescription.length > 300 ? "..." : "")
+    : "";
 
   const content = `
     <div style="font-size: 18px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 12px;">
-      👋 Xin chào ${payload.assigneeName},
+      👋 Xin chào ${safeAssignee},
     </div>
     <div style="font-size: 14px; line-height: 1.6; color: ${BRAND.textMain};">
-      Bạn vừa được <strong>${payload.assignorName}</strong> phân công phụ trách công việc mới trong dự án <strong>${payload.projectName}</strong>.
+      Bạn vừa được <strong>${safeAssignor}</strong> phân công phụ trách công việc mới trong dự án <strong>${safeProjectName}</strong>.
     </div>
 
     <!-- Task Detail Card -->
@@ -477,12 +494,12 @@ export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string
       </div>
 
       <div style="font-size: 16px; font-weight: 700; color: ${BRAND.textMain}; margin-bottom: 12px; line-height: 1.4;">
-        ${payload.taskTitle}
+        ${safeTaskTitle}
       </div>
 
       ${
-        payload.taskDescription
-          ? `<div style="font-size: 13px; color: ${BRAND.textMuted}; background: #ffffff; border: 1px solid ${BRAND.border}; border-radius: 8px; padding: 12px; margin-bottom: 16px; line-height: 1.5; white-space: pre-wrap;">${payload.taskDescription.slice(0, 300)}${payload.taskDescription.length > 300 ? "..." : ""}</div>`
+        descSnippet
+          ? `<div style="font-size: 13px; color: ${BRAND.textMuted}; background: #ffffff; border: 1px solid ${BRAND.border}; border-radius: 8px; padding: 12px; margin-bottom: 16px; line-height: 1.5; white-space: pre-wrap;">${descSnippet}</div>`
           : ""
       }
 
@@ -497,7 +514,7 @@ export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string
         </tr>
         <tr>
           <td class="meta-label">Người giao việc:</td>
-          <td class="meta-val">${payload.assignorName}</td>
+          <td class="meta-val">${safeAssignor}</td>
         </tr>
         ${
           payload.dueDate
@@ -511,7 +528,7 @@ export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string
         }
         <tr>
           <td class="meta-label">Dự án:</td>
-          <td class="meta-val">${payload.projectName} (${payload.projectKey})</td>
+          <td class="meta-val">${safeProjectName} (${escapeHtml(payload.projectKey)})</td>
         </tr>
       </table>
     </div>
@@ -529,8 +546,8 @@ export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string
   `;
 
   return wrapBaseLayout(
-    `[KZTEK Work] Giao việc mới: ${taskCode} - ${payload.taskTitle}`,
-    `Bạn vừa được ${payload.assignorName} giao task ${taskCode}: ${payload.taskTitle}`,
+    `[KZTEK Work] Giao việc mới: ${taskCode} - ${safeTaskTitle}`,
+    `Bạn vừa được ${safeAssignor} giao task ${taskCode}: ${safeTaskTitle}`,
     content
   );
 }
@@ -539,20 +556,26 @@ export function generateTaskAssignedEmailHtml(payload: TaskEmailPayload): string
  * Tạo mẫu HTML Email Cập nhật Trạng thái (Status Changed)
  */
 export function generateStatusChangedEmailHtml(payload: StatusChangeEmailPayload): string {
+  const safeActor = escapeHtml(payload.actorName);
+  const safeTaskTitle = escapeHtml(payload.taskTitle);
+  const safeProjectName = escapeHtml(payload.projectName);
+  const safeOldStatus = escapeHtml(payload.oldStatus);
+  const safeNewStatus = escapeHtml(payload.newStatus);
+
   const content = `
     <div style="font-size: 18px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 12px;">
       Thông báo Cập nhật Tiến độ Công việc
     </div>
     <div style="font-size: 14px; line-height: 1.6; color: ${BRAND.textMain};">
-      Thành viên <strong>${payload.actorName}</strong> vừa chuyển trạng thái công việc <strong>#${payload.taskNumber}: ${payload.taskTitle}</strong> trong dự án <strong>${payload.projectName}</strong>.
+      Thành viên <strong>${safeActor}</strong> vừa chuyển trạng thái công việc <strong>#${payload.taskNumber}: ${safeTaskTitle}</strong> trong dự án <strong>${safeProjectName}</strong>.
     </div>
 
     <div class="card" style="text-align: center; padding: 24px;">
       <div style="font-size: 13px; color: ${BRAND.textMuted}; margin-bottom: 8px;">Thay đổi trạng thái:</div>
       <div style="font-size: 16px; font-weight: 700;">
-        <span class="tag" style="background: #e2e8f0; color: #475569; font-size: 13px;">${payload.oldStatus}</span>
+        <span class="tag" style="background: #e2e8f0; color: #475569; font-size: 13px;">${safeOldStatus}</span>
         <span style="margin: 0 10px; color: ${BRAND.accent}; font-size: 18px;">➔</span>
-        <span class="tag" style="background: #dbeafe; color: #1d4ed8; font-size: 13px;">${payload.newStatus}</span>
+        <span class="tag" style="background: #dbeafe; color: #1d4ed8; font-size: 13px;">${safeNewStatus}</span>
       </div>
     </div>
 
@@ -565,7 +588,7 @@ export function generateStatusChangedEmailHtml(payload: StatusChangeEmailPayload
 
   return wrapBaseLayout(
     `[KZTEK Work] Cập nhật trạng thái task #${payload.taskNumber}`,
-    `${payload.actorName} đã chuyển trạng thái task #${payload.taskNumber} sang ${payload.newStatus}`,
+    `${safeActor} đã chuyển trạng thái task #${payload.taskNumber} sang ${safeNewStatus}`,
     content
   );
 }
@@ -575,21 +598,24 @@ export function generateStatusChangedEmailHtml(payload: StatusChangeEmailPayload
  */
 export function generateTaskCommentEmailHtml(payload: CommentEmailPayload): string {
   const directLink = payload.taskUrl || `${getAppBaseUrl()}/projects/${payload.projectId}/board?taskId=${payload.taskId || ""}`;
+  const safeAuthor = escapeHtml(payload.authorName);
+  const safeTaskTitle = escapeHtml(payload.taskTitle);
+  const safeCommentBody = escapeHtml(payload.commentBody);
 
   const content = `
     <div style="font-size: 18px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 12px;">
       💬 Bình luận mới trong công việc
     </div>
     <div style="font-size: 14px; line-height: 1.6; color: ${BRAND.textMain};">
-      <strong>${payload.authorName}</strong> vừa để lại một bình luận trong task <strong>#${payload.taskNumber}: ${payload.taskTitle}</strong>:
+      <strong>${safeAuthor}</strong> vừa để lại một bình luận trong task <strong>#${payload.taskNumber}: ${safeTaskTitle}</strong>:
     </div>
 
     <div class="card" style="border-left: 4px solid ${BRAND.accent}; background: #fff8f5;">
       <div style="font-size: 13px; font-weight: 700; color: ${BRAND.primary}; margin-bottom: 6px;">
-        ${payload.authorName} viết:
+        ${safeAuthor} viết:
       </div>
       <div style="font-size: 14px; color: ${BRAND.textMain}; line-height: 1.5; white-space: pre-wrap;">
-        ${payload.commentBody}
+        ${safeCommentBody}
       </div>
     </div>
 
@@ -602,7 +628,7 @@ export function generateTaskCommentEmailHtml(payload: CommentEmailPayload): stri
 
   return wrapBaseLayout(
     `[KZTEK Work] Bình luận mới trên task #${payload.taskNumber}`,
-    `${payload.authorName} vừa bình luận: "${payload.commentBody.slice(0, 80)}"`,
+    `${safeAuthor} vừa bình luận: "${escapeHtml(payload.commentBody.slice(0, 80))}"`,
     content
   );
 }
@@ -748,8 +774,13 @@ export async function sendTaskCommentEmail(payload: CommentEmailPayload): Promis
  * Tạo mẫu HTML Email khi được Tag/Mention (@mention)
  */
 export function generateTaskMentionEmailHtml(payload: TaskMentionEmailPayload): string {
-  const taskCode = `${payload.projectKey}-${payload.taskNumber}`;
+  const taskCode = `${escapeHtml(payload.projectKey)}-${payload.taskNumber}`;
   const directLink = payload.taskUrl || `${getAppBaseUrl()}/projects/${payload.projectId}/board?taskId=${payload.taskId}`;
+  const safeAuthor = escapeHtml(payload.authorName);
+  const safeRecipient = escapeHtml(payload.recipientName);
+  const safeTaskTitle = escapeHtml(payload.taskTitle);
+  const safeProjectName = escapeHtml(payload.projectName);
+  const safeCommentBody = escapeHtml(payload.commentBody);
 
   const content = `
     <div style="background: linear-gradient(135deg, rgba(240, 89, 34, 0.15), rgba(37, 28, 83, 0.1)); border: 1px solid rgba(240, 89, 34, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center;">
@@ -759,7 +790,7 @@ export function generateTaskMentionEmailHtml(payload: TaskMentionEmailPayload): 
           Bạn vừa được gắn thẻ (@mention)
         </div>
         <div style="font-size: 12px; color: ${BRAND.textMuted};">
-          <strong>${payload.authorName}</strong> đã nhắc đến bạn trong một bình luận
+          <strong>${safeAuthor}</strong> đã nhắc đến bạn trong một bình luận
         </div>
       </div>
     </div>
@@ -768,16 +799,16 @@ export function generateTaskMentionEmailHtml(payload: TaskMentionEmailPayload): 
       Nội Dung Thảo Luận Công Việc
     </div>
     <div style="font-size: 14px; line-height: 1.6; color: ${BRAND.textMain};">
-      Xin chào <strong>${payload.recipientName}</strong>, bạn được nhắc đến trong công việc <span style="font-family: monospace; font-weight: 700; color: ${BRAND.accent};">${taskCode}</span>: <strong>${payload.taskTitle}</strong> thuộc dự án <strong>${payload.projectName}</strong>.
+      Xin chào <strong>${safeRecipient}</strong>, bạn được nhắc đến trong công việc <span style="font-family: monospace; font-weight: 700; color: ${BRAND.accent};">${taskCode}</span>: <strong>${safeTaskTitle}</strong> thuộc dự án <strong>${safeProjectName}</strong>.
     </div>
 
     <!-- Comment Blockquote Card -->
     <div class="card" style="border-left: 4px solid ${BRAND.accent}; background: #fffaf7; padding: 18px 20px; margin: 18px 0;">
       <div style="font-size: 12px; font-weight: 700; color: ${BRAND.accent}; margin-bottom: 8px; display: flex; align-items: center;">
-        💬 Lời nhắn từ ${payload.authorName}:
+        💬 Lời nhắn từ ${safeAuthor}:
       </div>
       <div style="font-size: 14px; color: #1e293b; line-height: 1.6; white-space: pre-wrap; font-style: normal;">
-        ${payload.commentBody}
+        ${safeCommentBody}
       </div>
     </div>
 
@@ -793,15 +824,15 @@ export function generateTaskMentionEmailHtml(payload: TaskMentionEmailPayload): 
         </tr>
         <tr>
           <td class="meta-label">Tiêu đề:</td>
-          <td class="meta-val" style="font-weight: 700;">${payload.taskTitle}</td>
+          <td class="meta-val" style="font-weight: 700;">${safeTaskTitle}</td>
         </tr>
         <tr>
           <td class="meta-label">Dự án:</td>
-          <td class="meta-val">${payload.projectName} (${payload.projectKey})</td>
+          <td class="meta-val">${safeProjectName} (${escapeHtml(payload.projectKey)})</td>
         </tr>
         <tr>
           <td class="meta-label">Người nhắc bạn:</td>
-          <td class="meta-val" style="font-weight: 600; color: ${BRAND.accent};">${payload.authorName}</td>
+          <td class="meta-val" style="font-weight: 600; color: ${BRAND.accent};">${safeAuthor}</td>
         </tr>
       </table>
     </div>
@@ -819,8 +850,8 @@ export function generateTaskMentionEmailHtml(payload: TaskMentionEmailPayload): 
   `;
 
   return wrapBaseLayout(
-    `[KZTEK Work] [${taskCode}] ${payload.authorName} đã nhắc đến bạn`,
-    `${payload.authorName} đã nhắc đến bạn trong task ${taskCode}: "${payload.commentBody.slice(0, 80)}"`,
+    `[KZTEK Work] [${taskCode}] ${safeAuthor} đã nhắc đến bạn`,
+    `${safeAuthor} đã nhắc đến bạn trong task ${taskCode}: "${escapeHtml(payload.commentBody.slice(0, 80))}"`,
     content
   );
 }
@@ -876,14 +907,7 @@ export type AccountCredentialsEmailPayload = {
   senderName: string;
 };
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+
 
 /**
  * Tạo mẫu HTML Email Thông tin Tài khoản (gửi tài khoản + mật khẩu khởi tạo)

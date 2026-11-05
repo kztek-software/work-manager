@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getTicketById, getTicketByTrackingCode, addTicketComment } from "@/lib/tickets";
+import { getSessionUser } from "@/lib/auth";
 
 const commentSchema = z.object({
   authorName: z.string().min(1, "Vui lòng nhập tên người gửi").max(100),
@@ -34,13 +35,23 @@ export async function POST(
       );
     }
 
+    // Kiểm tra phiên đăng nhập thực tế của người gửi để chống giả mạo isStaff / isInternalOnly
+    const user = await getSessionUser(req);
+    const isActualStaff = !!user && (user.role === "ADMIN" || user.role === "MEMBER");
+
+    // Khách hàng hoặc user chưa đăng nhập tuyệt đối KHÔNG thể tự gắn cờ isStaff hoặc tạo ghi chú nội bộ
+    const isStaff = isActualStaff ? (parsed.data.isStaff ?? true) : false;
+    const isInternalOnly = isActualStaff ? (parsed.data.isInternalOnly ?? false) : false;
+    const authorName = isActualStaff && user ? user.name : parsed.data.authorName;
+    const authorEmail = isActualStaff && user ? user.email : parsed.data.authorEmail;
+
     const comment = await addTicketComment({
       ticketId: ticket.id,
-      authorName: parsed.data.authorName,
-      authorEmail: parsed.data.authorEmail,
+      authorName,
+      authorEmail,
       message: parsed.data.message,
-      isStaff: parsed.data.isStaff,
-      isInternalOnly: parsed.data.isInternalOnly,
+      isStaff,
+      isInternalOnly,
     });
 
     return NextResponse.json({ comment }, { status: 201 });

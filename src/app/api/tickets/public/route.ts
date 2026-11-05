@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createTicket } from "@/lib/tickets";
 import { sendNotification } from "@/lib/notifications";
 import { publish } from "@/lib/bus";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 const publicTicketSchema = z.object({
   projectId: z.string().optional().nullable(),
@@ -41,6 +42,16 @@ export async function GET() {
 // POST /api/tickets/public -> Gửi ticket báo lỗi từ khách hàng (Không cần chọn dự án)
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 requests / phút / IP chống spam tickets
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`ticket_public:${clientIp}`, { maxRequests: 5, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Bạn đã gửi quá nhiều yêu cầu báo lỗi. Vui lòng thử lại sau 1 phút.",
+        rl
+      );
+    }
+
     const body = await req.json().catch(() => null);
     const parsed = publicTicketSchema.safeParse(body);
     if (!parsed.success) {

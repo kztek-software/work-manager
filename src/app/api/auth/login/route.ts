@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, createSession } from "@/lib/auth";
+import { checkRateLimit, createRateLimitResponse, getClientIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().min(1),
@@ -16,6 +17,16 @@ function getClientBaseUrl(req: NextRequest): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 10 requests / phút / IP
+    const clientIp = getClientIp(req);
+    const rl = checkRateLimit(`login:${clientIp}`, { maxRequests: 10, windowMs: 60 * 1000 });
+    if (!rl.success) {
+      return createRateLimitResponse(
+        "Quá nhiều lần đăng nhập không thành công, vui lòng thử lại sau 1 phút",
+        rl
+      );
+    }
+
     const baseUrl = getClientBaseUrl(req);
     let email = "";
     let password = "";
@@ -61,7 +72,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const isPasswordValid = verifyPassword(password, user?.passwordHash || "");
+    const isPasswordValid = user ? await verifyPassword(password, user.passwordHash) : false;
 
     if (!user || !isPasswordValid) {
       if (!contentType.includes("application/json")) {
@@ -73,15 +84,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Tài khoản hoặc mật khẩu không đúng" }, { status: 401 });
     }
 
-    const token = await createSession(user.id);
+    if (user.isActive === false) {
+      return NextResponse.json({ error: "Tài khoản của bạn đã bị khóa hoặc vô hiệu hóa" }, { status: 403 });
+    }
+
+    const token = await createSession(user.id, user.tokenVersion, user.role);
 
     // Nếu gửi bằng form HTML thông thường (legacy fallback)
     if (!contentType.includes("application/json")) {
+      const secureAttr = process.env.COOKIE_SECURE === "true" ? "; Secure" : "";
       return new Response(null, {
         status: 303,
         headers: {
           Location: user.mustChangePassword ? "/change-password" : "/",
-          "Set-Cookie": `flowboard_session=${token}; Path=/; Max-Age=604800; SameSite=Lax`,
+          "Set-Cookie": `flowboard_session=${token}; Path=/; Max-Age=604800; SameSite=Lax; HttpOnly${secureAttr}`,
         },
       });
     }
@@ -100,7 +116,7 @@ export async function POST(req: NextRequest) {
     });
 
     res.cookies.set("flowboard_session", token, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
       maxAge: 7 * 24 * 60 * 60,

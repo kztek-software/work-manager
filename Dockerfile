@@ -6,7 +6,7 @@
 # qua biến môi trường DATABASE_URL (xem prisma/schema.prisma + src/lib/prisma.ts).
 # ---------------------------------------------------------------------------
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=22
 
 # --- Stage 1: deps — cài dependencies + generate Prisma Client -------------
 FROM node:${NODE_VERSION}-bookworm-slim AS deps
@@ -43,6 +43,11 @@ RUN npm run build
 # Prisma CLI nên cần stage riêng. Dữ liệu mẫu chỉ tạo khi SEED_DEMO_DATA=true.
 FROM node:${NODE_VERSION}-bookworm-slim AS migrate
 WORKDIR /app
+
+# openssl: Prisma CLI cần để chọn đúng engine (tránh cảnh báo "failed to detect libssl")
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/src/generated ./src/generated

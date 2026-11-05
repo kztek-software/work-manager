@@ -39,14 +39,14 @@ function TaskCardComponent({
 
   // The avatar/assignee slot doubles as a quick-assign trigger when members + onAssign are wired in.
   const assigneeSlot = task.assignee ? (
-    <Avatar className="h-[22px] w-[22px] border border-white/10 shadow-sm shrink-0" title={`Phụ trách: ${task.assignee.name}`}>
-      <AvatarFallback color={task.assignee.avatarColor} className="text-[9px] font-bold">
+    <Avatar className="h-[23px] w-[23px] ring-1 ring-black/5 dark:ring-white/10 border border-background shadow-xs shrink-0" title={`Phụ trách: ${task.assignee.name}`}>
+      <AvatarFallback color={task.assignee.avatarColor} className="text-[9.5px] font-bold">
         {initials(task.assignee.name)}
       </AvatarFallback>
     </Avatar>
   ) : (
     <div
-      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border border-dashed border-line-strong text-muted/70"
+      className="flex h-[23px] w-[23px] shrink-0 items-center justify-center rounded-full border border-dashed border-line-strong text-muted/70 hover:border-accent hover:text-accent transition-colors"
       title="Chưa giao"
     >
       <Plus className="h-3 w-3" />
@@ -55,14 +55,14 @@ function TaskCardComponent({
 
   return (
     <div
-      className={`group relative rounded-xl border p-2.5 sm:p-3 transition-all duration-200 ${
+      className={`group relative rounded-xl border p-3 transition-all duration-200 ${
         overlay
           ? "rotate-2 scale-[1.03] shadow-2xl shadow-black/80 ring-2 ring-accent border-accent bg-surface/95 backdrop-blur-xl cursor-grabbing z-50 overflow-hidden"
-          : "border-line bg-surface/80 hover:bg-surface hover:border-line-strong hover:shadow-md shadow-sm cursor-grab active:cursor-grabbing active:scale-[0.98]"
+          : "border-line bg-surface/80 hover:bg-surface hover:border-line-strong hover:shadow-md shadow-xs cursor-grab active:cursor-grabbing active:scale-[0.98]"
       }`}
     >
       {/* Priority strip — the single strong color cue on the card */}
-      <span className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl" style={{ backgroundColor: priority.color }} />
+      <span className="absolute left-0 top-0 bottom-0 w-[2.5px] rounded-l-xl opacity-80" style={{ backgroundColor: priority.color }} />
 
       {/* Drag affordance — purely visual, the whole card stays draggable */}
       <div className="pointer-events-none absolute left-2.5 top-2.5 flex gap-0.5 opacity-0 group-hover:opacity-40 transition-opacity">
@@ -71,10 +71,12 @@ function TaskCardComponent({
         <span className="h-[3px] w-[3px] rounded-full bg-muted" />
       </div>
 
-      {/* Top row: Type + code & Priority */}
+      {/* Top row: Type + code & Priority — thoáng đãng, không bị cắt cụt chữ loại việc */}
       <div className="mb-1.5 flex items-center justify-between gap-1.5">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <TypeIcon type={task.type} />
+        <div className="flex min-w-0 items-center gap-1.5" title={`Loại công việc: ${type.label}`}>
+          <div className="shrink-0" title={type.label}>
+            <TypeIcon type={task.type} />
+          </div>
           {projectTag && (
             <span
               className="shrink-0 rounded px-1 py-0.2 text-[9.5px] font-mono font-bold bg-surface-3 border border-line-strong text-muted-light"
@@ -83,8 +85,8 @@ function TaskCardComponent({
               {projectTag.key}
             </span>
           )}
-          <span className="truncate text-[10.5px] font-bold text-muted">
-            #{task.number} · {type.label}
+          <span className="shrink-0 text-[11px] font-mono font-bold text-muted group-hover:text-foreground transition-colors">
+            #{task.number}
           </span>
         </div>
 
@@ -95,8 +97,9 @@ function TaskCardComponent({
             </span>
           )}
           <span
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold whitespace-nowrap shadow-2xs"
             style={{ backgroundColor: `${priority.color}18`, color: priority.color, border: `1px solid ${priority.color}40` }}
+            title={`Độ ưu tiên: ${priority.label}`}
           >
             <PriorityIcon priority={task.priority} className="h-2.5 w-2.5" />
             {priority.label}
@@ -104,33 +107,46 @@ function TaskCardComponent({
         </div>
       </div>
 
-      {/* Title */}
-      <h3 className="mb-1.5 text-[12.5px] sm:text-[13px] font-semibold text-foreground leading-snug group-hover:text-accent transition-colors line-clamp-2">
+      {/* Title with hover detail tooltip */}
+      <h3
+        className="mb-1.5 text-[12.5px] sm:text-[13px] font-semibold text-foreground leading-snug group-hover:text-accent transition-colors line-clamp-2"
+        title={
+          task.description
+            ? `${task.title}\n\n📄 Mô tả: ${task.description.length > 250 ? task.description.slice(0, 250) + "..." : task.description}`
+            : task.title
+        }
+      >
         {task.title}
       </h3>
 
-      {/* Labels — only rendered when labels exist */}
+      {/* Labels — clean neutral palette, color reserved for bug/issue */}
       {(isTicket || labels.length > 0) && (
         <div className="mb-2 flex flex-wrap items-center gap-1">
           {isTicket && (
-            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-accent/20 text-accent border border-accent/30">
+            <span className="px-1.5 py-0.5 rounded-md text-[9.5px] font-mono font-semibold bg-surface-2 text-accent border border-accent/30">
               Ticket KH
             </span>
           )}
-          {labels.slice(0, 3).map(({ label }) => (
-            <span
-              key={label.id}
-              className="rounded-full px-2 py-0.5 text-[10px] font-bold tracking-tight"
-              style={{ backgroundColor: `${label.color}20`, color: label.color, border: `1px solid ${label.color}40` }}
-            >
-              {label.name}
-            </span>
-          ))}
+          {labels.slice(0, 3).map(({ label }) => {
+            const isBug = label.name.toLowerCase().includes("bug") || label.name.toLowerCase().includes("lỗi");
+            return (
+              <span
+                key={label.id}
+                className={`rounded-md px-1.5 py-0.5 text-[10px] tracking-tight border font-medium ${
+                  isBug
+                    ? "bg-rose-500/10 text-rose-500 border-rose-500/25 font-semibold"
+                    : "bg-surface-2 text-muted border-line/80 hover:bg-surface-3"
+                }`}
+              >
+                {label.name}
+              </span>
+            );
+          })}
         </div>
       )}
 
       {/* Footer: due date, comments, checklist chips + assignee — compact and tight */}
-      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-line/40">
+      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-line/50">
         <div className="flex flex-wrap items-center gap-1">
           {task.dueDate && (
             <span

@@ -1,7 +1,10 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies, headers } from "next/headers";
-import { scryptSync, randomBytes, timingSafeEqual } from "crypto";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 import { prisma } from "./prisma";
+
+const scryptAsync = promisify(scrypt);
 
 const SECRET = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "flowboard-dev-secret-change-me-in-production"
@@ -9,18 +12,24 @@ const SECRET = new TextEncoder().encode(
 const COOKIE_NAME = "flowboard_session";
 const SESSION_DAYS = 7;
 
-export function hashPassword(password: string): string {
+/** Băm mật khẩu bất đồng bộ không block Event Loop */
+export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
-  return `${salt}:${hash}`;
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${salt}:${derivedKey.toString("hex")}`;
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
+/** Xác minh mật khẩu bất đồng bộ */
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
-  const candidate = scryptSync(password, salt, 64);
-  const expected = Buffer.from(hash, "hex");
-  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+  try {
+    const candidate = (await scryptAsync(password, salt, 64)) as Buffer;
+    const expected = Buffer.from(hash, "hex");
+    return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+  } catch {
+    return false;
+  }
 }
 
 /** Sinh mật khẩu tạm ngẫu nhiên (bỏ các ký tự dễ nhầm như 0/O, 1/l/I) */
@@ -38,25 +47,56 @@ export type SessionUser = {
   email: string;
   avatarColor: string;
   title: string | null;
-  role?: string;
-  mustChangePassword?: boolean;
+  role: string;
+  mustChangePassword: boolean;
+  isActive: boolean;
+  tokenVersion: number;
 };
 
-export async function createJwtToken(userId: string): Promise<string> {
-  return await new SignJWT({ sub: userId })
+export async function createJwtToken(
+  userId: string,
+  extraPayload?: { role?: string; tokenVersion?: number }
+): Promise<string> {
+  const jwt = new SignJWT({
+    sub: userId,
+    ...(extraPayload?.role ? { role: extraPayload.role } : {}),
+    ...(extraPayload?.tokenVersion !== undefined ? { tokenVersion: extraPayload.tokenVersion } : {}),
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DAYS}d`)
-    .sign(SECRET);
+    .setExpirationTime(`${SESSION_DAYS}d`);
+
+  return await jwt.sign(SECRET);
 }
 
-export async function createSession(userId: string): Promise<string> {
-  const token = await createJwtToken(userId);
+export async function createSession(
+  userId: string,
+  tokenVersion?: number,
+  role?: string
+): Promise<string> {
+  let tv = tokenVersion;
+  let userRole = role;
+
+  if (tv === undefined || userRole === undefined) {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tokenVersion: true, role: true },
+    });
+    if (u) {
+      if (tv === undefined) tv = u.tokenVersion;
+      if (userRole === undefined) userRole = u.role;
+    }
+  }
+
+  const token = await createJwtToken(userId, {
+    tokenVersion: tv ?? 1,
+    role: userRole ?? "MEMBER",
+  });
 
   try {
     const store = await cookies();
     store.set(COOKIE_NAME, token, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
       secure: process.env.COOKIE_SECURE === "true",
       maxAge: SESSION_DAYS * 24 * 60 * 60,
@@ -73,9 +113,9 @@ export async function destroySession() {
   try {
     const store = await cookies();
     store.set(COOKIE_NAME, "", {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
-      secure: false,
+      secure: process.env.COOKIE_SECURE === "true",
       maxAge: 0,
       path: "/",
     });
@@ -130,13 +170,37 @@ export async function getSessionUser(req?: Request | null): Promise<SessionUser 
   try {
     const { payload } = await jwtVerify(token, SECRET);
     if (!payload.sub) return null;
+
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, name: true, email: true, avatarColor: true, title: true, role: true, mustChangePassword: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarColor: true,
+        title: true,
+        role: true,
+        mustChangePassword: true,
+        isActive: true,
+        tokenVersion: true,
+      },
     });
+
+    if (!user) return null;
+
+    // Chặn tài khoản bị vô hiệu hóa
+    if (!user.isActive) {
+      return null;
+    }
+
+    // Đối chiếu tokenVersion trong token với DB để thu hồi phiên cũ khi đổi mật khẩu
+    const payloadVersion = typeof payload.tokenVersion === "number" ? payload.tokenVersion : null;
+    if (payloadVersion === null || payloadVersion !== user.tokenVersion) {
+      return null;
+    }
+
     return user;
-  } catch (err) {
-    console.error("getSessionUser error:", err);
+  } catch {
     return null;
   }
 }

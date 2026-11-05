@@ -36,14 +36,14 @@ export function BoardColumn({
   return (
     <div
       id={`board-col-${status.id}`}
-      className="flex w-[84vw] sm:w-auto sm:flex-1 sm:min-w-[220px] md:min-w-[240px] shrink-0 sm:shrink-0 lg:shrink flex-col h-full max-h-full rounded-2xl border border-line bg-surface/40 p-2 sm:p-2 backdrop-blur-sm shadow-sm transition-all overflow-hidden"
+      className="flex w-[84vw] sm:w-auto sm:flex-1 sm:min-w-[230px] md:min-w-[245px] shrink-0 sm:shrink-0 lg:shrink flex-col h-full max-h-full rounded-2xl border border-line bg-surface/35 p-2 sm:p-2.5 backdrop-blur-sm shadow-xs transition-all overflow-hidden"
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between px-1.5 py-1 mb-1 shrink-0">
+      <div className="flex items-center justify-between px-2 py-1.5 mb-1.5 shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <span
-            className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full shadow-sm"
-            style={{ backgroundColor: status.color, boxShadow: `0 0 8px ${status.color}80` }}
+            className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full"
+            style={{ backgroundColor: status.color }}
           />
           <span className="text-[11.5px] sm:text-xs font-bold uppercase tracking-wider text-foreground">
             {status.label}
@@ -73,7 +73,7 @@ export function BoardColumn({
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div
           ref={setNodeRef}
-          className={`flex-1 min-h-0 space-y-1.5 sm:space-y-2 overflow-y-auto pr-1 rounded-xl transition-all duration-200 ${
+          className={`flex-1 min-h-0 space-y-2 overflow-y-auto pr-1 rounded-xl transition-all duration-200 ${
             isOver
               ? "bg-accent/10 ring-2 ring-accent/60 border-2 border-dashed border-accent/60 scale-[1.01]"
               : ""

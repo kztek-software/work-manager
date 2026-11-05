@@ -19,8 +19,10 @@ import {
   Minus,
   ChevronDown,
   RemoveFormatting,
+  Check,
 } from "lucide-react";
 import { COLOR_PRESETS, type ColorPreset } from "./rich-text-toolbar";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 /**
  * Converts Markdown string to HTML for WYSIWYG editor initialization
@@ -29,7 +31,7 @@ export function markdownToHtml(md: string): string {
   if (!md) return "";
 
   // If already HTML, return as is
-  if (/<(p|strong|em|u|del|span|ol|ul|li|h[1-6]|blockquote|pre|code|div)[\s>]/i.test(md)) {
+  if (/<(p|strong|b|em|i|u|del|s|strike|span|ol|ul|li|h[1-6]|blockquote|pre|code|div|mark|br|hr|a|img)[\s>/]/i.test(md)) {
     return md;
   }
 
@@ -118,6 +120,33 @@ export function markdownToHtml(md: string): string {
   return resultLines.join("\n");
 }
 
+export function parseColorToHex(input: string): string {
+  if (!input) return "";
+  const s = input.trim().toLowerCase();
+  if (s.startsWith("#")) {
+    if (s.length === 4) {
+      return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
+    }
+    return s;
+  }
+  const rgbMatch = s.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1], 10).toString(16).padStart(2, "0");
+    const g = parseInt(rgbMatch[2], 10).toString(16).padStart(2, "0");
+    const b = parseInt(rgbMatch[3], 10).toString(16).padStart(2, "0");
+    return `#${r}${g}${b}`;
+  }
+  return s;
+}
+
+export function matchPresetColor(colorVal: string): ColorPreset | undefined {
+  if (!colorVal) return undefined;
+  const hex = parseColorToHex(colorVal);
+  return COLOR_PRESETS.find(
+    (p) => p.hex.toLowerCase() === hex || p.key.toLowerCase() === hex || p.name.toLowerCase() === hex
+  );
+}
+
 export interface WysiwygEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -150,18 +179,195 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(!value || value.trim() === "" || value === "<p><br></p>");
-  
+
+  // Active formatting state under current selection / cursor
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+    strikeThrough: false,
+    highlight: false,
+    colorKey: "",
+    colorHex: "",
+    colorName: "",
+    orderedList: false,
+    unorderedList: false,
+    blockquote: false,
+    code: false,
+    heading: "",
+  });
+
   const isFocusedRef = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastEmittedValueRef = useRef(value || "");
   const colorMenuRef = useRef<HTMLDivElement | null>(null);
   const headingMenuRef = useRef<HTMLDivElement | null>(null);
 
+  // Check active formatting under cursor / selection
+  const updateActiveFormats = useCallback(() => {
+    if (!editorRef.current) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const anchorNode = selection.anchorNode;
+    if (!anchorNode || !editorRef.current.contains(anchorNode)) return;
+
+    let bold = false;
+    let italic = false;
+    let underline = false;
+    let strikeThrough = false;
+    let highlight = false;
+    let detectedColor = "";
+    let orderedList = false;
+    let unorderedList = false;
+    let blockquote = false;
+    let code = false;
+    let heading = "";
+
+    try {
+      bold = document.queryCommandState("bold");
+      italic = document.queryCommandState("italic");
+      underline = document.queryCommandState("underline");
+      strikeThrough = document.queryCommandState("strikeThrough");
+      orderedList = document.queryCommandState("insertOrderedList");
+      unorderedList = document.queryCommandState("insertUnorderedList");
+    } catch {
+      // Fallback
+    }
+
+    try {
+      const blockVal = (document.queryCommandValue("formatBlock") || "").toLowerCase();
+      if (blockVal === "blockquote") blockquote = true;
+      if (blockVal === "pre") code = true;
+      if (blockVal === "h1" || blockVal === "h2" || blockVal === "h3") {
+        heading = blockVal;
+      }
+    } catch {}
+
+    try {
+      const backColor = document.queryCommandValue("hiliteColor") || document.queryCommandValue("backColor");
+      if (
+        backColor &&
+        backColor !== "transparent" &&
+        backColor !== "rgba(0, 0, 0, 0)" &&
+        backColor !== "rgb(255, 255, 255)" &&
+        backColor !== "#ffffff"
+      ) {
+        highlight = true;
+      }
+    } catch {}
+
+    try {
+      const foreVal = document.queryCommandValue("foreColor");
+      if (foreVal) {
+        detectedColor = foreVal;
+      }
+    } catch {}
+
+    // Traverse ancestors in DOM to catch semantic elements
+    let curr: Node | null = anchorNode.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
+    while (curr && curr !== editorRef.current) {
+      if (curr instanceof HTMLElement) {
+        const tag = curr.tagName.toLowerCase();
+        if (tag === "b" || tag === "strong") bold = true;
+        if (tag === "i" || tag === "em") italic = true;
+        if (tag === "u") underline = true;
+        if (tag === "s" || tag === "del" || tag === "strike") strikeThrough = true;
+        if (tag === "ol") orderedList = true;
+        if (tag === "ul") unorderedList = true;
+        if (tag === "li") {
+          const parentTag = curr.parentElement?.tagName.toLowerCase();
+          if (parentTag === "ol") orderedList = true;
+          if (parentTag === "ul") unorderedList = true;
+        }
+        if (tag === "blockquote") blockquote = true;
+        if (tag === "pre" || tag === "code") code = true;
+        if (tag === "mark") highlight = true;
+        if (
+          curr.style.backgroundColor &&
+          curr.style.backgroundColor !== "transparent" &&
+          curr.style.backgroundColor !== "rgba(0, 0, 0, 0)"
+        ) {
+          highlight = true;
+        }
+        if (curr.style.color && !detectedColor) {
+          detectedColor = curr.style.color;
+        }
+        if (tag === "font" && (curr as HTMLFontElement).color && !detectedColor) {
+          detectedColor = (curr as HTMLFontElement).color;
+        }
+        if (tag === "h1" || tag === "h2" || tag === "h3") {
+          if (!heading) heading = tag;
+        }
+      }
+      curr = curr.parentNode;
+    }
+
+    const matchedPreset = matchPresetColor(detectedColor);
+    const colorKey = matchedPreset ? matchedPreset.key : "";
+    const colorHex = matchedPreset ? matchedPreset.hex : "";
+    const colorName = matchedPreset ? matchedPreset.name : "";
+
+    setActiveFormats((prev) => {
+      if (
+        prev.bold === bold &&
+        prev.italic === italic &&
+        prev.underline === underline &&
+        prev.strikeThrough === strikeThrough &&
+        prev.highlight === highlight &&
+        prev.colorKey === colorKey &&
+        prev.colorHex === colorHex &&
+        prev.colorName === colorName &&
+        prev.orderedList === orderedList &&
+        prev.unorderedList === unorderedList &&
+        prev.blockquote === blockquote &&
+        prev.code === code &&
+        prev.heading === heading
+      ) {
+        return prev;
+      }
+      return {
+        bold,
+        italic,
+        underline,
+        strikeThrough,
+        highlight,
+        colorKey,
+        colorHex,
+        colorName,
+        orderedList,
+        unorderedList,
+        blockquote,
+        code,
+        heading,
+      };
+    });
+  }, []);
+
+  // Listen to selectionchange globally when editor is focused
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (isFocusedRef.current) {
+        updateActiveFormats();
+      }
+    };
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, [updateActiveFormats]);
+
+  // Autofocus if requested
+  useEffect(() => {
+    if (autoFocus && editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, [autoFocus]);
+
   // Sync external value to innerHTML ONLY when not focused (avoids cursor loss & re-render lag)
   useEffect(() => {
     if (!editorRef.current) return;
     if (!isFocusedRef.current) {
-      const html = markdownToHtml(value || "");
+      const html = sanitizeHtml(markdownToHtml(value || ""));
       if (editorRef.current.innerHTML !== html) {
         editorRef.current.innerHTML = html;
         lastEmittedValueRef.current = value || "";
@@ -201,7 +407,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       debounceTimerRef.current = null;
     }
     const html = editorRef.current.innerHTML;
-    const cleanHtml = html === "<p><br></p>" || html === "<br>" || html === "" ? "" : html;
+    const cleanHtml = html === "<p><br></p>" || html === "<br>" || html === "" ? "" : sanitizeHtml(html);
     if (cleanHtml !== lastEmittedValueRef.current) {
       lastEmittedValueRef.current = cleanHtml;
       onChange(cleanHtml);
@@ -220,9 +426,24 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       console.warn("execCommand failed:", e);
     }
     handleInputImmediate();
+    setTimeout(updateActiveFormats, 10);
   };
 
   // Immediate input handler (Zero DOM thrashing, debounced parent update)
+  // Handle paste with DOMPurify sanitization
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const textHtml = e.clipboardData.getData("text/html");
+    const textPlain = e.clipboardData.getData("text/plain");
+    if (textHtml) {
+      const clean = sanitizeHtml(textHtml);
+      document.execCommand("insertHTML", false, clean);
+    } else if (textPlain) {
+      document.execCommand("insertText", false, textPlain);
+    }
+    handleInputImmediate();
+  };
+
   const handleInputImmediate = () => {
     if (!editorRef.current) return;
     const html = editorRef.current.innerHTML;
@@ -237,20 +458,73 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
     debounceTimerRef.current = setTimeout(() => {
       flushChange();
     }, 150);
+
+    setTimeout(updateActiveFormats, 10);
+  };
+
+  const toggleHighlight = () => {
+    if (disabled) return;
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    if (activeFormats.highlight) {
+      try {
+        document.execCommand("hiliteColor", false, "transparent");
+        document.execCommand("backColor", false, "transparent");
+      } catch {}
+      if (editorRef.current) {
+        const selection = window.getSelection();
+        if (selection && selection.anchorNode) {
+          let curr: Node | null = selection.anchorNode;
+          while (curr && curr !== editorRef.current) {
+            if (curr instanceof HTMLElement && (curr.tagName === "MARK" || curr.style.backgroundColor)) {
+              curr.style.backgroundColor = "transparent";
+            }
+            curr = curr.parentNode;
+          }
+        }
+      }
+    } else {
+      execCmd("hiliteColor", "#fef08a");
+    }
+    handleInputImmediate();
+    setTimeout(updateActiveFormats, 10);
   };
 
   const applyColor = (hex: string) => {
+    if (disabled) return;
     if (hex === "inherit" || hex === "default") {
       execCmd("removeFormat");
     } else {
       execCmd("foreColor", hex);
     }
     setShowColorMenu(false);
+    setTimeout(updateActiveFormats, 10);
   };
 
   const applyHeading = (tag: string) => {
+    if (disabled) return;
     execCmd("formatBlock", `<${tag}>`);
     setShowHeadingMenu(false);
+    setTimeout(updateActiveFormats, 10);
+  };
+
+  const toggleBlockquote = () => {
+    if (disabled) return;
+    if (activeFormats.blockquote) {
+      execCmd("formatBlock", "<p>");
+    } else {
+      execCmd("formatBlock", "<blockquote>");
+    }
+  };
+
+  const toggleCode = () => {
+    if (disabled) return;
+    if (activeFormats.code) {
+      execCmd("formatBlock", "<p>");
+    } else {
+      execCmd("formatBlock", "<pre>");
+    }
   };
 
   const handleKeyDownInternal = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -279,6 +553,11 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
       if (key === "x" && e.shiftKey) {
         e.preventDefault();
         execCmd("strikeThrough");
+        return;
+      }
+      if (key === "h" && e.shiftKey) {
+        e.preventDefault();
+        toggleHighlight();
         return;
       }
       if (key === "enter") {
@@ -315,6 +594,7 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           node.textContent = remaining;
           document.execCommand("insertOrderedList", false);
           flushChange();
+          setTimeout(updateActiveFormats, 10);
           return;
         }
 
@@ -324,14 +604,19 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           node.textContent = remaining;
           document.execCommand("insertUnorderedList", false);
           flushChange();
+          setTimeout(updateActiveFormats, 10);
           return;
         }
       }
     }
   };
 
-  const btnBase =
-    "inline-flex items-center justify-center rounded-md text-xs font-semibold text-muted hover:text-foreground hover:bg-surface-3 transition-colors disabled:opacity-40 cursor-pointer select-none h-7 px-1.5 min-w-[28px]";
+  const getBtnClass = (isActive: boolean, extra = "") =>
+    `inline-flex items-center justify-center rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer select-none h-8 px-2 min-w-[32px] ${
+      isActive
+        ? "bg-accent/20 text-accent font-bold ring-1 ring-accent/40 shadow-xs"
+        : "text-muted hover:text-foreground hover:bg-surface-3"
+    } disabled:opacity-40 disabled:cursor-not-allowed ${extra}`;
 
   return (
     <div
@@ -356,9 +641,9 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("bold")}
-          className={btnBase}
+          className={getBtnClass(activeFormats.bold)}
         >
-          <Bold className="h-3.5 w-3.5" />
+          <Bold className="h-4 w-4" />
         </button>
 
         {/* 2. Italic */}
@@ -368,9 +653,9 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("italic")}
-          className={btnBase}
+          className={getBtnClass(activeFormats.italic)}
         >
-          <Italic className="h-3.5 w-3.5" />
+          <Italic className="h-4 w-4" />
         </button>
 
         {/* 3. Underline */}
@@ -380,9 +665,9 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("underline")}
-          className={btnBase}
+          className={getBtnClass(activeFormats.underline)}
         >
-          <Underline className="h-3.5 w-3.5" />
+          <Underline className="h-4 w-4" />
         </button>
 
         {/* 4. Strikethrough */}
@@ -392,92 +677,122 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("strikeThrough")}
-          className={btnBase}
+          className={getBtnClass(activeFormats.strikeThrough)}
         >
-          <Strikethrough className="h-3.5 w-3.5" />
+          <Strikethrough className="h-4 w-4" />
         </button>
 
         {/* 5. Highlight */}
         <button
           type="button"
-          title="Đánh dấu highlight"
+          title={activeFormats.highlight ? "Bỏ highlight (Ctrl+Shift+H)" : "Đánh dấu highlight (Ctrl+Shift+H)"}
           disabled={disabled}
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => execCmd("hiliteColor", "#fef08a")}
-          className={`${btnBase} text-amber-500 hover:text-amber-400`}
+          onClick={toggleHighlight}
+          className={getBtnClass(
+            activeFormats.highlight,
+            activeFormats.highlight ? "text-amber-500 font-bold ring-amber-400/50 bg-amber-400/20" : "text-amber-500 hover:text-amber-400"
+          )}
         >
-          <Highlighter className="h-3.5 w-3.5" />
+          <Highlighter className="h-4 w-4" />
         </button>
 
         {/* Separator */}
-        <div className="h-4 w-[1px] bg-line/80 mx-0.5" />
+        <div className="h-5 w-[1px] bg-line/80 mx-0.5" />
 
         {/* 6. Color Picker Menu */}
         <div className="relative" ref={colorMenuRef}>
           <button
             type="button"
-            title="Đổi màu chữ trực tiếp"
+            title={activeFormats.colorName ? `Màu chữ hiện tại: ${activeFormats.colorName}` : "Đổi màu chữ"}
             disabled={disabled}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowColorMenu((prev) => !prev)}
-            className={`${btnBase} gap-0.5 text-accent`}
+            className={getBtnClass(Boolean(activeFormats.colorKey) || showColorMenu, "gap-1")}
           >
-            <Palette className="h-3.5 w-3.5" />
+            <div className="relative flex items-center">
+              <Palette
+                className="h-4 w-4"
+                style={{ color: activeFormats.colorHex || undefined }}
+              />
+              {activeFormats.colorHex && (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border border-surface shadow-xs"
+                  style={{ backgroundColor: activeFormats.colorHex }}
+                />
+              )}
+            </div>
             <ChevronDown className="h-2.5 w-2.5 opacity-60" />
           </button>
 
           {showColorMenu && (
-            <div className="absolute top-full left-0 mt-1 z-[100] w-64 rounded-xl border border-line bg-surface-2 p-2.5 shadow-2xl space-y-1.5 animate-fade-in-up">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted px-1 flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <Palette className="h-3 w-3 text-accent" />
+            <div className="absolute top-full left-0 mt-1 z-[100] w-72 rounded-2xl border border-line bg-surface-2 p-3 shadow-2xl space-y-2 animate-fade-in-up">
+              <div className="text-xs font-bold text-foreground px-1 flex items-center justify-between border-b border-line/50 pb-2">
+                <span className="flex items-center gap-1.5">
+                  <Palette className="h-3.5 w-3.5 text-accent" />
                   Màu chữ
                 </span>
                 <button
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => applyColor("inherit")}
-                  className="text-[10px] text-muted hover:text-accent font-semibold cursor-pointer"
+                  className={`text-[11px] px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold flex items-center gap-1 border ${
+                    !activeFormats.colorKey
+                      ? "bg-accent/15 border-accent text-accent ring-1 ring-accent/30"
+                      : "border-line/50 text-muted hover:text-foreground hover:bg-surface-3"
+                  }`}
                 >
-                  Mặc định
+                  <span>Mặc định</span>
+                  {!activeFormats.colorKey && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
                 </button>
               </div>
 
-              {/* Compact 4-column color grid with swatches & clear labels */}
-              <div className="grid grid-cols-4 gap-1 pt-1 border-t border-line/40">
-                {COLOR_PRESETS.map((color) => (
-                  <button
-                    key={color.key}
-                    type="button"
-                    title={color.name}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => applyColor(color.hex)}
-                    className="flex items-center gap-1.5 rounded-lg p-1.5 text-[11px] font-medium text-foreground hover:bg-surface-3 transition-colors cursor-pointer"
-                  >
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full shrink-0 shadow-xs border border-white/20 ${color.bgClass}`}
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <span className="truncate">{color.name}</span>
-                  </button>
-                ))}
+              {/* 2-column color grid with ample width (w-72), NO ellipsis '...' truncation */}
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                {COLOR_PRESETS.map((color) => {
+                  const isSelected = activeFormats.colorKey === color.key;
+                  return (
+                    <button
+                      key={color.key}
+                      type="button"
+                      title={color.name}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyColor(color.hex)}
+                      className={`flex items-center justify-between gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-accent/20 border-accent text-accent font-bold ring-1 ring-accent/40 shadow-xs"
+                          : "border-line/40 bg-surface/70 text-foreground hover:bg-surface-3 hover:border-line"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="h-3.5 w-3.5 rounded-full shrink-0 shadow-xs border border-white/20"
+                          style={{ backgroundColor: color.hex }}
+                        />
+                        <span className="whitespace-nowrap">{color.name}</span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-accent shrink-0 stroke-[2.5]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
 
         {/* Separator */}
-        <div className="h-4 w-[1px] bg-line/80 mx-0.5" />
+        <div className="h-5 w-[1px] bg-line/80 mx-0.5" />
 
         {/* 7. Numbered List 1. 2. 3. */}
         <button
           type="button"
           title="Danh sách số thứ tự (1. 2. 3.)"
           disabled={disabled}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("insertOrderedList")}
-          className={`${btnBase} text-accent font-mono font-bold`}
+          className={getBtnClass(activeFormats.orderedList, "font-mono font-bold")}
         >
-          <ListOrdered className="h-3.5 w-3.5" />
+          <ListOrdered className="h-4 w-4" />
           <span className="text-[10px] ml-0.5">1.2.3</span>
         </button>
 
@@ -486,14 +801,15 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           type="button"
           title="Danh sách gạch đầu dòng"
           disabled={disabled}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => execCmd("insertUnorderedList")}
-          className={btnBase}
+          className={getBtnClass(activeFormats.unorderedList)}
         >
-          <List className="h-3.5 w-3.5" />
+          <List className="h-4 w-4" />
         </button>
 
         {/* Separator */}
-        <div className="h-4 w-[1px] bg-line/80 mx-0.5" />
+        <div className="h-5 w-[1px] bg-line/80 mx-0.5" />
 
         {/* 9. Headings Dropdown */}
         <div className="relative" ref={headingMenuRef}>
@@ -501,45 +817,70 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
             type="button"
             title="Tiêu đề (H1, H2, H3)"
             disabled={disabled}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => setShowHeadingMenu((prev) => !prev)}
-            className={`${btnBase} gap-0.5`}
+            className={getBtnClass(Boolean(activeFormats.heading) || showHeadingMenu, "gap-0.5")}
           >
-            <span className="font-bold text-[11px]">H</span>
+            <span className="font-bold text-[11px]">
+              {activeFormats.heading ? activeFormats.heading.toUpperCase() : "H"}
+            </span>
             <ChevronDown className="h-2.5 w-2.5 opacity-60" />
           </button>
 
           {showHeadingMenu && (
-            <div className="absolute top-full left-0 mt-1 z-50 w-36 rounded-xl border border-line bg-surface-2 p-1.5 shadow-2xl space-y-1 animate-fade-in-up">
+            <div className="absolute top-full left-0 mt-1 z-50 w-44 rounded-2xl border border-line bg-surface-2 p-1.5 shadow-2xl space-y-1 animate-fade-in-up">
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h1")}
-                className="w-full flex items-center gap-2 px-2 py-1 text-xs font-bold hover:bg-surface-3 rounded-lg text-left cursor-pointer"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-bold rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h1" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
+                }`}
               >
-                <Heading1 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 1 (H1)</span>
+                <div className="flex items-center gap-2">
+                  <Heading1 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 1 (H1)</span>
+                </div>
+                {activeFormats.heading === "h1" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h2")}
-                className="w-full flex items-center gap-2 px-2 py-1 text-xs font-semibold hover:bg-surface-3 rounded-lg text-left cursor-pointer"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-semibold rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h2" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
+                }`}
               >
-                <Heading2 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 2 (H2)</span>
+                <div className="flex items-center gap-2">
+                  <Heading2 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 2 (H2)</span>
+                </div>
+                {activeFormats.heading === "h2" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("h3")}
-                className="w-full flex items-center gap-2 px-2 py-1 text-xs font-medium hover:bg-surface-3 rounded-lg text-left cursor-pointer"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium rounded-xl text-left cursor-pointer transition-colors border ${
+                  activeFormats.heading === "h3" ? "bg-accent/20 border-accent text-accent" : "border-transparent hover:bg-surface-3 text-foreground"
+                }`}
               >
-                <Heading3 className="h-3.5 w-3.5 text-accent" />
-                <span>Tiêu đề 3 (H3)</span>
+                <div className="flex items-center gap-2">
+                  <Heading3 className="h-3.5 w-3.5 text-accent" />
+                  <span>Tiêu đề 3 (H3)</span>
+                </div>
+                {activeFormats.heading === "h3" && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
               <button
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => applyHeading("p")}
-                className="w-full flex items-center gap-2 px-2 py-1 text-xs text-muted hover:bg-surface-3 rounded-lg text-left cursor-pointer"
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-xl text-left cursor-pointer transition-colors border ${
+                  !activeFormats.heading ? "bg-surface-3 border-line/60 text-foreground font-semibold" : "border-transparent text-muted hover:bg-surface-3"
+                }`}
               >
                 <span>Văn bản thường</span>
+                {!activeFormats.heading && <Check className="h-3 w-3 text-accent stroke-[2.5]" />}
               </button>
             </div>
           )}
@@ -550,10 +891,11 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           type="button"
           title="Trích dẫn"
           disabled={disabled}
-          onClick={() => execCmd("formatBlock", "<blockquote>")}
-          className={btnBase}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={toggleBlockquote}
+          className={getBtnClass(activeFormats.blockquote)}
         >
-          <Quote className="h-3.5 w-3.5" />
+          <Quote className="h-4 w-4" />
         </button>
 
         {/* 11. Code block */}
@@ -561,10 +903,11 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           type="button"
           title="Khối mã (Code)"
           disabled={disabled}
-          onClick={() => execCmd("formatBlock", "<pre>")}
-          className={`${btnBase} font-mono`}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={toggleCode}
+          className={getBtnClass(activeFormats.code, "font-mono")}
         >
-          <Code className="h-3.5 w-3.5" />
+          <Code className="h-4 w-4" />
         </button>
 
         {/* 12. Clear Formatting */}
@@ -572,10 +915,14 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           type="button"
           title="Xóa định dạng"
           disabled={disabled}
-          onClick={() => execCmd("removeFormat")}
-          className={btnBase}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => {
+            execCmd("removeFormat");
+            setTimeout(updateActiveFormats, 10);
+          }}
+          className={getBtnClass(false)}
         >
-          <RemoveFormatting className="h-3.5 w-3.5" />
+          <RemoveFormatting className="h-4 w-4" />
         </button>
       </div>
 
@@ -591,9 +938,13 @@ export const WysiwygEditor = React.memo(function WysiwygEditor({
           ref={editorRef}
           contentEditable={!disabled}
           onInput={handleInputImmediate}
+          onPaste={handlePaste}
+          onKeyUp={updateActiveFormats}
+          onMouseUp={updateActiveFormats}
           onFocus={() => {
             isFocusedRef.current = true;
             setIsFocused(true);
+            updateActiveFormats();
           }}
           onBlur={() => {
             isFocusedRef.current = false;
